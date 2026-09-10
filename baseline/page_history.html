@@ -1,0 +1,407 @@
+    <div id="historyPage" class="page-section hidden max-w-[1400px] mx-auto pb-20">
+      <div class="mb-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+        <div>
+          <h1 class="text-[32px] font-black tracking-tight mb-2 text-brand-black">History Deteksi</h1>
+          <p class="text-brand-muted font-bold text-[14px] flex items-center gap-2">
+             Kelola riwayat transaksi Anda. 
+          </p>
+        </div>
+        <div class="flex gap-3 items-center">
+           <button data-portal-refresh onclick="fetchAllData()" class="flex items-center gap-2 text-brand-coral hover:text-brand-light font-bold text-[13px] bg-brand-paper border border-brand-stone hover:border-brand-light px-5 py-2.5 rounded-xl transition-all shadow-sm">
+             <i class="bi bi-arrow-clockwise text-base"></i> Refresh Data
+           </button>
+        </div>
+      </div>
+
+      <div id="historyPageSkeleton" class="hidden animate-pulse" aria-hidden="true">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div class="h-28 rounded-[1.5rem] bg-white border border-brand-stone p-6"><div class="portal-skeleton" style="height:56px"></div></div>
+          <div class="h-28 rounded-[1.5rem] bg-white border border-brand-stone p-6"><div class="portal-skeleton" style="height:56px"></div></div>
+        </div>
+        <div class="portal-skeleton" style="height:48px;margin-bottom:24px;border-radius:14px"></div>
+        <div class="bg-white rounded-[2rem] border border-brand-stone p-6">
+          <div class="portal-skeleton" style="height:42px;margin-bottom:12px"></div>
+          <div class="portal-skeleton" style="height:54px;margin-bottom:8px"></div>
+          <div class="portal-skeleton" style="height:54px;margin-bottom:8px"></div>
+          <div class="portal-skeleton" style="height:54px"></div>
+        </div>
+      </div>
+
+      <div id="historyPageContent">
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white rounded-[1.5rem] p-6 shadow-sm border border-brand-stone flex items-center gap-5">
+          <div class="w-14 h-14 rounded-2xl bg-[#F2F0FF] text-brand-coral flex items-center justify-center text-2xl"><i class="bi bi-receipt"></i></div>
+          <div>
+            <p class="text-[10px] font-black text-brand-muted uppercase tracking-widest mb-1">Total Data</p>
+            <h3 id="summaryCount" class="text-[28px] font-black text-brand-black leading-none">0</h3>
+          </div>
+        </div>
+        <div class="bg-gradient-primary rounded-[1.5rem] p-6 shadow-[0_8px_20px_rgba(118,81,255,0.2)] border border-transparent flex items-center gap-5 relative overflow-hidden group">
+          <div class="absolute -right-6 -top-6 w-32 h-32 bg-white/10 rounded-full group-hover:scale-110 transition-transform"></div>
+          <div class="w-14 h-14 rounded-2xl bg-white/20 text-white flex items-center justify-center text-2xl border border-white/20 z-10"><i class="bi bi-cash-stack"></i></div>
+          <div class="z-10">
+            <p class="text-[10px] font-black text-white/80 uppercase tracking-widest mb-1">Total Nominal</p>
+            <h3 id="summaryTotal" class="text-[28px] font-black text-white leading-none">Rp 0</h3>
+          </div>
+        </div>
+      </div>
+      
+      <div class="flex flex-col lg:flex-row gap-4 mb-6 w-full">
+        <div class="w-full lg:w-[280px] relative flex items-center z-20">
+          <input type="text" id="filterCabangInput" class="w-full bg-white border border-brand-stone focus:border-brand-coral rounded-xl pl-10 pr-4 py-2.5 font-bold text-brand-black outline-none shadow-sm transition-colors" placeholder="Filter Cabang...">
+          <i class="bi bi-shop absolute left-4 text-brand-muted pointer-events-none"></i>
+          <div id="filterCabangDropdown" class="legacy-typeahead-menu hidden"></div>
+        </div>
+        <div class="legacy-filter-surface flex-1 flex bg-white border border-brand-stone rounded-xl shadow-sm p-1 items-center">
+          <div class="legacy-filter-search flex-[6] relative flex items-center px-4 border-r border-brand-stone">
+            <i class="bi bi-search text-brand-muted mr-3"></i>
+            <input type="text" id="searchBar" class="w-full bg-transparent border-none py-2 font-bold text-brand-black outline-none" placeholder="Cari Toko atau Barang...">
+          </div>
+          <div id="dateFilterWrapper" class="flex-[4] relative flex items-center justify-between px-4 cursor-pointer hover:bg-brand-paper rounded-r-lg h-full min-h-[40px] transition-colors" onclick="if(FP_INSTANCE) FP_INSTANCE.open()">
+             <div class="flex items-center gap-2 text-brand-black font-bold text-[10px] uppercase tracking-widest"><span id="startDateDisplay">START</span><i class="bi bi-arrow-right text-brand-muted"></i><span id="endDateDisplay">TO</span></div>
+             <i class="bi bi-calendar-range calendar-icon text-brand-muted ml-2"></i>
+             <i class="bi bi-x-circle-fill clear-date-btn" onclick="clearDateFilter(event)"></i>
+             <input type="text" id="dateRangeFilter" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
+          </div>
+        </div>
+      </div>
+      
+      <div id="tableContainer" class="bg-white rounded-[2rem] shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-brand-stone overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse min-w-[1200px]">
+            <thead id="historyTableHead" class="bg-brand-paper border-b border-brand-stone text-brand-muted text-[10px] font-black uppercase tracking-widest select-none">
+              <tr>
+                 <th class="px-4 py-4 pl-6 text-center w-[58px]">No.</th>
+                 <th class="px-5 py-4 cursor-pointer sortable" onclick="handleSort('history', 2, 'date')">Tanggal <i class="bi bi-arrow-down-up ml-1 opacity-50"></i></th>
+                 <th class="px-5 py-4 cursor-pointer sortable" onclick="handleSort('history', 3, 'string')">Cabang <i class="bi bi-arrow-down-up ml-1 opacity-50"></i></th>
+                 <th class="px-5 py-4 cursor-pointer sortable" onclick="handleSort('history', 5, 'string')">Supplier <i class="bi bi-arrow-down-up ml-1 opacity-50"></i></th>
+                 <th class="px-5 py-4 cursor-pointer sortable" onclick="handleSort('history', 6, 'string')">Nama Barang <i class="bi bi-arrow-down-up ml-1 opacity-50"></i></th>
+                 <th class="px-5 py-4 text-center cursor-pointer sortable" onclick="handleSort('history', 7, 'number')">Qty <i class="bi bi-arrow-down-up ml-1 opacity-50"></i></th>
+                 <th class="px-5 py-4 text-center">Unit</th>
+                 <th class="px-5 py-4 text-right cursor-pointer sortable" onclick="handleSort('history', 8, 'number')">Total <i class="bi bi-arrow-down-up ml-1 opacity-50"></i></th>
+                 <th class="px-5 py-4 text-center cursor-pointer sortable" onclick="handleSort('history', 11, 'string')">Status <i class="bi bi-arrow-down-up ml-1 opacity-50"></i></th>
+                 <th class="px-5 py-4 text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody" class="divide-y divide-brand-stone/50"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="legacy-table-footer mt-6 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <span class="text-[11px] font-bold text-brand-muted uppercase tracking-widest whitespace-nowrap">Baris per halaman</span>
+          <div class="legacy-limit-control" id="historyLimitDropdownWrapper">
+            <button type="button" id="historyLimitBtn" class="legacy-limit-trigger" data-expense-limit-toggle="history" data-value="10" aria-haspopup="listbox" aria-controls="historyLimitMenu" aria-expanded="false">
+              <span id="historyLimitLabel">10 baris</span><i class="bi bi-chevron-down" aria-hidden="true"></i>
+            </button>
+            <div id="historyLimitMenu" class="legacy-limit-menu hidden" role="listbox" aria-label="Jumlah baris per halaman histori">
+              <button type="button" class="legacy-limit-option limit-opt-history active-limit" data-expense-limit-value="10" role="option" aria-selected="true"><span>10 baris</span><i class="bi bi-check2" aria-hidden="true"></i></button>
+              <button type="button" class="legacy-limit-option limit-opt-history" data-expense-limit-value="25" role="option" aria-selected="false"><span>25 baris</span></button>
+              <button type="button" class="legacy-limit-option limit-opt-history" data-expense-limit-value="50" role="option" aria-selected="false"><span>50 baris</span></button>
+              <button type="button" class="legacy-limit-option limit-opt-history" data-expense-limit-value="100" role="option" aria-selected="false"><span>100 baris</span></button>
+            </div>
+          </div>
+        </div>
+        <div id="paginationControls" class="flex items-center gap-1.5"></div>
+      </div>
+      </div>
+    </div>
+
+<script>
+    const historyEscapeHtml = value => window.legacyEscapeHtml ? window.legacyEscapeHtml(value) : String(value == null ? '' : value).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+    const historyEncodeData = value => encodeURIComponent(String(value == null ? '' : value));
+    let HISTORY_REQUEST_SEQUENCE = 0;
+
+    function setHistoryPageLoading(loading) {
+      const page = document.getElementById('historyPage');
+      const skeleton = document.getElementById('historyPageSkeleton');
+      if (page) page.classList.toggle('history-page-loading', Boolean(loading));
+      if (skeleton) skeleton.setAttribute('aria-hidden', loading ? 'false' : 'true');
+    }
+
+    function renderHistoryTableSkeleton() {
+      const widths = ['52%','68%','76%','60%','72%','58%','44%','48%','38%','42%'];
+      const rows = Array.from({ length:6 }, (_, rowIndex) => `<tr aria-hidden="true">${Array.from({ length:10 }, (_, columnIndex) => `<td><span class="portal-skeleton legacy-table-skeleton" style="width:${widths[(rowIndex + columnIndex) % widths.length]}"></span></td>`).join('')}</tr>`).join('');
+      $('#historyTableBody').attr('aria-busy', 'true').html(rows);
+      $('#summaryCount, #summaryTotal').html('<span class="portal-skeleton" style="display:inline-block;width:72px;height:18px"></span>');
+    }
+    document.addEventListener('click', event => {
+      const control = event.target.closest && event.target.closest('[data-history-action]');
+      if (!control) return;
+      const value = decodeURIComponent(control.dataset.historyValue || '');
+      if (control.dataset.historyAction === 'image') window.showImg(value);
+      else if (control.dataset.historyAction === 'edit') openEditRow(value, false);
+      else if (control.dataset.historyAction === 'forward') forwardToKategori(value);
+      else if (control.dataset.historyAction === 'delete') deleteHistoryRow(value);
+    });
+    document.addEventListener('click', event => {
+      const trigger = event.target.closest && event.target.closest('[data-expense-limit-toggle="history"]');
+      if (trigger) {
+        event.preventDefault();
+        event.stopPropagation();
+        const menu = document.getElementById('historyLimitMenu');
+        if (!menu) return;
+        if (!menu.classList.contains('hidden') && window.closeLegacyFloatingPopover) {
+          window.closeLegacyFloatingPopover('historyLimitMenu');
+        } else if (window.openLegacyFloatingPopover) {
+          window.openLegacyFloatingPopover(trigger, menu);
+        }
+        return;
+      }
+      const option = event.target.closest && event.target.closest('#historyLimitMenu [data-expense-limit-value]');
+      if (!option) return;
+      event.preventDefault();
+      event.stopPropagation();
+      window.setHistoryLimit(Number(option.dataset.expenseLimitValue));
+    });
+
+    window.setHistoryLimit = function(val) {
+      const limitButton = document.getElementById('historyLimitBtn');
+      if (limitButton) limitButton.dataset.value = String(val);
+      $('#historyLimitLabel').text(val + ' baris');
+      $('.limit-opt-history').removeClass('active-limit text-brand-coral bg-[#F2F0FF]').find('i').remove();
+      $('.limit-opt-history').attr('aria-selected', 'false');
+      $(`.limit-opt-history[data-expense-limit-value="${val}"]`).addClass('active-limit text-brand-coral bg-[#F2F0FF]').attr('aria-selected', 'true').append('<i class="bi bi-check2 text-brand-coral font-black" aria-hidden="true"></i>');
+      if (window.closeLegacyFloatingPopover) window.closeLegacyFloatingPopover('historyLimitMenu');
+      applyHistoryFilters();
+    };
+
+    if (window.bindLegacyPopoverKeyboard) {
+      window.bindLegacyPopoverKeyboard('historyLimitBtn', 'historyLimitMenu');
+    }
+
+    function getHistoryRequest(page) {
+      const datePayload = getDateFilterPayload(FP_INSTANCE, '#dateFilterWrapper');
+      return {
+        page: page || 1,
+        limit: parseInt($('#historyLimitBtn').attr('data-value')) || 10,
+        filters: Object.assign({
+          search: $('#searchBar').val().toLowerCase().trim(),
+          cabang: $('#filterCabangInput').val().toLowerCase().trim()
+        }, datePayload),
+        sort: SORT_STATE.history.col === -1 ? {} : { col: SORT_STATE.history.col, asc: SORT_STATE.history.asc }
+      };
+    }
+
+    async function fetchHistoryPage(page, showLoader = false, options = {}) {
+      const requestSequence = ++HISTORY_REQUEST_SEQUENCE;
+      const initialLoading = Boolean(showLoader && !HISTORY_LOADED);
+      if (initialLoading) {
+        setHistoryPageLoading(true);
+      } else if (!options.background) {
+        renderHistoryTableSkeleton();
+      }
+
+      try {
+        const res = await callServer('getHistoryPage', getHistoryRequest(page));
+        if (requestSequence !== HISTORY_REQUEST_SEQUENCE) return;
+        if (res && res.error) {
+          Swal.fire('Server Error (History)', res.error, 'error');
+        }
+        GLOBAL_HISTORY = (res && (res.rows || res.history)) ? (res.rows || res.history) : [];
+        FILTERED_HISTORY = GLOBAL_HISTORY;
+        HISTORY_META = {
+          total: Number(res && res.total) || 0,
+          totalAmount: Number(res && res.totalAmount) || 0,
+          page: Number(res && res.page) || 1,
+          limit: Number(res && res.limit) || (parseInt($('#historyLimitBtn').attr('data-value')) || 10)
+        };
+        CURRENT_PAGE = HISTORY_META.page;
+        HISTORY_LOADED = true;
+        $('#historyTableBody').removeAttr('aria-busy');
+        renderHistoryTable();
+        if (window.PortalCore && window.PortalCore.Portal) window.PortalCore.Portal.pageLoadedAt.historyPage = Date.now();
+      } catch(e) {
+        if (requestSequence === HISTORY_REQUEST_SEQUENCE) {
+          $('#historyTableBody').removeAttr('aria-busy');
+          if (!HISTORY_LOADED) $('#historyTableBody').html('<tr><td colspan="10" class="p-12 text-center text-brand-danger font-bold text-[11px]">Data History gagal dimuat. Gunakan Refresh Data untuk mencoba lagi.</td></tr>');
+          Swal.fire('Koneksi Error', e.message, 'error');
+        }
+      } finally {
+        if (requestSequence === HISTORY_REQUEST_SEQUENCE) {
+          $('#historyTableBody').removeAttr('aria-busy');
+          setHistoryPageLoading(false);
+        }
+      }
+    }
+
+    function fetchAllData() {
+      return fetchHistoryPage(1, !HISTORY_LOADED, { background:HISTORY_LOADED });
+    }
+    window.deleteHistoryRow = async function(id) {
+       const result = await Swal.fire({
+          title: 'Hapus Data?',
+          text: "Data transaksi ini akan dihapus permanen!",
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#FF6B6B', 
+          cancelButtonColor: '#EAEBFA', 
+          confirmButtonText: 'Ya, Hapus!',
+          cancelButtonText: 'Batal',
+          customClass: { cancelButton: 'text-brand-black font-bold' }
+       });
+
+       if (result.isConfirmed) {
+          try {
+             Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'Menghapus data...', showConfirmButton: false, didOpen: () => { Swal.showLoading() } });
+             await callServer('deleteTransaction', id);
+             GLOBAL_HISTORY = GLOBAL_HISTORY.filter(r => r[0] !== id);
+             applyHistoryFilters(); 
+             Toast.fire({ icon: 'success', title: 'Data berhasil dihapus' });
+          } catch(e) {
+             Toast.fire({ icon: 'error', title: e.message });
+          }
+       }
+    }
+    window.handleSort = function(view, colIndex, dataType) {
+       if (SORT_STATE[view].col === colIndex) {
+          SORT_STATE[view].asc = !SORT_STATE[view].asc;
+       } else {
+          SORT_STATE[view].col = colIndex;
+          SORT_STATE[view].asc = true;
+       }
+
+       let dataArray = [];
+       if (view === 'history') dataArray = FILTERED_HISTORY;
+       else if (view === 'listrik') dataArray = FILTERED_LISTRIK;
+       else if (view === 'umum') dataArray = FILTERED_UMUM;
+
+       dataArray.sort((a, b) => {
+          let valA = a[colIndex];
+          let valB = b[colIndex];
+
+          if (dataType === 'number' || dataType === 'date') {
+             valA = Number(valA) || 0;
+             valB = Number(valB) || 0;
+             return SORT_STATE[view].asc ? valA - valB : valB - valA;
+          } else {
+             valA = String(valA).toLowerCase();
+             valB = String(valB).toLowerCase();
+             if (valA < valB) return SORT_STATE[view].asc ? -1 : 1;
+             if (valA > valB) return SORT_STATE[view].asc ? 1 : -1;
+             return 0;
+          }
+       });
+
+       // Update Icons UI
+       $(`#${view}TableHead th i.bi-arrow-down, #${view}TableHead th i.bi-arrow-up`).removeClass('bi-arrow-down bi-arrow-up text-brand-coral opacity-100').addClass('bi-arrow-down-up opacity-50');
+       
+       const theads = document.querySelectorAll(`#${view}TableHead th.sortable`);
+       let targetTh = null;
+       
+       const onclickStr = `handleSort('${view}', ${colIndex}`;
+       for (let i = 0; i < theads.length; i++) {
+          if (theads[i].getAttribute('onclick').includes(onclickStr)) {
+             targetTh = theads[i];
+             break;
+          }
+       }
+
+       if (targetTh) {
+          const icon = targetTh.querySelector('i');
+          if (icon) {
+             icon.classList.remove('bi-arrow-down-up', 'opacity-50');
+             icon.classList.add(SORT_STATE[view].asc ? 'bi-arrow-down' : 'bi-arrow-up', 'text-brand-coral', 'opacity-100');
+          }
+       }
+
+       if (view === 'history') { fetchHistoryPage(1); }
+       else if (view === 'listrik') fetchExpensePage('listrik', 1);
+       else if (view === 'umum') fetchExpensePage('umum', 1);
+    }
+
+    function applyHistoryFilters() {
+      fetchHistoryPage(1);
+    }
+
+    function renderHistoryTable() {
+      const b = $('#historyTableBody').empty(); 
+      const limit = HISTORY_META.limit || parseInt($('#historyLimitBtn').attr('data-value')) || 10;
+      const pagedData = FILTERED_HISTORY;
+      const rowOffset = Math.max(0, (CURRENT_PAGE - 1) * limit);
+      
+      $('#summaryCount').text(fmtRp(HISTORY_META.total)); 
+      $('#summaryTotal').text('Rp ' + fmtRp(HISTORY_META.totalAmount));
+
+      if(pagedData.length === 0) {
+         b.html('<tr><td colspan="10" class="p-16 text-center text-brand-muted font-bold uppercase opacity-60 text-[11px]">Data tidak ditemukan</td></tr>');
+      } else {
+         let rowsHtml = '';
+         pagedData.forEach((r, rowIndex) => {
+           const statusPosting = r[11] ? r[11].trim() : "";
+           const badgeStatus = statusPosting ? `<span class="bg-green-100 text-green-700 px-2.5 py-1 rounded-[4px] text-[9px] font-black uppercase tracking-widest border border-green-200 shadow-sm">Posted: ${historyEscapeHtml(statusPosting)}</span>` : `<span class="bg-[#F2F0FF] text-brand-coral px-2.5 py-1 rounded-[4px] text-[9px] font-black uppercase tracking-widest border border-[#DCD5FF]">Pending</span>`;
+           
+           rowsHtml += `<tr class="hover:bg-brand-paper transition-colors" data-id="${historyEscapeHtml(r[0])}">
+              <td class="px-4 py-3 pl-6 text-center text-[10px] font-black text-brand-muted tabular-nums">${rowOffset + rowIndex + 1}</td>
+              <td class="px-5 py-3 whitespace-nowrap text-[11px] font-bold text-brand-black">${historyEscapeHtml(fmtIndo(r[2]))}</td>
+              <td class="px-5 py-3 text-[11px] font-bold text-brand-black"><div>${historyEscapeHtml(r[3])}</div><div class="text-[9px] text-brand-muted uppercase font-bold tracking-widest mt-0.5">${historyEscapeHtml(r[4])}</div></td>
+              <td class="px-5 py-3 text-[11px] font-bold text-brand-black">${historyEscapeHtml(r[5])}</td>
+              <td class="px-5 py-3 text-[11px] font-semibold text-brand-black/80">${historyEscapeHtml(r[6])}</td>
+              <td class="px-5 py-3 text-center font-black text-[12px]">${fmtRp(r[7])}</td>
+              <td class="px-5 py-3 text-center text-[10px] font-bold uppercase text-brand-muted tracking-wider">${historyEscapeHtml(r[10]||'PCS')}</td>
+              <td class="px-5 py-3 text-right text-[12px] font-black text-brand-black whitespace-nowrap">Rp ${fmtRp(r[8])}</td>
+              <td class="px-5 py-3 text-center whitespace-nowrap">${badgeStatus}</td>
+              <td class="px-5 py-3 text-center whitespace-nowrap">
+                <div class="flex gap-2 justify-center">
+                  <button class="w-8 h-8 rounded-lg bg-white border border-brand-stone text-brand-black hover:bg-brand-paper transition-colors shadow-sm flex items-center justify-center" data-history-action="image" data-history-value="${historyEncodeData(r[9])}" title="Lihat Nota"><i class="bi bi-eye-fill text-[12px]"></i></button>
+                  <button class="w-8 h-8 rounded-lg bg-white border border-brand-stone text-brand-coral hover:border-brand-coral hover:text-brand-coral flex items-center justify-center shadow-sm transition-colors" data-history-action="edit" data-history-value="${historyEncodeData(r[0])}" title="Edit Data"><i class="bi bi-pencil-square text-[12px]"></i></button>
+                  ${!statusPosting ? `<button class="w-8 h-8 rounded-lg bg-white border border-brand-stone text-brand-light hover:border-brand-light hover:text-brand-light flex items-center justify-center shadow-sm transition-colors" data-history-action="forward" data-history-value="${historyEncodeData(r[0])}" title="Posting ke Pengeluaran"><i class="bi bi-send-check-fill text-[12px]"></i></button>` : `<div class="w-8 h-8"></div>`}
+                  <button class="w-8 h-8 rounded-lg bg-white border border-brand-stone text-brand-danger hover:bg-brand-danger hover:border-brand-danger hover:text-white transition-colors shadow-sm flex items-center justify-center" data-history-action="delete" data-history-value="${historyEncodeData(r[0])}" title="Hapus Data"><i class="bi bi-trash3-fill text-[12px]"></i></button>
+                </div>
+              </td>
+            </tr>`;
+         });
+         b.html(rowsHtml);
+         const tableRows = b.find('tr');
+         pagedData.forEach((r, idx) => { tableRows.eq(idx).data('full-data', r); });
+      }
+      renderPaginationControls('#paginationControls', HISTORY_META.total, CURRENT_PAGE, limit, 'goToPage');
+    }
+    
+    window.goToPage = function(p) { 
+      fetchHistoryPage(p); 
+    }
+
+    window.forwardToKategori = async function(id) {
+       const row = GLOBAL_HISTORY.find(r => r[0] === id);
+       if(!row) return;
+
+       const result = await Swal.fire({
+          title: 'Posting Data',
+          html: `<div class="text-[13px] mb-4">Arahkan transaksi <strong>${historyEscapeHtml(row[6])}</strong> (Rp ${historyEscapeHtml(fmtRp(row[8]))}) ini ke:</div>`,
+          showCancelButton: true,
+          showDenyButton: true,
+          confirmButtonText: '<i class="bi bi-lightning-charge-fill mr-1"></i> Listrik',
+          denyButtonText: '<i class="bi bi-receipt-cutoff mr-1"></i> Umum',
+          cancelButtonText: 'Batal',
+          confirmButtonColor: '#7651FF',
+          denyButtonColor: '#1E1E2F',
+       });
+
+       let targetKategori = null;
+       if (result.isConfirmed) targetKategori = 'Listrik';
+       else if (result.isDenied) targetKategori = 'Umum';
+
+       if (targetKategori) {
+          Toast.fire({ icon: 'info', title: 'Menyalin data ke ' + targetKategori });
+          try {
+             await callServer('duplicateToKategori', id, targetKategori);
+             row[11] = targetKategori; 
+             applyHistoryFilters();
+             fetchListrikSilently(); 
+             Toast.fire({ icon: 'success', title: 'Data berhasil diposting' });
+          } catch (e) {
+             Toast.fire({ icon: 'error', title: e.message });
+          }
+       }
+    }
+    async function fetchListrikSilently() {
+       try { 
+           const activePage = $('.nav-item.active-page').data('page') || 'inputPage';
+           if (KONTROL_SUMMARY.year) await fetchExpenseSummaryByBranchMonth(false);
+           if (EXPENSE_META.listrik.loaded || activePage === 'listrikPage') await fetchExpensePage('listrik', EXPENSE_META.listrik.page || 1);
+           if (EXPENSE_META.umum.loaded || activePage === 'umumPage') await fetchExpensePage('umum', EXPENSE_META.umum.page || 1);
+       } catch(e) {}
+    }
+</script>

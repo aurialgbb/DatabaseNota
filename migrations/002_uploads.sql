@@ -1,0 +1,2 @@
+CREATE TABLE upload_groups (id uuid PRIMARY KEY, uid text REFERENCES profiles(uid), branch_id text REFERENCES branches(id), expected_photos integer NOT NULL CHECK(expected_photos BETWEEN 1 AND 5), status text NOT NULL DEFAULT 'OCR_PROCESSING', created_at timestamptz NOT NULL DEFAULT now(), receipt_ids jsonb);
+CREATE TABLE ocr_photos (upload_id uuid REFERENCES upload_groups(id), client_photo_id text, photo_id uuid REFERENCES photos(id), job_id uuid REFERENCES jobs(id), result jsonb, PRIMARY KEY(upload_id,client_photo_id));

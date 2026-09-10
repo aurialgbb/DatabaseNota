@@ -1,0 +1,4 @@
+# Preserve frozen source bytes: build scripts verify their SHA-256 hashes.
+baseline/** -text
+*.png -text
+*.webp -text

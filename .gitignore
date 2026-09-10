@@ -1,0 +1,21 @@
+node_modules/
+.next/
+.vercel/
+.env*
+!.env.example
+public/portal.html
+public/runtime/
+generated/
+*.tsbuildinfo
+test-results/
+local-data/
+/.swc
+
+# Generated previews and local credentials
+public/workspace-preview.html
+public/baseline-manifest.json
+*.pem
+*.key
+*service-account*.json
+*credentials*.json
+

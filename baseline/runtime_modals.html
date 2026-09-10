@@ -1,0 +1,329 @@
+
+  <!-- Modals -->
+  <div id="previewModal" class="modal-overlay" style="z-index: 20000;">
+    <div class="modal-content bg-white p-2 rounded-[2rem] shadow-2xl max-w-3xl w-full mx-4 relative overflow-hidden border border-brand-stone">
+      <button data-gbb-handler-h44="" class="absolute top-4 right-4 w-8 h-8 bg-brand-paper text-brand-muted rounded-full flex items-center justify-center font-bold hover:bg-brand-coral hover:text-white transition-colors z-10"><i class="bi bi-x-lg"></i></button>
+      <div id="modalImgContainer" class="bg-[#F8F9FC] rounded-[1.5rem] overflow-y-auto flex flex-col items-center p-6 max-h-[85vh]"></div>
+    </div>
+  </div>
+  
+  <div id="editRowModal" class="modal-overlay">
+    <div class="modal-content bg-white rounded-[2rem] shadow-2xl max-w-md w-full mx-4 overflow-hidden border border-brand-stone">
+      <div class="p-6 border-b border-brand-stone bg-[#F8F9FC] flex justify-between items-center font-black uppercase tracking-widest text-brand-black">Edit Data Transaksi</div>
+      <div class="p-6 space-y-5">
+        <input type="hidden" id="editRowId">
+        <input type="hidden" id="isReviewPhase" value="0">
+        
+        <div id="editDateContainer" class="hidden">
+           <label class="block text-[10px] font-bold text-brand-muted uppercase tracking-widest mb-1.5">Tanggal Nota</label>
+           <div class="relative flex items-center">
+             <input type="text" id="editItemDate" class="w-full bg-brand-paper border border-transparent focus:border-brand-coral focus:bg-white rounded-xl pl-4 pr-10 py-2.5 font-bold outline-none cursor-pointer text-brand-black transition-all">
+             <i class="bi bi-calendar-event absolute right-4 text-brand-muted pointer-events-none"></i>
+           </div>
+        </div>
+
+        <div>
+           <label class="block text-[10px] font-bold text-brand-muted uppercase tracking-widest mb-1.5">Nama Toko / Supplier</label>
+           <input type="text" id="editTokoName" class="w-full bg-brand-paper border border-transparent focus:border-brand-coral focus:bg-white rounded-xl px-4 py-2.5 font-bold outline-none text-brand-black transition-all">
+        </div>
+        <div>
+           <label class="block text-[10px] font-bold text-brand-muted uppercase tracking-widest mb-1.5">Item Name</label>
+           <input type="text" id="editItemName" class="w-full bg-brand-paper border border-transparent focus:border-brand-coral focus:bg-white rounded-xl px-4 py-2.5 font-bold outline-none text-brand-black transition-all">
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+           <div>
+              <label class="block text-[10px] font-bold text-brand-muted uppercase tracking-widest mb-1.5">Qty (Angka & Desimal)</label>
+              <input type="text" id="editItemQty" class="w-full bg-brand-paper border border-transparent focus:border-brand-coral focus:bg-white rounded-xl px-4 py-2.5 font-bold outline-none text-brand-black transition-all text-center" placeholder="1.000,50" data-gbb-handler-h45="">
+           </div>
+           <div>
+              <label class="block text-[10px] font-bold text-brand-muted uppercase tracking-widest mb-1.5">Unit</label>
+              <input type="text" id="editItemUnit" class="w-full bg-brand-paper border border-transparent focus:border-brand-coral focus:bg-white rounded-xl px-4 py-2.5 font-bold outline-none text-brand-black transition-all text-center">
+           </div>
+        </div>
+        <div>
+           <label class="block text-[10px] font-bold text-brand-muted uppercase tracking-widest mb-1.5">Total Price</label>
+           <div class="relative">
+              <span class="absolute left-4 top-1/2 -translate-y-1/2 text-brand-muted font-bold">Rp</span>
+              <input type="text" id="editItemTotal" class="w-full bg-brand-paper border border-transparent focus:border-brand-coral focus:bg-white rounded-xl pl-10 pr-4 py-2.5 font-bold outline-none text-brand-black transition-all" data-gbb-handler-h46="">
+           </div>
+        </div>
+      </div>
+      <div class="p-6 border-t border-brand-stone bg-[#F8F9FC] flex justify-end gap-3">
+        <button data-gbb-handler-h47="" class="px-5 py-2.5 rounded-xl font-bold text-xs bg-white border border-brand-stone text-brand-black hover:bg-brand-stone transition-colors">Batal</button>
+        <button id="btnSaveRowEdit" data-gbb-handler-h48="" class="px-6 py-2.5 rounded-xl font-bold text-xs bg-brand-black text-white hover:bg-[#2A2A3D] shadow-md transition-colors relative">
+           <span class="btn-text">Simpan Perubahan</span>
+           <span class="btn-spinner hidden absolute inset-0 flex items-center justify-center">
+              <i class="bi bi-arrow-repeat animate-spin text-lg"></i>
+           </span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="kontrolDetailModal" class="modal-overlay">
+    <div class="modal-content bg-[#F8F9FC] rounded-[2rem] shadow-2xl max-w-lg w-full mx-4 overflow-hidden border border-brand-stone flex flex-col max-h-[90vh]">
+      <div class="p-6 border-b border-brand-stone bg-white flex justify-between items-center font-black uppercase tracking-widest text-brand-black shadow-sm">
+         <span id="kontrolDetailTitle" class="text-sm">Detail Transaksi</span>
+         <button data-gbb-handler-h49="" class="w-8 h-8 rounded-full bg-red-100 hover:bg-red-500 text-red-600 hover:text-white transition-colors flex items-center justify-center shadow-sm">
+            <i class="bi bi-x-lg font-bold"></i>
+         </button>
+      </div>
+      <div class="p-6 overflow-y-auto flex-1 space-y-4 custom-scrollbar" id="kontrolDetailContent">
+         <!-- Dinamis populates -->
+      </div>
+      <div class="p-5 border-t border-brand-stone bg-white flex justify-end shadow-sm">
+         <button data-gbb-handler-h50="" class="px-6 py-2.5 rounded-xl font-bold text-xs bg-brand-black text-white hover:bg-[#2A2A3D] shadow-md transition-colors">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="listrikModal" class="modal-overlay">
+    <div class="modal-content bg-white rounded-[2rem] shadow-2xl max-w-md w-full mx-4 overflow-hidden border border-brand-stone flex flex-col max-h-[90vh]">
+      <div id="modalPengeluaranTitle" class="p-6 border-b border-brand-stone bg-[#F8F9FC] flex justify-between items-center font-black uppercase tracking-widest text-brand-black">Form Transaksi</div>
+      <div class="p-6 space-y-5 overflow-y-auto">
+        <input type="hidden" id="listrikRowId">
+        <input type="hidden" id="pengeluaranKategori" value="Listrik">
+        
+        <div class="relative z-20">
+           <label class="block text-[10px] font-bold text-brand-muted uppercase tracking-widest mb-1.5">Cabang / Toko <span class="text-brand-coral">*</span></label>
+           <div class="relative flex items-center z-10">
+             <input type="text" id="listrikTokoInput" class="w-full bg-brand-paper border border-transparent focus:border-brand-coral focus:bg-white rounded-xl pl-4 pr-10 py-2.5 font-bold outline-none text-brand-black transition-all shadow-sm" placeholder="Ketik nama cabang..." autocomplete="off">
+             <i class="bi bi-search absolute right-4 text-brand-muted pointer-events-none"></i>
+           </div>
+           <div id="listrikTokoDropdown" class="legacy-typeahead-menu hidden"></div>
+        </div>
+
+        <div>
+           <label class="block text-[10px] font-bold text-brand-muted uppercase tracking-widest mb-1.5">Nama CV</label>
+           <input type="text" id="listrikCvDisplay" class="w-full bg-[#EAEBFA]/40 border border-transparent rounded-xl px-4 py-2.5 font-bold outline-none text-brand-muted cursor-not-allowed" readonly>
+        </div>
+
+        <div>
+           <label class="block text-[10px] font-bold text-brand-muted uppercase tracking-widest mb-1.5">Tanggal Bayar <span class="text-brand-coral">*</span></label>
+           <div class="relative flex items-center">
+             <input type="text" id="listrikDateInput" class="w-full bg-brand-paper border border-transparent focus:border-brand-coral focus:bg-white rounded-xl pl-4 pr-10 py-2.5 font-bold outline-none cursor-pointer text-brand-black transition-all shadow-sm">
+             <i class="bi bi-calendar-event absolute right-4 text-brand-muted pointer-events-none"></i>
+           </div>
+        </div>
+
+        <div>
+           <label class="block text-[10px] font-bold text-brand-muted uppercase tracking-widest mb-1.5">Nominal Tagihan <span class="text-brand-coral">*</span></label>
+           <div class="relative shadow-sm">
+              <span class="absolute left-4 top-1/2 -translate-y-1/2 text-brand-muted font-bold">Rp</span>
+              <input type="text" id="listrikNominal" data-gbb-handler-h51="" class="w-full bg-brand-paper border border-transparent focus:border-brand-coral focus:bg-white rounded-xl pl-10 pr-4 py-2.5 font-bold outline-none text-brand-black transition-all">
+           </div>
+        </div>
+
+        <div id="keteranganContainer" class="hidden">
+           <label class="block text-[10px] font-bold text-brand-muted uppercase tracking-widest mb-1.5">Keterangan Pengeluaran <span class="text-brand-coral">*</span></label>
+           <textarea id="listrikKeterangan" rows="2" class="w-full bg-brand-paper border border-transparent focus:border-brand-coral focus:bg-white rounded-xl px-4 py-2.5 font-bold outline-none text-brand-black transition-all shadow-sm" placeholder="Tulis detail..."></textarea>
+        </div>
+
+        <div>
+           <label class="block text-[10px] font-bold text-brand-muted uppercase tracking-widest mb-1.5">Bukti Transaksi (Opsional)</label>
+           <div id="listrikPasteZone" class="legacy-evidence-drop w-full bg-brand-paper border border-dashed border-[#D5D5E0] hover:border-brand-coral rounded-xl p-4 text-center cursor-pointer transition-all flex flex-col items-center justify-center focus:outline-none" tabindex="0" role="button" aria-label="Upload atau tempel bukti transaksi">
+              <input type="file" id="listrikFileInput" accept="image/*" class="hidden">
+              <div id="listrikUploadPrompt" class="flex flex-col items-center pointer-events-none">
+                  <i class="bi bi-images text-xl text-brand-coral mb-1"></i>
+                  <p class="text-[10px] font-bold text-brand-black">Upload atau tempel bukti</p>
+                  <p class="text-[9px] font-semibold text-brand-muted mt-1">Klik area ini, atau tekan <span class="legacy-keycap">Ctrl+V</span></p>
+              </div>
+              <div id="listrikImagePreview" class="hidden relative w-full max-w-[150px] mx-auto mt-2 rounded-lg overflow-hidden border border-brand-stone shadow-sm">
+                 <img id="listrikPreviewImg" src="" class="w-full h-auto object-cover">
+                 <button type="button" data-gbb-handler-h52="" class="absolute top-1 right-1 bg-brand-coral text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md hover:scale-110 transition-transform"><i class="bi bi-x-lg text-[10px]"></i></button>
+              </div>
+           </div>
+        </div>
+      </div>
+      <div class="p-6 border-t border-brand-stone bg-[#F8F9FC] flex justify-end gap-3 shrink-0">
+        <button data-gbb-handler-h53="" class="px-5 py-2.5 rounded-xl font-bold text-xs bg-white border border-brand-stone text-brand-black hover:bg-brand-stone transition-colors">Batal</button>
+        <button id="btnSaveListrik" data-gbb-handler-h54="" class="px-6 py-2.5 rounded-xl font-bold text-xs bg-brand-black text-white hover:bg-[#2A2A3D] shadow-md transition-colors relative">
+           <span class="btn-text">Simpan Data</span>
+           <span class="btn-spinner hidden absolute inset-0 flex items-center justify-center">
+              <i class="bi bi-arrow-repeat animate-spin text-lg"></i>
+           </span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Upload / Deteksi Foto Tarik Data -->
+  <div id="tarikUploadModal" class="modal-overlay" style="z-index: 20000;">
+    <div class="modal-content bg-white rounded-[2rem] shadow-2xl max-w-sm w-full mx-4 overflow-hidden border border-brand-stone flex flex-col max-h-[90vh]">
+      <div class="p-6 border-b border-brand-stone bg-[#F8F9FC] flex justify-between items-center shrink-0">
+         <span class="font-black uppercase tracking-widest text-brand-black">Deteksi Foto Nota</span>
+         <button data-gbb-handler-h55="" class="w-8 h-8 rounded-full bg-red-100 hover:bg-red-500 text-red-600 hover:text-white transition-colors flex items-center justify-center shadow-sm">
+            <i class="bi bi-x-lg font-bold"></i>
+         </button>
+      </div>
+      <div class="p-6 flex flex-col items-center overflow-y-auto custom-scrollbar">
+        <input type="hidden" id="tarikRowIndex">
+        <p id="tarikModalDesc" class="text-xs font-bold text-brand-muted text-center mb-6"></p>
+        
+        <div id="tarikPasteZone" class="w-full bg-[#FCFCFD] border-2 border-dashed border-[#D5D5E0] hover:border-brand-coral rounded-xl p-8 text-center cursor-pointer transition-all flex flex-col items-center justify-center focus:outline-none" tabindex="0">
+           <input type="file" id="tarikFileInput" accept="image/*" class="hidden">
+           <div id="tarikUploadPrompt" class="flex flex-col items-center pointer-events-none">
+               <i class="bi bi-cloud-arrow-up-fill text-4xl text-brand-coral mb-2"></i>
+               <p class="text-[12px] font-black text-brand-black">Pilih atau Seret Foto</p>
+               <p class="text-[11px] font-bold text-brand-muted mt-1">Atau CTRL+V (Paste) di sini</p>
+           </div>
+           <div id="tarikImagePreview" class="hidden relative w-full h-40 flex items-center justify-center">
+               <img id="tarikPreviewImg" src="" class="max-h-full max-w-full rounded-lg shadow-sm border border-brand-stone object-contain bg-white">
+               <button data-gbb-handler-h56="" class="absolute -top-3 -right-3 w-8 h-8 bg-brand-danger text-white rounded-full flex items-center justify-center font-bold hover:bg-red-600 transition-colors shadow-md z-10"><i class="bi bi-x-lg"></i></button>
+           </div>
+        </div>
+      </div>
+      <div class="p-5 border-t border-brand-stone bg-[#F8F9FC] flex justify-end gap-3 shrink-0">
+        <button data-gbb-handler-h57="" class="px-5 py-2.5 rounded-xl font-bold text-xs bg-white border border-brand-stone text-brand-black hover:bg-brand-stone transition-colors">Batal</button>
+        <button id="btnSaveTarikFoto" data-gbb-handler-h58="" class="px-6 py-2.5 rounded-xl font-bold text-xs bg-gradient-primary text-white shadow-lg shadow-brand-coral/20 hover:shadow-xl hover:shadow-brand-coral/30 hover:-translate-y-0.5 transition-all relative">
+           <span class="btn-text">Simpan Foto</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Tambah Data Tarik -->
+  <div id="tambahTarikModal" class="modal-overlay" style="z-index: 20000;">
+    <div class="modal-content bg-white w-full max-w-md mx-4 rounded-2xl shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]">
+      <div class="p-6 pb-4 border-b border-brand-stone/30 flex justify-between items-center bg-gradient-to-r from-[#F8F9FC] to-white">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-[#F2F0FF] flex items-center justify-center text-brand-coral shadow-sm">
+            <i class="bi bi-plus-circle-fill text-xl"></i>
+          </div>
+          <h2 class="text-xl font-black text-brand-black tracking-tight" id="tambahTarikModalTitle">Tambah Data</h2>
+        </div>
+        <button data-gbb-handler-h59="" class="w-8 h-8 rounded-full bg-red-100 hover:bg-red-500 text-red-600 hover:text-white transition-colors flex items-center justify-center shadow-sm">
+          <i class="bi bi-x-lg font-bold"></i>
+        </button>
+      </div>
+
+      <div class="p-6 pb-24 overflow-y-auto custom-scrollbar flex-1 space-y-3.5">
+        <input type="hidden" id="tambahTarikTgl">
+        
+        <div>
+          <label class="block text-[10px] font-bold text-brand-muted uppercase tracking-widest mb-1.5">Keterangan <span class="text-brand-coral">*</span></label>
+          <input type="text" id="tambahKeterangan" class="w-full border border-brand-stone/50 focus:border-brand-coral rounded-xl py-2 px-3 text-[13px] font-bold text-brand-black outline-none transition-colors" placeholder="Contoh: BELI LAUK">
+        </div>
+
+        <div id="tambahCabangContainer" style="display:none;">
+          <label class="block text-[10px] font-bold text-brand-muted uppercase tracking-widest mb-1.5">Cabang (Opsional)</label>
+          <input type="text" id="tambahCabang" class="w-full border border-brand-stone/50 focus:border-brand-coral rounded-xl py-2 px-3 pr-8 text-[13px] font-bold text-brand-black outline-none transition-colors uppercase" placeholder="Pilih/Ketik Cabang">
+        </div>
+        
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-[10px] font-bold text-brand-muted uppercase tracking-widest mb-1.5">Jenis</label>
+            <input type="text" id="tambahJenis" class="w-full border border-brand-stone/50 focus:border-brand-coral rounded-xl py-2 px-3 pr-8 text-[13px] font-bold text-brand-black outline-none transition-colors uppercase" placeholder="Pilih/Ketik">
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-brand-muted uppercase tracking-widest mb-1.5">Jumlah</label>
+            <input type="text" id="tambahJumlah" class="w-full border border-brand-stone/50 focus:border-brand-coral rounded-xl py-2 px-3 text-[13px] font-bold text-brand-black outline-none transition-colors" placeholder="Misal: 1 Atau 5 PCS">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-bold text-brand-muted uppercase tracking-widest mb-1.5">Nominal <span class="text-brand-coral">*</span></label>
+          <div class="relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-brand-stone font-black text-[13px]">Rp</span>
+            <input type="text" id="tambahNominal" data-gbb-handler-h60="" class="w-full border border-brand-stone/50 focus:border-brand-coral rounded-xl py-2 px-3 pl-9 text-[13px] font-black text-brand-black outline-none transition-colors" placeholder="0">
+          </div>
+        </div>
+        
+        <div>
+          <label class="block text-[10px] font-bold text-brand-muted uppercase tracking-widest mb-1.5">Eliminasi?</label>
+          <div class="relative">
+             <input type="text" id="tambahEliminasi" class="w-full border border-brand-stone/50 focus:border-brand-coral rounded-xl py-2 px-3 text-[13px] font-bold text-brand-black outline-none transition-colors bg-white cursor-pointer" readonly placeholder="Pilih YA/TIDAK">
+          </div>
+        </div>
+
+        <div>
+           <label class="block text-[10px] font-bold text-brand-muted uppercase tracking-widest mb-1.5">Bukti Transaksi (Opsional)</label>
+           <div id="tambahPasteZone" class="w-full bg-brand-paper border border-dashed border-[#D5D5E0] hover:border-brand-coral rounded-xl p-5 text-center cursor-pointer transition-all flex flex-col items-center justify-center focus:outline-none relative" data-gbb-handler-h61="">
+              <input type="file" id="tambahFileInput" accept="image/*" class="hidden" data-gbb-handler-h62="">
+              <div id="tambahUploadPrompt" class="flex flex-col items-center pointer-events-none">
+                  <i class="bi bi-image text-2xl text-brand-muted mb-1"></i>
+                  <p class="text-[11px] font-bold text-brand-muted">Klik untuk upload file</p>
+                  <p class="text-[10px] font-semibold text-brand-coral mt-0.5">Atau CTRL+V (Paste) di sini</p>
+              </div>
+              <div id="tambahImagePreview" class="hidden relative w-full max-w-[150px] mx-auto mt-2 rounded-lg overflow-hidden border border-brand-stone shadow-sm">
+                 <img id="tambahPreviewImg" src="" class="w-full h-auto object-cover">
+                 <button type="button" data-gbb-handler-h63="" class="absolute top-1 right-1 bg-brand-coral text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md hover:scale-110 transition-transform z-10"><i class="bi bi-x-lg text-[10px]"></i></button>
+              </div>
+           </div>
+        </div>
+
+      </div>
+
+      <div class="p-5 border-t border-brand-stone/30 bg-[#F8F9FC] flex justify-end gap-3">
+        <button data-gbb-handler-h64="" class="px-5 py-2.5 rounded-xl font-bold text-sm text-brand-muted hover:bg-[#EAEBFA] transition-colors">Batal</button>
+        <button id="btnSubmitTambahTarik" data-gbb-handler-h65="" class="px-6 py-2.5 rounded-xl font-bold text-sm bg-gradient-primary text-white shadow-lg shadow-brand-coral/20 hover:shadow-xl hover:shadow-brand-coral/30 hover:-translate-y-0.5 transition-all flex items-center gap-2">
+          <i class="bi bi-cloud-arrow-up-fill"></i> Simpan
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Edit Data Tarik -->
+  <div id="editTarikModal" class="modal-overlay" style="z-index: 20000;">
+    <div class="modal-content bg-white w-full max-w-md mx-4 rounded-2xl shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]">
+      <div class="p-6 pb-4 border-b border-brand-stone/30 flex justify-between items-center bg-gradient-to-r from-[#F8F9FC] to-white">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-[#F2F0FF] flex items-center justify-center text-brand-coral shadow-sm">
+            <i class="bi bi-pencil-square text-xl"></i>
+          </div>
+          <h2 class="text-xl font-black text-brand-black tracking-tight" id="editTarikModalTitle">Edit Data</h2>
+        </div>
+        <button data-gbb-handler-h66="" class="w-8 h-8 rounded-full bg-red-100 hover:bg-red-500 text-red-600 hover:text-white transition-colors flex items-center justify-center shadow-sm">
+          <i class="bi bi-x-lg font-bold"></i>
+        </button>
+      </div>
+
+      <div class="p-6 pb-24 overflow-y-auto custom-scrollbar flex-1 space-y-3.5">
+        <input type="hidden" id="editTarikIdx">
+        
+        <div>
+          <label class="block text-[10px] font-bold text-brand-muted uppercase tracking-widest mb-1.5">Keterangan <span class="text-brand-coral">*</span></label>
+          <input type="text" id="editKeterangan" class="w-full border border-brand-stone/50 focus:border-brand-coral rounded-xl py-2 px-3 text-[13px] font-bold text-brand-black outline-none transition-colors" placeholder="Contoh: BELI LAUK">
+        </div>
+
+        <div id="editCabangContainer" style="display:none;">
+          <label class="block text-[10px] font-bold text-brand-muted uppercase tracking-widest mb-1.5">Cabang (Opsional)</label>
+          <input type="text" id="editCabang" class="w-full border border-brand-stone/50 focus:border-brand-coral rounded-xl py-2 px-3 pr-8 text-[13px] font-bold text-brand-black outline-none transition-colors uppercase" placeholder="Pilih/Ketik Cabang">
+        </div>
+        
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-[10px] font-bold text-brand-muted uppercase tracking-widest mb-1.5">Jenis</label>
+            <input type="text" id="editJenis" class="w-full border border-brand-stone/50 focus:border-brand-coral rounded-xl py-2 px-3 pr-8 text-[13px] font-bold text-brand-black outline-none transition-colors uppercase" placeholder="Pilih/Ketik">
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-brand-muted uppercase tracking-widest mb-1.5">Jumlah</label>
+            <input type="text" id="editJumlah" class="w-full border border-brand-stone/50 focus:border-brand-coral rounded-xl py-2 px-3 text-[13px] font-bold text-brand-black outline-none transition-colors" placeholder="Misal: 1 Atau 5 PCS">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-bold text-brand-muted uppercase tracking-widest mb-1.5">Nominal <span class="text-brand-coral">*</span></label>
+          <div class="relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-brand-stone font-black text-[13px]">Rp</span>
+            <input type="text" id="editNominal" data-gbb-handler-h67="" class="w-full border border-brand-stone/50 focus:border-brand-coral rounded-xl py-2 px-3 pl-9 text-[13px] font-black text-brand-black outline-none transition-colors" placeholder="0">
+          </div>
+        </div>
+        
+        <div>
+          <label class="block text-[10px] font-bold text-brand-muted uppercase tracking-widest mb-1.5">Eliminasi?</label>
+          <div class="relative">
+             <input type="text" id="editEliminasi" class="w-full border border-brand-stone/50 focus:border-brand-coral rounded-xl py-2 px-3 text-[13px] font-bold text-brand-black outline-none transition-colors bg-white cursor-pointer" readonly placeholder="Pilih YA/TIDAK">
+          </div>
+        </div>
+
+      </div>
+
+      <div class="p-5 border-t border-brand-stone/30 bg-[#F8F9FC] flex justify-end gap-3">
+        <button data-gbb-handler-h68="" class="px-5 py-2.5 rounded-xl font-bold text-sm text-brand-muted hover:bg-[#EAEBFA] transition-colors">Batal</button>
+        <button id="btnSubmitEditTarik" data-gbb-handler-h69="" class="px-6 py-2.5 rounded-xl font-bold text-sm bg-gradient-primary text-white shadow-lg shadow-brand-coral/20 hover:shadow-xl hover:shadow-brand-coral/30 hover:-translate-y-0.5 transition-all flex items-center gap-2">
+          <i class="bi bi-cloud-arrow-up-fill"></i> Push Data Perubahan
+        </button>
+      </div>
+    </div>
+  </div>

@@ -1,0 +1,681 @@
+    <div id="listrikPage" class="page-section hidden max-w-[1400px] mx-auto pb-20">
+      <div id="listrikPageHeader" class="mb-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+        <div>
+          <h1 class="text-[32px] font-black tracking-tight mb-2 text-brand-black">Nota Listrik</h1>
+          <p class="text-brand-muted font-bold text-[14px] flex items-center gap-2">
+             Kontrol tagihan listrik semua cabang.
+          </p>
+        </div>
+        
+        <div class="flex flex-col sm:flex-row gap-4 items-center">
+            <button data-portal-refresh onclick="fetchListrik()" class="flex items-center gap-2 text-brand-coral hover:text-brand-light font-bold text-[13px] bg-brand-paper border border-brand-stone hover:border-brand-light px-5 py-2.5 rounded-xl transition-all shadow-sm">
+               <i class="bi bi-arrow-clockwise text-base"></i> Refresh Data
+            </button>
+            <!-- Tab Toggle -->
+            <div class="relative flex p-1 bg-[#F2F2F5] rounded-xl w-fit border border-[#EAEBFA]">
+              <div id="listrikSlideBg" class="absolute inset-y-1 left-1 bg-white rounded-lg shadow-sm transition-all duration-300 ease-out z-0" style="width: calc(50% - 4px); transform: translateX(0);"></div>
+              <button id="btnTabDetail" onclick="switchListrikTab('detail')" class="relative z-10 px-5 py-2 font-bold w-40 text-center text-brand-coral transition-colors rounded-lg focus:outline-none">Detail Transaksi</button>
+              <button id="btnTabKontrol" onclick="switchListrikTab('kontrol')" class="relative z-10 px-5 py-2 font-bold text-brand-muted hover:text-brand-black w-40 text-center transition-colors rounded-lg focus:outline-none">Kontrol Transaksi</button>
+             </div>
+        </div>
+      </div>
+      <!-- Tab: Detail Transaksi -->
+      <div id="tabListrikDetail" class="animate-[fadeIn_0.4s_ease-out]">
+        <div class="flex flex-col lg:flex-row justify-between mb-6 gap-4">
+          <div class="legacy-filter-surface flex-1 flex bg-white border border-brand-stone rounded-xl shadow-sm p-1 items-center max-w-xl">
+            <div class="legacy-filter-search flex-[6] relative flex items-center px-4 border-r border-brand-stone">
+              <i class="bi bi-search text-brand-muted mr-3"></i>
+              <input type="text" id="listrikSearchBar" class="w-full bg-transparent border-none py-2 font-bold text-brand-black outline-none" placeholder="Cari Toko/CV...">
+            </div>
+            <div id="listrikDateFilterWrapper" class="flex-[4] relative flex items-center justify-between px-4 cursor-pointer hover:bg-brand-paper rounded-r-lg h-full min-h-[40px] transition-colors" onclick="if(FP_LISTRIK_FILTER) FP_LISTRIK_FILTER.open()">
+              <div class="flex items-center gap-2 text-brand-black font-bold text-[10px] uppercase tracking-widest"><span id="listrikStartDisplay">START</span><i class="bi bi-arrow-right text-brand-muted"></i><span id="listrikEndDisplay">TO</span></div>
+              <i class="bi bi-calendar-range calendar-icon text-brand-muted ml-2"></i>
+              <i class="bi bi-x-circle-fill clear-date-btn" onclick="clearListrikDateFilter(event)"></i>
+              <input type="text" id="listrikDateRangeFilter" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
+            </div>
+          </div>
+          <button onclick="openListrikModal(false)" class="bg-brand-black text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 hover:bg-[#2A2A3D] shadow-md hover:-translate-y-1 transition-all text-xs uppercase tracking-widest whitespace-nowrap"><i class="bi bi-plus-lg text-base"></i> Tambah Transaksi</button>
+        </div>
+
+        <div class="bg-white rounded-[2rem] shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-brand-stone overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse min-w-[900px]">
+              <thead id="listrikTableHead" class="bg-brand-paper border-b border-brand-stone text-brand-muted text-[10px] font-black uppercase tracking-widest select-none">
+                <tr>
+                   <th class="p-5 pl-8 cursor-pointer sortable" onclick="handleSort('listrik', 2, 'date')">Tanggal <i class="bi bi-arrow-down-up ml-1 opacity-50"></i></th>
+                   <th class="p-5 cursor-pointer sortable" onclick="handleSort('listrik', 3, 'string')">Cabang / Toko <i class="bi bi-arrow-down-up ml-1 opacity-50"></i></th>
+                   <th class="p-5">CV</th>
+                   <th class="p-5 text-right cursor-pointer sortable" onclick="handleSort('listrik', 5, 'number')">Nominal Tagihan <i class="bi bi-arrow-down-up ml-1 opacity-50"></i></th>
+                   <th class="p-5 text-center">Foto</th>
+                   <th class="p-5 text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody id="listrikTableBody" class="divide-y divide-brand-stone/50 text-[11px]"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="legacy-table-footer mt-6 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <span class="text-[11px] font-bold text-brand-muted uppercase tracking-widest whitespace-nowrap">Baris per halaman</span>
+            <div class="legacy-limit-control" id="listrikLimitDropdownWrapper">
+              <button type="button" id="listrikLimitBtn" class="legacy-limit-trigger" data-expense-limit-toggle="listrik" data-value="50" aria-haspopup="listbox" aria-controls="listrikLimitMenu" aria-expanded="false">
+                <span id="listrikLimitLabel">50 baris</span><i class="bi bi-chevron-down" aria-hidden="true"></i>
+              </button>
+              <div id="listrikLimitMenu" class="legacy-limit-menu hidden" role="listbox" aria-label="Jumlah baris per halaman">
+                <button type="button" class="legacy-limit-option limit-opt-listrik" data-expense-limit-value="10" role="option"><span>10 baris</span></button>
+                <button type="button" class="legacy-limit-option limit-opt-listrik" data-expense-limit-value="25" role="option"><span>25 baris</span></button>
+                <button type="button" class="legacy-limit-option limit-opt-listrik active-limit" data-expense-limit-value="50" role="option"><span>50 baris</span><i class="bi bi-check2" aria-hidden="true"></i></button>
+                <button type="button" class="legacy-limit-option limit-opt-listrik" data-expense-limit-value="100" role="option"><span>100 baris</span></button>
+              </div>
+            </div>
+          </div>
+          <!-- Info total & pagination -->
+          <div class="flex items-center gap-3">
+            <span id="listrikRowInfo" class="text-[11px] font-bold text-brand-muted"></span>
+            <div id="listrikPaginationControls" class="flex items-center gap-1.5"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Kontrol Transaksi -->
+      <div id="tabListrikKontrol" class="hidden animate-[fadeIn_0.4s_ease-out]">
+        <div class="bg-white rounded-[2rem] shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-brand-stone overflow-hidden p-8 lg:p-10">
+           <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
+              <h3 class="text-lg font-black text-brand-black tracking-tight">Matriks Pembayaran Listrik</h3>
+              
+              <div class="legacy-limit-control legacy-year-control w-full sm:w-40">
+                 <input type="hidden" id="listrikYearFilter" value="2026">
+                 <button type="button" id="yearDropdownBtn" class="legacy-limit-trigger legacy-year-trigger" aria-haspopup="listbox" aria-controls="yearDropdownList" aria-expanded="false">
+                    <span id="selectedYearDisplay">2026</span>
+                    <i class="bi bi-chevron-down" aria-hidden="true"></i>
+                 </button>
+                 <div id="yearDropdownList" class="legacy-limit-menu legacy-year-menu hidden" role="listbox" aria-label="Pilih tahun kontrol transaksi">
+                 </div>
+              </div>
+           </div>
+           
+           <div class="overflow-x-auto rounded-xl border border-brand-stone">
+              <table class="w-full text-center border-collapse min-w-[1000px]">
+                <thead class="bg-brand-paper border-b border-brand-stone text-brand-muted text-[10px] font-black uppercase tracking-widest">
+                  <tr id="kontrolTableHeader">
+                    <th class="p-4 border-r border-brand-stone text-left pl-6 w-[200px] sticky left-0 bg-brand-paper z-10 shadow-[2px_0_5px_rgba(0,0,0,0.05)]">Nama Toko</th>
+                  </tr>
+                </thead>
+                <tbody id="kontrolTableBody" class="divide-y divide-brand-stone/50 bg-white"></tbody>
+              </table>
+           </div>
+        </div>
+      </div>
+    </div>
+
+<script>
+const listrikEscapeHtml = value => window.legacyEscapeHtml ? window.legacyEscapeHtml(value) : String(value == null ? '' : value).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+const listrikEncodeData = value => encodeURIComponent(String(value == null ? '' : value));
+document.addEventListener('click', event => {
+  const control = event.target.closest && event.target.closest('[data-listrik-action]');
+  if (!control) return;
+  const value = decodeURIComponent(control.dataset.listrikValue || '');
+  if (control.dataset.listrikAction === 'image') {
+    if (typeof window.showImg === 'function') window.showImg(value);
+    else Swal.fire('Foto gagal dimuat', 'Viewer foto belum siap. Muat ulang halaman lalu coba lagi.', 'error');
+  }
+  else if (control.dataset.listrikAction === 'edit') openListrikModal(true, value, control.dataset.listrikType || 'Listrik');
+  else if (control.dataset.listrikAction === 'delete') deleteListrik(value);
+  else if (control.dataset.listrikAction === 'kontrol') openKontrolDetail(value, Number(control.dataset.listrikYear), Number(control.dataset.listrikMonth));
+});
+document.addEventListener('change', event => {
+  if (event.target && event.target.classList.contains('umum-row-check')) updateBulkDeleteUmumBtn();
+});
+document.addEventListener('click', event => {
+  const trigger = event.target.closest && event.target.closest('[data-expense-limit-toggle]');
+  if (trigger) {
+    const type = trigger.dataset.expenseLimitToggle || 'listrik';
+    if (type !== 'listrik' && type !== 'umum') return;
+    event.preventDefault();
+    event.stopPropagation();
+    window.toggleLimitDropdown(type);
+    return;
+  }
+  const option = event.target.closest && event.target.closest('[data-expense-limit-value]');
+  if (!option) return;
+  const menu = option.closest('[id$="LimitMenu"]');
+  const type = menu ? menu.id.replace(/LimitMenu$/, '') : 'listrik';
+  if (type !== 'listrik' && type !== 'umum') return;
+  event.preventDefault();
+  event.stopPropagation();
+  const value = Number(option.dataset.expenseLimitValue);
+  if (type === 'umum') window.setUmumLimit(value);
+  else window.setListrikLimit(value);
+});
+document.addEventListener('click', event => {
+  const option = event.target.closest && event.target.closest('[data-listrik-year]');
+  if (!option) return;
+  event.preventDefault();
+  event.stopPropagation();
+  window.selectListrikYear(Number(option.dataset.listrikYear));
+});
+
+window.goToListrikPage = function(p) {
+  fetchExpensePage('listrik', p);
+};
+
+    // ── Custom Limit Dropdown Logic ──
+    window.toggleLimitDropdown = function(type) {
+      const menu = document.getElementById(`${type}LimitMenu`);
+      const btn = document.getElementById(`${type}LimitBtn`);
+      if (!menu || !btn) return;
+      const isOpen = !menu.classList.contains('hidden');
+      if (isOpen && window.closeLegacyFloatingPopover) window.closeLegacyFloatingPopover(menu);
+      else if (window.openLegacyFloatingPopover) window.openLegacyFloatingPopover(btn, menu);
+    };
+    window.setListrikLimit = function(val) {
+      const limitButton = document.getElementById('listrikLimitBtn');
+      if (limitButton) limitButton.dataset.value = String(val);
+      $('#listrikLimitLabel').text(val + ' baris');
+      $('.limit-opt-listrik').removeClass('active-limit text-brand-coral bg-[#F2F0FF]').find('i').remove();
+      $('.limit-opt-listrik').attr('aria-selected', 'false');
+      $(`.limit-opt-listrik[data-expense-limit-value="${val}"]`).addClass('active-limit text-brand-coral bg-[#F2F0FF]').attr('aria-selected', 'true').append('<i class="bi bi-check2 text-brand-coral font-black" aria-hidden="true"></i>');
+      if (window.closeLegacyFloatingPopover) window.closeLegacyFloatingPopover('listrikLimitMenu');
+      $('#listrikLimitBtn').removeClass('open');
+      applyListrikFilters();
+    };
+    window.setUmumLimit = function(val) {
+      const limitButton = document.getElementById('umumLimitBtn');
+      if (limitButton) limitButton.dataset.value = String(val);
+      $('#umumLimitLabel').text(val + ' baris');
+      $('.limit-opt-umum').removeClass('active-limit text-brand-coral bg-[#F2F0FF]').find('i').remove();
+      $('.limit-opt-umum').attr('aria-selected', 'false');
+      $(`.limit-opt-umum[data-expense-limit-value="${val}"]`).addClass('active-limit text-brand-coral bg-[#F2F0FF]').attr('aria-selected', 'true').append('<i class="bi bi-check2 text-brand-coral font-black" aria-hidden="true"></i>');
+      if (window.closeLegacyFloatingPopover) window.closeLegacyFloatingPopover('umumLimitMenu');
+      $('#umumLimitBtn').removeClass('open');
+      applyUmumFilters();
+    };
+    $(document).ready(() => {
+       setupCustomDropdown('listrikTokoInput', 'listrikTokoDropdown', (s) => { 
+          if(s) { $('#listrikTokoInput').val(s.toko); $('#listrikCvDisplay').val(s.cv); }
+       });
+       const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agt", "Sep", "Okt", "Nov", "Des"];
+       let monthHeaders = '';
+       months.forEach(m => monthHeaders += `<th class="p-4 border-l border-brand-stone w-[60px]">${m}</th>`);
+       $('#kontrolTableHeader').append(monthHeaders);
+
+       const currYear = new Date().getFullYear();
+       const startYear = 2026;
+       const maxYear = Math.max(currYear + 5, 2035); 
+       $('#listrikYearFilter').val(currYear);
+       $('#selectedYearDisplay').text(currYear);
+       let yearHtml = '';
+        for(let y = startYear; y <= maxYear; y++) {
+           yearHtml += `<button type="button" class="legacy-limit-option listrik-year-option ${y === currYear ? 'active-limit' : ''}" data-listrik-year="${y}" role="option" aria-selected="${y === currYear ? 'true' : 'false'}"><span>${y}</span>${y === currYear ? '<i class="bi bi-check2" aria-hidden="true"></i>' : ''}</button>`;
+        }
+        $('#yearDropdownList').html(yearHtml);
+
+        $('#yearDropdownBtn').on('click', function(e) {
+           e.stopPropagation();
+           if (window.toggleLegacyFloatingPopover) window.toggleLegacyFloatingPopover('yearDropdownBtn', 'yearDropdownList');
+        });
+        if (window.bindLegacyPopoverKeyboard) {
+           window.bindLegacyPopoverKeyboard('listrikLimitBtn', 'listrikLimitMenu');
+           window.bindLegacyPopoverKeyboard('umumLimitBtn', 'umumLimitMenu');
+           window.bindLegacyPopoverKeyboard('yearDropdownBtn', 'yearDropdownList');
+        }
+
+       $('#listrikPasteZone').on('click', function(e) {
+          if (e.target.id === 'listrikFileInput') return; 
+          if(!$(e.target).closest('button').length) {
+             document.getElementById('listrikFileInput').click(); 
+          }
+       });
+
+       $('#listrikPasteZone').on('paste', function(e) {
+          const file = window.getClipboardImageFile && window.getClipboardImageFile(e.originalEvent || e);
+          if (!file) return;
+          e.preventDefault();
+          e.stopPropagation();
+          window.assignPastedImageToInput(document.getElementById('listrikFileInput'), file);
+       }).on('keydown', function(e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+             e.preventDefault();
+             document.getElementById('listrikFileInput').click();
+          }
+       });
+
+       $('#listrikFileInput').on('change', function(e) {
+          if (this.files && this.files[0]) {
+             showListrikPreview(this.files[0]);
+          }
+       });
+    });
+
+    window.selectListrikYear = function(y) {
+       $('#listrikYearFilter').val(y);
+       $('#selectedYearDisplay').text(y);
+       $('.listrik-year-option').removeClass('active-limit').attr('aria-selected', 'false').find('i').remove();
+       $(`.listrik-year-option[data-listrik-year="${y}"]`).addClass('active-limit').attr('aria-selected', 'true').append('<i class="bi bi-check2" aria-hidden="true"></i>');
+       if (window.closeLegacyFloatingPopover) window.closeLegacyFloatingPopover('yearDropdownList');
+       fetchExpenseSummaryByBranchMonth(true);
+    }
+
+    window.showListrikPreview = function(file) {
+       if (!file) return;
+       const reader = new FileReader();
+       reader.onload = function(e) {
+          $('#listrikPreviewImg').attr('src', e.target.result);
+          $('#listrikImagePreview').removeClass('hidden');
+          $('#listrikUploadPrompt').addClass('hidden');
+          $('#listrikPasteZone').addClass('has-image').attr('aria-label', 'Bukti transaksi siap. Klik untuk mengganti atau tempel gambar baru.');
+       }
+       reader.readAsDataURL(file);
+    }
+
+    window.clearListrikPreview = function(e) {
+       if (e) e.stopPropagation();
+       $('#listrikFileInput').val('');
+       const fileInput = document.getElementById('listrikFileInput');
+       if (fileInput) fileInput.__pastedImageFile = null;
+       $('#listrikPreviewImg').attr('src', '');
+       $('#listrikImagePreview').addClass('hidden');
+       $('#listrikUploadPrompt').removeClass('hidden');
+       $('#listrikPasteZone').removeClass('has-image').attr('aria-label', 'Upload atau tempel bukti transaksi');
+    }
+
+    async function fetchExpenseSummaryByBranchMonth(showToast = false) {
+      const year = parseInt($('#listrikYearFilter').val()) || new Date().getFullYear();
+      const hadCurrentData = KONTROL_SUMMARY.loaded === true && Number(KONTROL_SUMMARY.year) === year;
+      if (!hadCurrentData) renderListrikKontrolSkeleton();
+      try {
+        const res = await callServer('getExpenseSummaryByBranchMonth', year);
+        if (res && res.error) Swal.fire('Server Error (Kontrol)', res.error, 'error');
+        KONTROL_SUMMARY = {
+          year: Number(res && res.year) || year,
+          branches: (res && res.branches) ? res.branches : [],
+          summary: (res && res.summary) ? res.summary : {},
+          loaded: true
+        };
+        renderListrikKontrol();
+      } catch (e) {
+        if (!hadCurrentData) $('#kontrolTableBody').removeAttr('aria-busy').html('<tr><td colspan="13" class="p-12 text-center text-brand-danger font-bold text-[11px]">Kontrol transaksi gagal dimuat. Gunakan tombol refresh untuk mencoba lagi.</td></tr>');
+        if (showToast) Toast.fire({ icon: 'error', title: e.message });
+      }
+    }
+
+    function renderListrikKontrolSkeleton() {
+      const widths = ['70%','42%','48%','38%','52%'];
+      const rows = Array.from({ length:6 }, (_, rowIndex) => `<tr class="legacy-control-skeleton-row" aria-hidden="true">${Array.from({ length:13 }, (_, columnIndex) => `<td class="p-4"><span class="portal-skeleton legacy-table-skeleton" style="width:${widths[(rowIndex + columnIndex) % widths.length]}"></span></td>`).join('')}</tr>`).join('');
+      $('#kontrolTableBody').attr('aria-busy', 'true').html(rows);
+    }
+
+    let LEGACY_EXPENSE_REFRESH_PROMISE = null;
+    async function fetchListrik() {
+       if (LEGACY_EXPENSE_REFRESH_PROMISE) return LEGACY_EXPENSE_REFRESH_PROMISE;
+       LEGACY_EXPENSE_REFRESH_PROMISE = (async () => { try {
+          const activePage = $('.nav-item.active-page').data('page');
+          const type = activePage === 'umumPage' ? 'umum' : 'listrik';
+          const page = EXPENSE_META[type] && EXPENSE_META[type].page || 1;
+          const result = await fetchExpensePage(type, page, true, { forceFresh:true, background:Boolean(EXPENSE_META[type] && EXPENSE_META[type].loaded), propagateError:true, silentError:true });
+          return result;
+       } catch(e) {
+          console.error("fetchListrik client catch:", e);
+          Toast.fire({ icon:'error', title:e.message });
+          return null;
+       } finally { LEGACY_EXPENSE_REFRESH_PROMISE = null; } })();
+       return LEGACY_EXPENSE_REFRESH_PROMISE;
+    }
+
+    function switchListrikTab(tab) {
+       if (tab === 'detail') {
+          $('#listrikSlideBg').css('transform', 'translateX(0)');
+          $('#btnTabDetail').removeClass('text-brand-muted').addClass('text-brand-coral');
+          $('#btnTabKontrol').removeClass('text-brand-coral').addClass('text-brand-muted');
+          $('#tabListrikKontrol').hide();
+          $('#tabListrikDetail').fadeIn(300);
+       } else {
+          const parentLeft = $('#listrikSlideBg').parent().offset().left;
+          const targetLeft = $('#btnTabKontrol').offset().left;
+          const paddingOffset = 4; 
+          const slideDist = targetLeft - parentLeft - paddingOffset;
+          
+          $('#listrikSlideBg').css('transform', `translateX(${slideDist}px)`);
+          $('#btnTabKontrol').removeClass('text-brand-muted').addClass('text-brand-coral');
+          $('#btnTabDetail').removeClass('text-brand-coral').addClass('text-brand-muted');
+          $('#tabListrikDetail').hide();
+          $('#tabListrikKontrol').fadeIn(300);
+          const selectedYear = parseInt($('#listrikYearFilter').val()) || new Date().getFullYear();
+          if (KONTROL_SUMMARY.year !== selectedYear) fetchExpenseSummaryByBranchMonth(true);
+       }
+    }
+
+    function applyListrikFilters() {
+      fetchExpensePage('listrik', 1);
+    }
+
+    function renderListrikDetail() {
+      try {
+        const b = $('#listrikTableBody').empty(); 
+        if (!Array.isArray(FILTERED_LISTRIK)) {
+           throw new Error("FILTERED_LISTRIK is not an array: " + typeof FILTERED_LISTRIK);
+        }
+        if(FILTERED_LISTRIK.length === 0) {
+           b.html('<tr><td colspan="6" class="p-16 text-center text-brand-muted font-bold uppercase opacity-60 text-[11px]">Data transaksi listrik tidak ditemukan</td></tr>');
+           return;
+        }
+
+        let rowsHtml = '';
+        FILTERED_LISTRIK.forEach(r => { 
+          if (!r) return;
+          rowsHtml += `<tr class="hover:bg-brand-paper transition-colors">
+            <td class="p-5 pl-8 whitespace-nowrap text-[11px] font-bold text-brand-black">${listrikEscapeHtml(fmtIndo(r[2]))}</td>
+            <td class="p-5 text-[11px] font-bold text-brand-black">${listrikEscapeHtml(r[3] || '')}</td>
+            <td class="p-5 text-[10px] font-bold text-brand-muted uppercase tracking-widest">${listrikEscapeHtml(r[4] || '')}</td>
+            <td class="p-5 text-right text-[12px] font-black text-brand-black whitespace-nowrap">Rp ${fmtRp(r[5])}</td>
+            <td class="p-5 text-center">
+              ${r[6] && r[6] !== '-' ? `<button data-listrik-action="image" data-listrik-value="${listrikEncodeData(r[6])}" class="text-green-500 hover:text-green-700 hover:scale-110 transition-transform"><i class="bi bi-file-earmark-image-fill text-xl"></i></button>` : `<i class="bi bi-file-earmark-image text-brand-stone text-xl"></i>`}
+            </td>
+            <td class="p-5 text-center whitespace-nowrap">
+              <div class="flex gap-2 justify-center">
+                <button class="w-8 h-8 rounded-lg bg-white border border-brand-stone text-brand-black hover:bg-brand-black hover:border-brand-black hover:text-white transition-colors shadow-sm flex items-center justify-center" data-listrik-action="edit" data-listrik-value="${listrikEncodeData(r[0])}" data-listrik-type="Listrik" title="Edit Data"><i class="bi bi-pencil-square text-[12px]"></i></button>
+                <button class="w-8 h-8 rounded-lg bg-white border border-brand-stone text-brand-danger hover:bg-brand-danger hover:border-brand-danger hover:text-white transition-colors shadow-sm flex items-center justify-center" data-listrik-action="delete" data-listrik-value="${listrikEncodeData(r[0])}" title="Hapus Data"><i class="bi bi-trash3-fill text-[12px]"></i></button>
+              </div>
+            </td>
+          </tr>`;
+        });
+        b.html(rowsHtml);
+          const lMeta = EXPENSE_META.listrik;
+          const lFrom = ((lMeta.page - 1) * lMeta.limit) + 1;
+          const lTo   = Math.min(lMeta.page * lMeta.limit, lMeta.total);
+          $('#listrikRowInfo').text(lMeta.total > 0 ? `${lFrom}–${lTo} dari ${lMeta.total} data` : '');
+          renderPaginationControls('#listrikPaginationControls', lMeta.total, lMeta.page, lMeta.limit, 'goToListrikPage');
+      } catch (e) {
+         console.error("Error in renderListrikDetail:", e);
+         Swal.fire('Render Error (Listrik)', e.message, 'error');
+      }
+    }
+
+    function applyUmumFilters() {
+      fetchExpensePage('umum', 1);
+    }
+
+    function renderUmumDetail() {
+      try {
+        const b = $('#umumTableBody').empty(); 
+        if(!Array.isArray(FILTERED_UMUM)) {
+           throw new Error("FILTERED_UMUM is not an array: " + typeof FILTERED_UMUM);
+        }
+        if(FILTERED_UMUM.length === 0) {
+           b.html('<tr><td colspan="10" class="p-16 text-center text-brand-muted font-bold uppercase opacity-60 text-[11px]">Data nota umum tidak ditemukan</td></tr>');
+           return;
+        }
+
+        let rowsHtml = '';
+        FILTERED_UMUM.forEach(r => { 
+          if (!r) return;
+          rowsHtml += `<tr class="hover:bg-brand-paper transition-colors">
+            <td class="p-5 pl-8 text-center"><input type="checkbox" class="umum-row-check accent-[#7651FF] cursor-pointer w-4 h-4 rounded" value="${listrikEscapeHtml(r[0])}"></td>
+            <td class="p-5 whitespace-nowrap text-[11px] font-bold text-brand-black">${listrikEscapeHtml(r[9] || '-')}</td>
+            <td class="p-5 whitespace-nowrap text-[11px] font-bold text-brand-black opacity-60">${listrikEscapeHtml(fmtIndo(r[2]))}</td>
+            <td class="p-5 text-[11px] font-bold text-brand-black">${listrikEscapeHtml(r[3] || '')}</td>
+            <td class="p-5 text-[11px] font-bold text-brand-black max-w-[200px] truncate" title="${listrikEscapeHtml(r[8] || '')}">${listrikEscapeHtml(r[8] || '-')}</td>
+            <td class="p-5 text-[11px] font-bold text-brand-black">${listrikEscapeHtml(r[10] || '-')}</td>
+            <td class="p-5 text-[11px] font-bold text-brand-black">${listrikEscapeHtml(r[11] || '-')}</td>
+            <td class="p-5 text-right text-[12px] font-black text-brand-black whitespace-nowrap">Rp ${fmtRp(r[5])}</td>
+            <td class="p-5 text-center">
+              ${r[6] && r[6] !== '-' ? `<button data-listrik-action="image" data-listrik-value="${listrikEncodeData(r[6])}" class="text-green-500 hover:text-green-700 hover:scale-110 transition-transform"><i class="bi bi-file-earmark-image-fill text-xl"></i></button>` : `<i class="bi bi-file-earmark-image text-brand-stone text-xl"></i>`}
+            </td>
+            <td class="p-5 text-center whitespace-nowrap">
+              <div class="flex gap-2 justify-center">
+                <button class="w-8 h-8 rounded-lg bg-white border border-brand-stone text-brand-black hover:bg-brand-black hover:border-brand-black hover:text-white transition-colors shadow-sm flex items-center justify-center" data-listrik-action="edit" data-listrik-value="${listrikEncodeData(r[0])}" data-listrik-type="Umum" title="Edit Data"><i class="bi bi-pencil-square text-[12px]"></i></button>
+                <button class="w-8 h-8 rounded-lg bg-white border border-brand-stone text-brand-danger hover:bg-brand-danger hover:border-brand-danger hover:text-white transition-colors shadow-sm flex items-center justify-center" data-listrik-action="delete" data-listrik-value="${listrikEncodeData(r[0])}" title="Hapus Data"><i class="bi bi-trash3-fill text-[12px]"></i></button>
+              </div>
+            </td>
+          </tr>`;
+        });
+        b.html(rowsHtml);
+          const uMeta = EXPENSE_META.umum;
+          const uFrom = ((uMeta.page - 1) * uMeta.limit) + 1;
+          const uTo   = Math.min(uMeta.page * uMeta.limit, uMeta.total);
+          $('#umumRowInfo').text(uMeta.total > 0 ? `${uFrom}–${uTo} dari ${uMeta.total} data` : '');
+          renderPaginationControls('#umumPaginationControls', uMeta.total, uMeta.page, uMeta.limit, 'goToUmumPage');
+      } catch (e) {
+         console.error("Error in renderUmumDetail:", e);
+         Swal.fire('Render Error (Umum)', e.message, 'error');
+      }
+    }
+
+    function renderListrikKontrol() {
+       const year = parseInt($('#listrikYearFilter').val());
+       const b = $('#kontrolTableBody').removeAttr('aria-busy').empty();
+
+       const branches = (KONTROL_SUMMARY.branches && KONTROL_SUMMARY.branches.length > 0)
+          ? KONTROL_SUMMARY.branches
+          : (APP_DATA.branches || []).map(x => x.toko).sort();
+       const summary = KONTROL_SUMMARY.summary || {};
+       
+       let rowsHtml = '';
+       branches.forEach(toko => {
+          rowsHtml += `<tr class="hover:bg-brand-paper transition-colors group">
+             <td class="p-4 border-r border-brand-stone text-left pl-6 font-bold text-brand-black text-[11px] sticky left-0 bg-white group-hover:bg-brand-paper transition-colors shadow-[2px_0_5px_rgba(0,0,0,0.02)]">${listrikEscapeHtml(toko)}</td>`;
+          
+          for(let m = 0; m < 12; m++) {
+             const cell = summary[toko] && summary[toko][m] ? summary[toko][m] : null;
+
+             if (cell && cell.count > 0) {
+                const totalNominal = Number(cell.total) || 0;
+                const countBadge = cell.count > 1 ? `<div class="absolute -top-2 -right-2 bg-brand-coral text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-full font-bold shadow-md">${cell.count}</div>` : '';
+                
+                rowsHtml += `<td class="p-4 border-l border-brand-stone align-middle text-center relative">
+                   <button data-listrik-action="kontrol" data-listrik-value="${listrikEncodeData(toko)}" data-listrik-year="${Number(year)}" data-listrik-month="${Number(m)}" title="Lunas: Rp ${listrikEscapeHtml(fmtRp(totalNominal))} (${Number(cell.count)} Transaksi) - Klik untuk detail" class="text-green-500 hover:text-green-700 hover:scale-110 active:scale-95 transition-all inline-flex outline-none relative">
+                      <i class="bi bi-check-circle-fill text-[20px]"></i>
+                      ${countBadge}
+                   </button>
+                </td>`;
+             } else {
+                rowsHtml += `<td class="p-4 border-l border-brand-stone align-middle text-center text-brand-stone">
+                   <i class="bi bi-dash-circle-dotted text-lg opacity-40 inline-block" title="Belum Dibayar"></i>
+                </td>`;
+             }
+          }
+          rowsHtml += `</tr>`;
+       });
+
+       b.html(rowsHtml);
+    }
+
+    window.openKontrolDetail = function(toko, year, m) {
+       try {
+          const cell = KONTROL_SUMMARY.summary && KONTROL_SUMMARY.summary[toko] ? KONTROL_SUMMARY.summary[toko][m] : null;
+          const records = cell && Array.isArray(cell.records) ? cell.records : [];
+
+          const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+          $('#kontrolDetailTitle').text(`Detail Nota Listrik: ${toko} (${monthNames[m]} ${year})`);
+
+          let html = '';
+          if (records.length === 0) {
+             html = `<div class="text-center text-brand-muted py-8 font-bold text-xs uppercase tracking-wider">Tidak ada transaksi ditemukan</div>`;
+          } else {
+             html = `<div class="space-y-4">`;
+             records.forEach((r, index) => {
+                const formattedDate = fmtIndo(r[2]);
+                const nominal = fmtRp(r[5]);
+                const cvName = r[4] || '-';
+                const urlFoto = r[6] || '';
+                const keterangan = r[8] || '-';
+                const jenis = r[10] || '-';
+                
+                let photoButton = '';
+                if (urlFoto && urlFoto !== '-') {
+                   photoButton = `
+                     <button data-listrik-action="image" data-listrik-value="${listrikEncodeData(urlFoto)}" class="flex items-center gap-1.5 text-brand-coral hover:text-brand-light font-bold text-xs bg-[#FFF2F0] border border-[#FFDAD5] px-4 py-2 rounded-xl transition-all shadow-sm">
+                        <i class="bi bi-image"></i> Lihat Foto
+                     </button>
+                   `;
+                } else {
+                   photoButton = `
+                     <span class="text-brand-muted text-xs font-bold bg-brand-paper border border-brand-stone px-4 py-2 rounded-xl inline-block">
+                        <i class="bi bi-image opacity-30"></i> Tidak Ada Foto
+                     </span>
+                   `;
+                }
+                
+                html += `
+                   <div class="p-5 bg-white border border-brand-stone rounded-2xl shadow-sm relative space-y-3">
+                      <div class="flex justify-between items-center pb-2.5 border-b border-brand-stone">
+                         <div class="text-[10px] font-black text-brand-muted uppercase tracking-widest">Transaksi #${index + 1}</div>
+                          <div class="font-bold text-xs text-brand-coral">${listrikEscapeHtml(formattedDate)}</div>
+                      </div>
+                      <div class="grid grid-cols-2 gap-4 text-left">
+                         <div>
+                            <div class="text-[9px] font-black text-brand-muted uppercase tracking-widest mb-0.5">Nama CV</div>
+                             <div class="text-xs font-bold text-brand-black">${listrikEscapeHtml(cvName)}</div>
+                         </div>
+                         <div>
+                            <div class="text-[9px] font-black text-brand-muted uppercase tracking-widest mb-0.5">Nominal</div>
+                             <div class="text-xs font-bold text-brand-black">Rp ${listrikEscapeHtml(nominal)}</div>
+                         </div>
+                         <div>
+                            <div class="text-[9px] font-black text-brand-muted uppercase tracking-widest mb-0.5">Jenis</div>
+                             <div class="text-xs font-bold text-brand-black">${listrikEscapeHtml(jenis)}</div>
+                         </div>
+                         <div>
+                            <div class="text-[9px] font-black text-brand-muted uppercase tracking-widest mb-0.5">Keterangan</div>
+                             <div class="text-xs font-bold text-brand-black">${listrikEscapeHtml(keterangan)}</div>
+                         </div>
+                      </div>
+                      <div class="flex justify-end pt-2 border-t border-brand-stone/50">
+                         ${photoButton}
+                      </div>
+                   </div>
+                `;
+             });
+             html += `</div>`;
+          }
+          $('#kontrolDetailContent').html(html);
+          $('#kontrolDetailModal').addClass('active');
+       } catch (e) {
+          console.error("Error in openKontrolDetail:", e);
+          Swal.fire('Error', e.message, 'error');
+       }
+    }
+
+    function openListrikModal(isEdit, id = null, kategori = 'Listrik') {
+       clearListrikPreview(null); 
+       
+       $('#pengeluaranKategori').val(kategori);
+       $('#modalPengeluaranTitle').text(kategori === 'Umum' ? 'Form Nota Umum' : 'Form Transaksi Listrik');
+       
+       if (kategori === 'Umum') {
+           $('#keteranganContainer').removeClass('hidden');
+       } else {
+           $('#keteranganContainer').addClass('hidden');
+       }
+
+       if (isEdit) {
+          const sourceRows = kategori === 'Umum' ? UMUM_HISTORY : LISTRIK_HISTORY;
+          const row = sourceRows.find(r => r[0] === id);
+          if(!row) return;
+          $('#listrikRowId').val(id);
+          $('#listrikTokoInput').val(row[3]);
+          $('#listrikCvDisplay').val(row[4]);
+          
+          setLegacyFlatpickrDate('listrikDateInput', row[2], false);
+
+          $('#listrikNominal').val(fmtRp(row[5]));
+          $('#listrikKeterangan').val(row[8] || '');
+       } else {
+          $('#listrikRowId').val('');
+          $('#listrikTokoInput').val('');
+          $('#listrikCvDisplay').val('');
+          $('#listrikNominal').val('');
+          $('#listrikKeterangan').val('');
+          
+          setLegacyFlatpickrDate('listrikDateInput', new Date(), true);
+       }
+       $('#listrikFileInput').val('');
+       $('#listrikModal').addClass('active');
+    }
+
+    async function saveListrikData() {
+       const id = $('#listrikRowId').val();
+       const toko = $('#listrikTokoInput').val();
+       const cv = $('#listrikCvDisplay').val();
+       const nominal = parseIndoNumber($('#listrikNominal').val());
+       const kategori = $('#pengeluaranKategori').val();
+       const keterangan = $('#listrikKeterangan').val();
+       const fileInput = document.getElementById('listrikFileInput');
+       const isEdit = id !== '';
+       
+       if(!toko || !nominal || nominal === 0) return Swal.fire('Oops', 'Lengkapi Toko dan Nominal!', 'warning');
+       if(kategori === 'Umum' && !keterangan) return Swal.fire('Oops', 'Lengkapi Keterangan Pengeluaran!', 'warning');
+
+       toggleBtnState('btnSaveListrik', true);
+       Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'Menyimpan data...', showConfirmButton: false, didOpen: () => { Swal.showLoading() } });
+
+       try {
+          let base64 = null;
+          const evidenceFile = (fileInput.files && fileInput.files[0]) || fileInput.__pastedImageFile || null;
+          if (evidenceFile) {
+             base64 = await compressImage(evidenceFile);
+          } else {
+             const src = $('#listrikPreviewImg').attr('src');
+             if (src && src.startsWith('data:image')) {
+                base64 = src.split(',')[1] || src;
+             }
+          }
+
+          const fldi = document.getElementById("listrikDateInput");
+          const dateVal = (fldi && fldi._flatpickr && fldi._flatpickr.selectedDates && fldi._flatpickr.selectedDates.length > 0) ? fldi._flatpickr.selectedDates[0].getTime() : new Date().getTime();
+          
+          const payload = { toko: toko, cv: cv, tanggal: dateVal, nominal: nominal, base64: base64, kategori: kategori, keterangan: keterangan };
+
+          const mutationResult = isEdit
+            ? await callServer('updateListrikTransaction', id, payload)
+            : await callServer('saveListrikTransaction', payload);
+          const expenseType = kategori === 'Umum' ? 'umum' : 'listrik';
+          const currentPage = EXPENSE_META[expenseType] && EXPENSE_META[expenseType].page || 1;
+          applyExpenseMutationLocally(expenseType, mutationResult, payload, id, isEdit);
+          
+          Toast.fire({ icon: 'success', title: 'Data berhasil disimpan' });
+          closeModal('listrikModal');
+          
+          if (KONTROL_SUMMARY.year) await fetchExpenseSummaryByBranchMonth(false);
+          try {
+            await fetchExpensePage(expenseType, currentPage, false, { forceFresh:true, background:true, propagateError:true, silentError:true });
+          } catch (syncError) {
+            Toast.fire({ icon:'warning', title:'Data tersimpan, tetapi tampilan belum tersinkron. Silakan refresh.' });
+          }
+
+       } catch(e) {
+          Toast.fire({ icon: 'error', title: e.message });
+       } finally {
+          toggleBtnState('btnSaveListrik', false);
+       }
+    }
+
+    function applyExpenseMutationLocally(type, result, payload, id, isEdit) {
+      const source = type === 'umum' ? UMUM_HISTORY : LISTRIK_HISTORY;
+      let row;
+      if (Array.isArray(result)) row = result.slice();
+      else {
+        const existing = source.find(item => String(item[0]) === String(id));
+        row = existing ? existing.slice() : [id || (result && result.id) || '', Date.now(), payload.tanggal];
+        row[0] = (result && result.id) || row[0];
+        row[2] = Number(result && result.tanggal) || Number(payload.tanggal);
+        row[3] = (result && result.toko) || String(payload.toko || '').toUpperCase();
+        row[4] = (result && result.cv) || String(payload.cv || '').toUpperCase();
+        row[5] = Number(result && result.nominal) || Number(payload.nominal) || 0;
+        row[6] = (result && result.url) || row[6] || '-';
+        row[7] = (result && result.kategori) || payload.kategori || 'Listrik';
+        row[8] = (result && result.keterangan) || payload.keterangan || '-';
+        row[9] = row[9] || '';
+        row[10] = row[10] || (type === 'umum' ? 'UMUM' : 'LISTRIK');
+        row[11] = row[11] || '-';
+      }
+      const found = source.findIndex(item => String(item[0]) === String(row[0]));
+      if (found >= 0) source.splice(found, 1, row);
+      else if (!isEdit && (EXPENSE_META[type].page || 1) === 1) source.unshift(row);
+      if (!isEdit) EXPENSE_META[type].total = Number(EXPENSE_META[type].total || 0) + 1;
+      if (type === 'umum') { UMUM_HISTORY = source; FILTERED_UMUM = source.slice(); renderUmumDetail(); }
+      else { LISTRIK_HISTORY = source; FILTERED_LISTRIK = source.slice(); renderListrikDetail(); }
+    }
+
+</script>

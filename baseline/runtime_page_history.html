@@ -1,0 +1,111 @@
+    <div id="historyPage" class="page-section hidden max-w-[1400px] mx-auto pb-20">
+      <div class="mb-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+        <div>
+          <h1 class="text-[32px] font-black tracking-tight mb-2 text-brand-black">History Deteksi</h1>
+          <p class="text-brand-muted font-bold text-[14px] flex items-center gap-2">
+             Kelola riwayat transaksi Anda. 
+          </p>
+        </div>
+        <div class="flex gap-3 items-center">
+           <button data-portal-refresh data-gbb-handler-h17="" class="flex items-center gap-2 text-brand-coral hover:text-brand-light font-bold text-[13px] bg-brand-paper border border-brand-stone hover:border-brand-light px-5 py-2.5 rounded-xl transition-all shadow-sm">
+             <i class="bi bi-arrow-clockwise text-base"></i> Refresh Data
+           </button>
+        </div>
+      </div>
+
+      <div id="historyPageSkeleton" class="hidden animate-pulse" aria-hidden="true">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div class="h-28 rounded-[1.5rem] bg-white border border-brand-stone p-6"><div class="portal-skeleton" style="height:56px"></div></div>
+          <div class="h-28 rounded-[1.5rem] bg-white border border-brand-stone p-6"><div class="portal-skeleton" style="height:56px"></div></div>
+        </div>
+        <div class="portal-skeleton" style="height:48px;margin-bottom:24px;border-radius:14px"></div>
+        <div class="bg-white rounded-[2rem] border border-brand-stone p-6">
+          <div class="portal-skeleton" style="height:42px;margin-bottom:12px"></div>
+          <div class="portal-skeleton" style="height:54px;margin-bottom:8px"></div>
+          <div class="portal-skeleton" style="height:54px;margin-bottom:8px"></div>
+          <div class="portal-skeleton" style="height:54px"></div>
+        </div>
+      </div>
+
+      <div id="historyPageContent">
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white rounded-[1.5rem] p-6 shadow-sm border border-brand-stone flex items-center gap-5">
+          <div class="w-14 h-14 rounded-2xl bg-[#F2F0FF] text-brand-coral flex items-center justify-center text-2xl"><i class="bi bi-receipt"></i></div>
+          <div>
+            <p class="text-[10px] font-black text-brand-muted uppercase tracking-widest mb-1">Total Data</p>
+            <h3 id="summaryCount" class="text-[28px] font-black text-brand-black leading-none">0</h3>
+          </div>
+        </div>
+        <div class="bg-gradient-primary rounded-[1.5rem] p-6 shadow-[0_8px_20px_rgba(118,81,255,0.2)] border border-transparent flex items-center gap-5 relative overflow-hidden group">
+          <div class="absolute -right-6 -top-6 w-32 h-32 bg-white/10 rounded-full group-hover:scale-110 transition-transform"></div>
+          <div class="w-14 h-14 rounded-2xl bg-white/20 text-white flex items-center justify-center text-2xl border border-white/20 z-10"><i class="bi bi-cash-stack"></i></div>
+          <div class="z-10">
+            <p class="text-[10px] font-black text-white/80 uppercase tracking-widest mb-1">Total Nominal</p>
+            <h3 id="summaryTotal" class="text-[28px] font-black text-white leading-none">Rp 0</h3>
+          </div>
+        </div>
+      </div>
+      
+      <div class="flex flex-col lg:flex-row gap-4 mb-6 w-full">
+        <div class="w-full lg:w-[280px] relative flex items-center z-20">
+          <input type="text" id="filterCabangInput" class="w-full bg-white border border-brand-stone focus:border-brand-coral rounded-xl pl-10 pr-4 py-2.5 font-bold text-brand-black outline-none shadow-sm transition-colors" placeholder="Filter Cabang...">
+          <i class="bi bi-shop absolute left-4 text-brand-muted pointer-events-none"></i>
+          <div id="filterCabangDropdown" class="legacy-typeahead-menu hidden"></div>
+        </div>
+        <div class="legacy-filter-surface flex-1 flex bg-white border border-brand-stone rounded-xl shadow-sm p-1 items-center">
+          <div class="legacy-filter-search flex-[6] relative flex items-center px-4 border-r border-brand-stone">
+            <i class="bi bi-search text-brand-muted mr-3"></i>
+            <input type="text" id="searchBar" class="w-full bg-transparent border-none py-2 font-bold text-brand-black outline-none" placeholder="Cari Toko atau Barang...">
+          </div>
+          <div id="dateFilterWrapper" class="flex-[4] relative flex items-center justify-between px-4 cursor-pointer hover:bg-brand-paper rounded-r-lg h-full min-h-[40px] transition-colors" data-gbb-handler-h18="">
+             <div class="flex items-center gap-2 text-brand-black font-bold text-[10px] uppercase tracking-widest"><span id="startDateDisplay">START</span><i class="bi bi-arrow-right text-brand-muted"></i><span id="endDateDisplay">TO</span></div>
+             <i class="bi bi-calendar-range calendar-icon text-brand-muted ml-2"></i>
+             <i class="bi bi-x-circle-fill clear-date-btn" data-gbb-handler-h19=""></i>
+             <input type="text" id="dateRangeFilter" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
+          </div>
+        </div>
+      </div>
+      
+      <div id="tableContainer" class="bg-white rounded-[2rem] shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-brand-stone overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse min-w-[1200px]">
+            <thead id="historyTableHead" class="bg-brand-paper border-b border-brand-stone text-brand-muted text-[10px] font-black uppercase tracking-widest select-none">
+              <tr>
+                 <th class="px-4 py-4 pl-6 text-center w-[58px]">No.</th>
+                 <th class="px-5 py-4 cursor-pointer sortable" data-gbb-handler-h20="">Tanggal <i class="bi bi-arrow-down-up ml-1 opacity-50"></i></th>
+                 <th class="px-5 py-4 cursor-pointer sortable" data-gbb-handler-h21="">Cabang <i class="bi bi-arrow-down-up ml-1 opacity-50"></i></th>
+                 <th class="px-5 py-4 cursor-pointer sortable" data-gbb-handler-h22="">Supplier <i class="bi bi-arrow-down-up ml-1 opacity-50"></i></th>
+                 <th class="px-5 py-4 cursor-pointer sortable" data-gbb-handler-h23="">Nama Barang <i class="bi bi-arrow-down-up ml-1 opacity-50"></i></th>
+                 <th class="px-5 py-4 text-center cursor-pointer sortable" data-gbb-handler-h24="">Qty <i class="bi bi-arrow-down-up ml-1 opacity-50"></i></th>
+                 <th class="px-5 py-4 text-center">Unit</th>
+                 <th class="px-5 py-4 text-right cursor-pointer sortable" data-gbb-handler-h25="">Total <i class="bi bi-arrow-down-up ml-1 opacity-50"></i></th>
+                 <th class="px-5 py-4 text-center cursor-pointer sortable" data-gbb-handler-h26="">Status <i class="bi bi-arrow-down-up ml-1 opacity-50"></i></th>
+                 <th class="px-5 py-4 text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody" class="divide-y divide-brand-stone/50"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="legacy-table-footer mt-6 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <span class="text-[11px] font-bold text-brand-muted uppercase tracking-widest whitespace-nowrap">Baris per halaman</span>
+          <div class="legacy-limit-control" id="historyLimitDropdownWrapper">
+            <button type="button" id="historyLimitBtn" class="legacy-limit-trigger" data-expense-limit-toggle="history" data-value="10" aria-haspopup="listbox" aria-controls="historyLimitMenu" aria-expanded="false">
+              <span id="historyLimitLabel">10 baris</span><i class="bi bi-chevron-down" aria-hidden="true"></i>
+            </button>
+            <div id="historyLimitMenu" class="legacy-limit-menu hidden" role="listbox" aria-label="Jumlah baris per halaman histori">
+              <button type="button" class="legacy-limit-option limit-opt-history active-limit" data-expense-limit-value="10" role="option" aria-selected="true"><span>10 baris</span><i class="bi bi-check2" aria-hidden="true"></i></button>
+              <button type="button" class="legacy-limit-option limit-opt-history" data-expense-limit-value="25" role="option" aria-selected="false"><span>25 baris</span></button>
+              <button type="button" class="legacy-limit-option limit-opt-history" data-expense-limit-value="50" role="option" aria-selected="false"><span>50 baris</span></button>
+              <button type="button" class="legacy-limit-option limit-opt-history" data-expense-limit-value="100" role="option" aria-selected="false"><span>100 baris</span></button>
+            </div>
+          </div>
+        </div>
+        <div id="paginationControls" class="flex items-center gap-1.5"></div>
+      </div>
+      </div>
+    </div>
+
+<!-- JavaScript page_history.html dimuat melalui runtime_loader -->

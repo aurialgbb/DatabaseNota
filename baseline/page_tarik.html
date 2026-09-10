@@ -1,0 +1,2101 @@
+      <!-- Tab: Tarik Data -->
+      <div id="tabInputTarik" class="legacy-pull-v3 animate-[fadeIn_0.4s_ease-out] pb-20">
+        <div class="legacy-pull-v3-shell">
+          <aside class="legacy-pull-v3-aside">
+            <div class="legacy-pull-v3-intro">
+              <span class="legacy-pull-v3-kicker"><i class="bi bi-link-45deg"></i> Sumber terhubung</span>
+              <h2>Tarik data spreadsheet</h2>
+              <p>Pilih sumber dan periode. Sistem akan menampilkan preview sebelum data dikirim.</p>
+            </div>
+            <div class="legacy-pull-v3-link">
+              <label class="legacy-input-v3-label">Spreadsheet Tujuan</label>
+              <input type="hidden" id="tarikLinkInput">
+              <button type="button" class="portal-btn portal-btn-soft" onclick="tarikCheckPendingRecovery()">Periksa pengiriman tertunda</button>
+              <div id="tarikLinkStatus" class="font-bold text-brand-muted flex items-center gap-3"><i class="bi bi-file-earmark-spreadsheet text-brand-coral text-base"></i><span>Link akan dimuat otomatis dari Master Link.</span></div>
+              <div class="legacy-pull-v3-submit">
+                <button id="btnFetchData" onclick="fetchTarikData()" class="bg-gradient-primary text-white disabled:opacity-50 disabled:cursor-not-allowed font-black shadow-[0_4px_15px_rgba(118,81,255,0.2)] hover:shadow-[0_8px_20px_rgba(118,81,255,0.3)] transition-all flex items-center justify-center gap-2 uppercase">
+                  <i id="btnFetchDataIcon" class="bi bi-cloud-download"></i> <span id="btnFetchDataText">Tarik Data</span>
+                </button>
+                <div id="tarikFetchStatus" class="legacy-pull-v3-fetch-status hidden" role="status" aria-live="polite"></div>
+              </div>
+            </div>
+          </aside>
+
+          <section class="legacy-pull-v3-form">
+            <div class="legacy-pull-v3-form-head"><strong>Filter sumber data</strong><span>Semua kolom bertanda * wajib diisi</span></div>
+            <div class="legacy-pull-v3-grid">
+              <div class="legacy-input-v3-field legacy-pull-v3-wide relative z-20">
+                <label class="legacy-input-v3-label">Tipe Data <span class="text-brand-coral">*</span></label>
+                <input type="hidden" id="tarikTipe" value="Central Kitchen">
+                <div id="btnTarikTipe" role="combobox" tabindex="0" aria-controls="dropTarikTipe" aria-expanded="false" class="legacy-pull-v3-trigger w-full font-bold text-brand-black cursor-pointer flex justify-between items-center transition-all" onclick="toggleLegacyFloatingPopover('btnTarikTipe','dropTarikTipe')">
+                  <span id="labelTarikTipe">Central Kitchen</span>
+                  <i class="bi bi-chevron-down text-brand-muted text-xs"></i>
+                </div>
+                <div id="dropTarikTipe" class="hidden absolute top-full left-0 right-0 mt-2 bg-white border border-brand-stone rounded-xl shadow-xl z-50 overflow-hidden">
+                  <div role="option" class="p-2.5 hover:bg-brand-paper cursor-pointer font-bold text-xs transition-colors" onclick="selectTarikTipe('Central Kitchen')">Central Kitchen</div>
+                  <div role="option" class="p-2.5 hover:bg-brand-paper cursor-pointer font-bold text-xs transition-colors" onclick="selectTarikTipe('Mandiri')">Mandiri</div>
+                </div>
+              </div>
+
+              <div class="legacy-input-v3-field legacy-pull-v3-wide relative z-20" id="tarikCabangContainer" style="display: none;">
+                <label class="legacy-input-v3-label">Cabang (Mandiri) <span class="text-brand-coral">*</span></label>
+                <input type="text" id="tarikCabangInput" role="combobox" aria-autocomplete="list" aria-controls="tarikCabangDropdown" aria-expanded="false" autocomplete="off" class="legacy-input-v3-control w-full font-bold text-brand-black outline-none transition-all" placeholder="Ketik atau pilih cabang Mandiri...">
+                <div id="tarikCabangDropdown" class="hidden absolute top-full left-0 right-0 mt-2 bg-white border border-brand-stone rounded-xl shadow-xl max-h-48 overflow-y-auto z-50"></div>
+              </div>
+
+              <div class="legacy-input-v3-field legacy-pull-v3-wide relative z-20" id="tarikCKContainer">
+                <label class="legacy-input-v3-label">Central Kitchen <span class="text-brand-coral">*</span></label>
+                <input type="text" id="tarikCentralKitchenInput" readonly role="combobox" aria-controls="tarikCentralKitchenDropdown" aria-expanded="false" class="legacy-input-v3-control w-full font-bold text-brand-black outline-none transition-all cursor-pointer" placeholder="Pilih Central Kitchen..." onclick="toggleLegacyFloatingPopover('tarikCentralKitchenInput','tarikCentralKitchenDropdown')">
+                <div id="tarikCentralKitchenDropdown" class="hidden absolute top-full left-0 right-0 mt-2 bg-white border border-brand-stone rounded-xl shadow-xl max-h-48 overflow-y-auto z-50"></div>
+              </div>
+
+              <div class="legacy-input-v3-field relative z-20">
+                <label class="legacy-input-v3-label">Bulan <span class="text-brand-coral">*</span></label>
+                <input type="hidden" id="tarikBulan">
+                <div id="btnTarikBulan" role="combobox" tabindex="0" aria-controls="dropTarikBulan" aria-expanded="false" class="legacy-pull-v3-trigger w-full font-bold text-brand-black cursor-pointer flex justify-between items-center transition-all" onclick="toggleLegacyFloatingPopover('btnTarikBulan','dropTarikBulan')">
+                  <span id="labelTarikBulan">Pilih Bulan</span>
+                  <i class="bi bi-chevron-down text-brand-muted text-xs"></i>
+                </div>
+                <div id="dropTarikBulan" class="hidden absolute top-full left-0 right-0 mt-2 bg-white border border-brand-stone rounded-xl shadow-xl max-h-48 overflow-y-auto z-50"></div>
+              </div>
+
+              <div class="legacy-input-v3-field relative z-20">
+                <label class="legacy-input-v3-label">Tahun <span class="text-brand-coral">*</span></label>
+                <input type="hidden" id="tarikTahun">
+                <div id="btnTarikTahun" role="combobox" tabindex="0" aria-controls="dropTarikTahun" aria-expanded="false" class="legacy-pull-v3-trigger w-full font-bold text-brand-black cursor-pointer flex justify-between items-center transition-all" onclick="toggleLegacyFloatingPopover('btnTarikTahun','dropTarikTahun')">
+                  <span id="labelTarikTahun">Pilih Tahun</span>
+                  <i class="bi bi-chevron-down text-brand-muted text-xs"></i>
+                </div>
+                <div id="dropTarikTahun" class="hidden absolute top-full left-0 right-0 mt-2 bg-white border border-brand-stone rounded-xl shadow-xl max-h-48 overflow-y-auto z-50"></div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div id="tarikResultSection" class="hidden animate-[fadeIn_0.5s_ease-out]">
+          <div class="legacy-pull-v3-result-head flex flex-col gap-2">
+            <div class="flex justify-between items-end">
+              <h3 class="text-[20px] font-black text-brand-black">Preview Data <span id="tarikBadgeCount" class="text-brand-coral text-sm ml-2 bg-[#F2F0FF] px-3 py-1 rounded-full">0 Baris</span></h3>
+            </div>
+            <p class="text-[12px] font-bold text-brand-muted flex items-center gap-2 hidden" id="tarikSpreadsheetInfo">
+              <i class="bi bi-file-earmark-spreadsheet text-brand-coral"></i> Spreadsheet: <span id="tarikSpreadsheetName" class="text-brand-black"></span>
+            </p>
+          </div>
+          
+          <!-- Summary Card Container -->
+          <div id="tarikSummaryCardContainer" class="hidden mb-6"></div>
+
+          <div class="legacy-pull-v3-result-card flex flex-col max-h-[600px]">
+            <div class="overflow-x-auto overflow-y-auto flex-1 custom-scrollbar">
+              <table class="w-full text-left border-collapse min-w-[1200px]">
+                <thead class="bg-brand-paper border-b border-brand-stone text-brand-muted text-[10px] font-black uppercase tracking-widest sticky top-0 z-10 shadow-sm">
+                  <tr>
+                    <th class="p-4 pl-8 w-16 bg-brand-paper">No</th>
+                    <th class="p-4 w-24 bg-brand-paper">Tgl</th>
+                    <th class="p-4 bg-brand-paper">Cabang</th>
+                    <th class="p-4 bg-brand-paper">Keterangan</th>
+                    <th class="p-4 bg-brand-paper">Jenis</th>
+                    <th class="p-4 bg-brand-paper">Jumlah</th>
+                    <th class="p-4 text-right bg-brand-paper">Nominal</th>
+                    <th class="p-4 text-center bg-brand-paper">Eliminasi</th>
+                    <th class="p-4 text-center w-32 bg-brand-paper">Foto Nota</th>
+                  </tr>
+                </thead>
+                <tbody id="tarikTableBody" class="divide-y divide-brand-stone/50 text-[12px]"></tbody>
+              </table>
+            </div>
+            <div class="legacy-pull-v3-result-actions flex justify-end border-t border-brand-stone items-center gap-3">
+              <button id="btnResetTarik" onclick="openResetTarikModal()" class="px-6 py-3 rounded-xl font-black bg-white hover:bg-red-500 text-red-600 hover:text-white border border-red-200 transition-all text-xs uppercase tracking-widest relative flex items-center gap-2">
+                 <i class="bi bi-arrow-counterclockwise text-sm"></i> Reset Data
+              </button>
+              <button id="btnSubmitTarik" onclick="submitTarikData()" class="px-8 py-3 rounded-xl font-black bg-gradient-primary text-white shadow-lg shadow-brand-coral/20 hover:shadow-xl hover:shadow-brand-coral/30 hover:-translate-y-0.5 transition-all text-xs uppercase tracking-widest relative">
+                 <span class="btn-text">Push Data & Submit Foto <i class="bi bi-check2-circle ml-1"></i></span>
+                 <span class="btn-spinner hidden absolute inset-0 flex items-center justify-center">
+                    <i class="bi bi-arrow-repeat animate-spin text-lg"></i>
+                 </span>
+              </button>
+            </div>
+          </div>
+        </div>
+        </div>
+    </div>
+  </div>
+
+
+<script>
+    const tarikEscapeHtml = value => window.legacyEscapeHtml ? window.legacyEscapeHtml(value) : String(value == null ? '' : value).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+    const tarikEncodeData = value => encodeURIComponent(String(value == null ? '' : value));
+    document.addEventListener('click', event => {
+      const control = event.target.closest && event.target.closest('[data-tarik-action]');
+      if (!control) return;
+      const value = decodeURIComponent(control.dataset.tarikValue || '');
+      const index = Number(control.dataset.tarikIndex);
+      if (control.dataset.tarikAction === 'select-ck') selectTarikCentralKitchen(value, decodeURIComponent(control.dataset.tarikName || ''));
+      else if (control.dataset.tarikAction === 'select-mandiri') selectTarikMandiri(value, decodeURIComponent(control.dataset.tarikName || ''));
+      else if (control.dataset.tarikAction === 'select-month') selectTarikBulan(value, decodeURIComponent(control.dataset.tarikName || ''));
+      else if (control.dataset.tarikAction === 'select-year') selectTarikTahun(value);
+      else if (control.dataset.tarikAction === 'toggle-date') toggleTarikDate(value);
+      else if (control.dataset.tarikAction === 'image') window.showImg(value);
+      else if (control.dataset.tarikAction === 'photo') openTarikModal(index);
+      else if (control.dataset.tarikAction === 'delete') deleteTarikDataLocal(index);
+      else if (control.dataset.tarikAction === 'eliminate') toggleEliminasiDirectly(index, control);
+      else if (control.dataset.tarikAction === 'add-row') addTarikRowDirectly(Number(value));
+    });
+    document.addEventListener('focusin', event => {
+      const input = event.target.closest && event.target.closest('[data-tarik-autocomplete]');
+      if (input) showTableAutocomplete(input, input.dataset.tarikAutocomplete, Number(input.dataset.row));
+    });
+    document.addEventListener('focusout', event => {
+      const input = event.target.closest && event.target.closest('[data-tarik-autocomplete]');
+      if (input) hideTableAutocomplete(input);
+    });
+    document.addEventListener('input', event => {
+      const input = event.target.closest && event.target.closest('[data-tarik-field]');
+      if (!input) return;
+      if (input.dataset.tarikAutocomplete) filterTableAutocomplete(input, input.dataset.tarikAutocomplete, Number(input.dataset.row));
+      const index = Number(input.dataset.row);
+      if (input.dataset.tarikMoney === 'true') {
+        formatCurrencyInput(input);
+        updateTarikNominalField(index, input.value);
+      } else {
+        updateTarikField(index, input.dataset.tarikField, input.value);
+      }
+    });
+    document.addEventListener('change', event => {
+      const input = event.target.closest && event.target.closest('[data-tarik-field]');
+      if (!input) return;
+      const index = Number(input.dataset.row);
+      if (input.dataset.tarikMoney === 'true') updateTarikNominalField(index, input.value);
+      else updateTarikField(index, input.dataset.tarikField, input.value);
+    });
+
+    // ==========================================
+    // MODUL TARIK DATA (MANDIRI & CENTRAL KITCHEN)
+    // ==========================================
+    let TARIK_DATA = [];
+    let TARIK_MASTER_BRANCHES = [];
+    let TARIK_MASTER_PERIOD = '';
+    let TARIK_MASTER_PROMISE = null;
+
+    const BULAN_SHORT = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
+    function fmtTarikTgl(tglStr) {
+      if (!tglStr || typeof tglStr !== 'string') return tglStr || '-';
+      const parts = tglStr.split(/[-/]/);
+      if (parts.length < 3) return tglStr;
+      const d = String(parts[0]).padStart(2, '0');
+      const mIdx = parseInt(parts[1]) - 1;
+      const y = parts[2];
+      if (isNaN(mIdx) || mIdx < 0 || mIdx > 11) return tglStr;
+      return `${d} ${BULAN_SHORT[mIdx]} ${y}`;
+    }
+
+    function tarikDateParts(value) {
+      const match = /^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/.exec(String(value || '').trim());
+      if (!match) return null;
+      const parts = { day: Number(match[1]), month: Number(match[2]), year: Number(match[3]) };
+      if (parts.day < 1 || parts.day > 31 || parts.month < 1 || parts.month > 12) return null;
+      return parts;
+    }
+
+    function tarikSameDate(value, day, month, year) {
+      const parts = tarikDateParts(value);
+      return Boolean(parts && parts.day === Number(day) && parts.month === Number(month) && parts.year === Number(year));
+    }
+
+    function tarikNextAvailableNo(rows) {
+      const used = new Set((rows || []).map(row => Number.parseInt(row.no, 10)).filter(no => Number.isInteger(no) && no > 0));
+      let candidate = 1;
+      while (used.has(candidate)) candidate += 1;
+      return candidate;
+    }
+
+    function syncTarikVisibleInputsToModel() {
+      document.querySelectorAll('#tarikTableBody [data-tarik-field]').forEach(input => {
+        const index = Number(input.dataset.row);
+        if (!Number.isInteger(index) || !TARIK_DATA[index]) return;
+        if (input.dataset.tarikMoney === 'true') {
+          const nextNominal = parseIndoNumber(input.value);
+          if (Number(TARIK_DATA[index].nominal || 0) !== nextNominal) updateTarikNominalField(index, input.value);
+          return;
+        }
+        const field = input.dataset.tarikField;
+        const nextValue = input.value;
+        if (String(TARIK_DATA[index][field] || '') !== nextValue) updateTarikField(index, field, nextValue);
+      });
+    }
+
+    function switchInputTab(tab) {
+      if (tab === 'tarik') {
+        $('#inputSlideBg').css('transform', 'translateX(0)');
+        $('#btnTabTarik').removeClass('text-brand-muted').addClass('text-brand-coral');
+        $('#btnTabUpload').removeClass('text-brand-coral').addClass('text-brand-muted');
+        $('#tabInputUpload').hide();
+        $('#tabInputTarik').fadeIn(300);
+        populateTarikPeriode();
+      } else {
+        const parentLeft = $('#inputSlideBg').parent().offset().left;
+        const targetLeft = $('#btnTabUpload').offset().left;
+        const paddingOffset = 4;
+        const slideDist = targetLeft - parentLeft - paddingOffset;
+        
+        $('#inputSlideBg').css('transform', `translateX(${slideDist}px)`);
+        $('#btnTabUpload').removeClass('text-brand-muted').addClass('text-brand-coral');
+        $('#btnTabTarik').removeClass('text-brand-coral').addClass('text-brand-muted');
+        $('#tabInputTarik').hide();
+        $('#tabInputUpload').fadeIn(300);
+      }
+    }
+
+    function selectTarikTipe(val) {
+      $('#tarikTipe').val(val);
+      $('#labelTarikTipe').text(val);
+      closeLegacyFloatingPopover('dropTarikTipe');
+      $('#tarikLinkInput').val('');
+      $('#tarikCabangInput').val('').removeData('branch-id');
+      $('#tarikCentralKitchenInput').val('');
+      $('#tarikCentralKitchenInput').removeData('branch-id');
+      $('#tarikLinkStatus').html('<i class="bi bi-link-45deg text-brand-coral text-lg"></i><span>Link akan dimuat otomatis dari Master Link.</span>');
+      handleTarikTipeChange();
+    }
+
+    function selectTarikBulan(val, name) {
+      $('#tarikBulan').val(val);
+      $('#labelTarikBulan').text(name);
+      closeLegacyFloatingPopover('dropTarikBulan');
+      $('#tarikLinkInput').val('');
+      prepareTarikBranches(true);
+    }
+
+    function selectTarikTahun(val) {
+      $('#tarikTahun').val(val);
+      $('#labelTarikTahun').text(val);
+      closeLegacyFloatingPopover('dropTarikTahun');
+      $('#tarikLinkInput').val('');
+      prepareTarikBranches(true);
+    }
+
+    function handleTarikTipeChange() {
+      const tipe = $('#tarikTipe').val();
+      if (tipe === 'Mandiri') {
+        $('#tarikCabangContainer').show();
+        $('#tarikCKContainer').hide();
+      } else {
+        $('#tarikCabangContainer').hide();
+        $('#tarikCKContainer').show();
+      }
+    }
+
+    function selectTarikCentralKitchen(id, name) {
+      $('#tarikCentralKitchenInput').val(name || id);
+      $('#tarikCentralKitchenInput').data('branch-id', id);
+      closeLegacyFloatingPopover('tarikCentralKitchenDropdown');
+      $('#tarikLinkInput').val('');
+      $('#tarikLinkStatus').html('<i class="bi bi-link-45deg text-brand-coral text-lg"></i><span>Link akan dimuat otomatis dari Master Link.</span>');
+    }
+
+    function selectTarikMandiri(id, name) {
+      $('#tarikCabangInput').val(name || id).data('branch-id', id).attr('aria-invalid', 'false');
+      closeLegacyFloatingPopover('tarikCabangDropdown');
+      $('#tarikLinkInput').val('');
+      $('#tarikLinkStatus').html('<i class="bi bi-link-45deg text-brand-coral text-lg"></i><span>Link akan dimuat otomatis dari Master Link.</span>');
+    }
+
+    function populateTarikCentralKitchens(branches) {
+      const kitchens = (branches || []).filter(item => String(item.type || '').toLowerCase().indexOf('central') >= 0);
+      const dropdown = $('#tarikCentralKitchenDropdown');
+      if (!kitchens.length) {
+        dropdown.html('<div class="p-3 text-xs font-bold text-brand-muted">Belum ada Central Kitchen di Master Link.</div>');
+        return kitchens;
+      }
+      dropdown.html(kitchens.map(item => `<div role="option" class="p-2.5 border-b border-brand-stone/70 last:border-b-0 hover:bg-brand-paper cursor-pointer font-bold text-xs transition-colors" data-tarik-action="select-ck" data-tarik-value="${tarikEncodeData(item.id || '')}" data-tarik-name="${tarikEncodeData(item.name || item.id || '')}">${tarikEscapeHtml(item.name || item.id)}</div>`).join(''));
+      const selectedId = $('#tarikCentralKitchenInput').data('branch-id');
+      if (!selectedId && kitchens.length === 1) selectTarikCentralKitchen(kitchens[0].id, kitchens[0].name || kitchens[0].id);
+      return kitchens;
+    }
+
+    function populateTarikMandiri(branches, query) {
+      const normalizedQuery = String(query || '').trim().toLowerCase();
+      const mandiri = (branches || []).filter(item => String(item.type || '').toLowerCase() === 'mandiri');
+      const matches = normalizedQuery
+        ? mandiri.filter(item => String(item.name || item.id || '').toLowerCase().includes(normalizedQuery)).slice(0, 12)
+        : mandiri.slice(0, 12);
+      const dropdown = $('#tarikCabangDropdown');
+      if (!matches.length) {
+        dropdown.html(`<div class="p-3 text-xs font-bold text-brand-muted">${mandiri.length ? 'Cabang tidak ditemukan.' : 'Belum ada cabang Mandiri di Master Link.'}</div>`);
+      } else {
+        dropdown.html(matches.map(item => `<div role="option" class="suggestion-item p-2.5 border-b border-brand-stone/70 last:border-b-0 hover:bg-brand-paper cursor-pointer font-bold text-xs transition-colors" data-tarik-action="select-mandiri" data-tarik-value="${tarikEncodeData(item.id || '')}" data-tarik-name="${tarikEncodeData(item.name || item.id || '')}">${tarikEscapeHtml(item.name || item.id)}</div>`).join(''));
+      }
+      return mandiri;
+    }
+
+    async function prepareTarikBranches(force) {
+      if (typeof window.portalGetMasterLinks !== 'function') return null;
+      const month = $('#tarikBulan').val() || String(new Date().getMonth() + 1).padStart(2, '0');
+      const year = $('#tarikTahun').val() || String(new Date().getFullYear());
+      const period = `${year}${month}`;
+      if (!force && TARIK_MASTER_PERIOD === period && TARIK_MASTER_BRANCHES.length) {
+        populateTarikCentralKitchens(TARIK_MASTER_BRANCHES);
+        populateTarikMandiri(TARIK_MASTER_BRANCHES, $('#tarikCabangInput').val());
+        return { branches:TARIK_MASTER_BRANCHES };
+      }
+      if (TARIK_MASTER_PROMISE && TARIK_MASTER_PERIOD === period) return TARIK_MASTER_PROMISE;
+      TARIK_MASTER_PERIOD = period;
+      TARIK_MASTER_PROMISE = window.portalGetMasterLinks(period).then(master => {
+        TARIK_MASTER_BRANCHES = Array.isArray(master && master.branches) ? master.branches : [];
+        populateTarikCentralKitchens(TARIK_MASTER_BRANCHES);
+        populateTarikMandiri(TARIK_MASTER_BRANCHES, $('#tarikCabangInput').val());
+        return master;
+      }).finally(() => { TARIK_MASTER_PROMISE = null; });
+      return TARIK_MASTER_PROMISE;
+    }
+
+    async function prepareTarikCentralKitchens() {
+      try {
+        await prepareTarikBranches(false);
+      } catch (error) {
+        // Link tetap divalidasi ulang saat Tarik Data agar pesan error tampil pada konteks yang tepat.
+      }
+    }
+
+    window.prepareTarikCentralKitchens = prepareTarikCentralKitchens;
+    window.prepareTarikBranches = prepareTarikBranches;
+
+    function populateTarikPeriode() {
+      const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+      const now = new Date();
+      if ($('#dropTarikBulan').children().length === 0) {
+        let htmlBulan = '';
+        months.forEach((m, i) => {
+          const val = String(i+1).padStart(2, '0');
+          htmlBulan += `<div role="option" class="p-2.5 hover:bg-brand-paper cursor-pointer font-bold text-xs transition-colors" data-tarik-action="select-month" data-tarik-value="${tarikEncodeData(val)}" data-tarik-name="${tarikEncodeData(m)}">${tarikEscapeHtml(m)}</div>`;
+        });
+        $('#dropTarikBulan').html(htmlBulan);
+        let htmlTahun = '';
+        for (let year = 2024; year <= now.getFullYear() + 1; year++) {
+          htmlTahun += `<div role="option" class="p-2.5 hover:bg-brand-paper cursor-pointer font-bold text-xs transition-colors" data-tarik-action="select-year" data-tarik-value="${tarikEncodeData(year)}">${year}</div>`;
+        }
+        $('#dropTarikTahun').html(htmlTahun);
+        selectTarikBulan(String(now.getMonth()+1).padStart(2, '0'), months[now.getMonth()]);
+        selectTarikTahun(String(now.getFullYear()));
+      }
+      handleTarikTipeChange();
+      ['btnTarikTipe:dropTarikTipe','btnTarikBulan:dropTarikBulan','btnTarikTahun:dropTarikTahun','tarikCentralKitchenInput:tarikCentralKitchenDropdown'].forEach(pair => {
+        const ids = pair.split(':'); bindLegacyPopoverKeyboard(ids[0], ids[1]);
+      });
+      const mandiriInput = document.getElementById('tarikCabangInput');
+      if (mandiriInput && mandiriInput.dataset.tarikComboBound !== 'true') {
+        mandiriInput.dataset.tarikComboBound = 'true';
+        const showMandiri = async () => {
+          try { await prepareTarikBranches(false); } catch (error) {}
+          populateTarikMandiri(TARIK_MASTER_BRANCHES, mandiriInput.value);
+          openLegacyFloatingPopover(mandiriInput, 'tarikCabangDropdown');
+        };
+        mandiriInput.addEventListener('focus', showMandiri);
+        mandiriInput.addEventListener('click', showMandiri);
+        mandiriInput.addEventListener('input', () => {
+          $(mandiriInput).removeData('branch-id').attr('aria-invalid', 'true');
+          $('#tarikLinkInput').val('');
+          populateTarikMandiri(TARIK_MASTER_BRANCHES, mandiriInput.value);
+          openLegacyFloatingPopover(mandiriInput, 'tarikCabangDropdown');
+        });
+        bindLegacyPopoverKeyboard('tarikCabangInput', 'tarikCabangDropdown');
+      }
+      prepareTarikBranches(false).catch(() => {});
+    }
+
+    function getTarikPeriodeString() {
+      const shortMonths = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agt", "Sep", "Okt", "Nov", "Des"];
+      const mIdx = parseInt($('#tarikBulan').val()) - 1;
+      const yy = $('#tarikTahun').val().slice(-2);
+      return `${$('#tarikBulan').val()}. ${shortMonths[mIdx]} ${yy}`;
+    }
+    window.populateTarikPeriode = populateTarikPeriode;
+
+    async function ensureTarikPermanentLink() {
+      const tipe = $('#tarikTipe').val();
+      const cabang = $('#tarikCabangInput').val().trim();
+      const centralKitchenId = $('#tarikCentralKitchenInput').data('branch-id') || '';
+      const month = $('#tarikBulan').val();
+      const year = $('#tarikTahun').val();
+      if (!month || !year) { Swal.fire('Pilih periode', 'Pilih bulan dan tahun terlebih dahulu.', 'warning'); return ''; }
+      const mandiriBranchId = $('#tarikCabangInput').data('branch-id') || '';
+      if (tipe === 'Mandiri' && (!cabang || !mandiriBranchId)) {
+        $('#tarikCabangInput').attr('aria-invalid', 'true').focus();
+        Swal.fire('Pilih cabang', 'Pilih cabang Mandiri yang valid dari dropdown Master Link.', 'warning');
+        return '';
+      }
+      if (typeof window.portalGetMasterLinks !== 'function') { Swal.fire('Master Link belum tersedia', 'Muat ulang aplikasi lalu coba kembali.', 'warning'); return ''; }
+      const period = `${year}${month}`;
+      $('#tarikLinkStatus').html('<i class="bi bi-arrow-repeat animate-spin text-brand-coral text-lg"></i><span>Memuat link permanen...</span>');
+      try {
+        const master = await window.portalGetMasterLinks(period);
+        const branches = master.branches || [];
+        const kitchens = populateTarikCentralKitchens(branches);
+        if (tipe === 'Central Kitchen' && !($('#tarikCentralKitchenInput').data('branch-id') || '')) {
+          if (!kitchens.length) {
+            $('#tarikLinkStatus').html('<i class="bi bi-exclamation-circle text-red-500 text-lg"></i><span>Belum ada Central Kitchen di Master Link.</span>');
+          } else {
+            $('#tarikLinkStatus').html('<i class="bi bi-exclamation-circle text-red-500 text-lg"></i><span>Pilih Central Kitchen terlebih dahulu.</span>');
+            $('#tarikCentralKitchenDropdown').removeClass('hidden');
+          }
+          return '';
+        }
+        let branch;
+        if (tipe === 'Central Kitchen') branch = branches.find(item => String(item.id || '') === String($('#tarikCentralKitchenInput').data('branch-id') || centralKitchenId));
+        else branch = branches.find(item => String(item.id || '') === String(mandiriBranchId) && String(item.type || '').toLowerCase() === 'mandiri');
+        if (!branch) {
+          $('#tarikCabangInput').removeData('branch-id').attr('aria-invalid', 'true');
+          $('#tarikLinkStatus').html('<i class="bi bi-exclamation-circle text-red-500 text-lg"></i><span>Cabang tidak lagi tersedia pada Master Link.</span>');
+          return '';
+        }
+        const entry = branch && master.links ? master.links[branch.id] : null;
+        const link = entry && (entry.url || entry.spreadsheetUrl);
+        if (!link) {
+          $('#tarikLinkInput').val('');
+          $('#tarikLinkStatus').html('<i class="bi bi-exclamation-circle text-red-500 text-lg"></i><span>Belum ada link permanen untuk cabang dan periode ini.</span>');
+          const go = await Swal.fire({ title:'Link belum dikonfigurasi', text:'Atur link spreadsheet terlebih dahulu pada menu Master Link.', icon:'warning', showCancelButton:true, confirmButtonText:'Buka Master Link', cancelButtonText:'Batal' });
+          if (go.isConfirmed && typeof window.portalShowPage === 'function') window.portalShowPage('taxMasterLinksPage');
+          return '';
+        }
+        $('#tarikLinkInput').val(link);
+        $('#tarikLinkStatus').html(`<i class="bi bi-check-circle-fill text-green-500 text-lg"></i><span>Link permanen aktif: ${tarikEscapeHtml(branch.name || branch.id)}</span>`);
+        return link;
+      } catch (error) {
+        $('#tarikLinkStatus').html('<i class="bi bi-exclamation-circle text-red-500 text-lg"></i><span>Link permanen tidak dapat dimuat.</span>');
+        Swal.fire('Gagal memuat Master Link', error.message, 'error');
+        return '';
+      }
+    }
+
+    const TARIK_FETCH_TIMEOUT_MS = 90000;
+    let TARIK_FETCH_RUNNING = false;
+    let TARIK_FETCH_STATUS_TIMERS = [];
+
+    function clearTarikFetchStatusTimers() {
+      TARIK_FETCH_STATUS_TIMERS.forEach(timerId => clearTimeout(timerId));
+      TARIK_FETCH_STATUS_TIMERS = [];
+    }
+
+    function setTarikFetchStatus(message, tone) {
+      const status = $('#tarikFetchStatus');
+      if (!message) {
+        status.addClass('hidden').text('');
+        return;
+      }
+      const colors = { progress: '#6255D9', success: '#18864B', warning: '#B26A00', error: '#D14343' };
+      status.removeClass('hidden').css('color', colors[tone] || colors.progress).text(message);
+    }
+
+    function beginTarikFetchFeedback() {
+      clearTarikFetchStatusTimers();
+      $('#btnFetchDataText').text('Membuka...');
+      setTarikFetchStatus('Membuka spreadsheet dan membaca data…', 'progress');
+      TARIK_FETCH_STATUS_TIMERS.push(setTimeout(() => {
+        $('#btnFetchDataText').text('Mencocokkan...');
+        setTarikFetchStatus('Data sedang dibaca dan dicocokkan dengan foto nota…', 'progress');
+      }, 15000));
+      TARIK_FETCH_STATUS_TIMERS.push(setTimeout(() => {
+        $('#btnFetchDataText').text('Masih diproses...');
+        setTarikFetchStatus('Proses lebih lama dari biasanya. Sistem masih bekerja; mohon jangan klik ulang.', 'warning');
+      }, 45000));
+    }
+
+    function tarikFetchWithTimeout(requestPromise) {
+      let timeoutId;
+      const timeoutPromise = new Promise((resolve, reject) => {
+        timeoutId = setTimeout(() => {
+          const error = new Error('Server belum merespons dalam 90 detik. Proses di server mungkin masih menyelesaikan pembacaan; tunggu sebentar sebelum mencoba lagi.');
+          error.code = 'TARIK_FETCH_TIMEOUT';
+          reject(error);
+        }, TARIK_FETCH_TIMEOUT_MS);
+      });
+      return Promise.race([requestPromise, timeoutPromise]).finally(() => clearTimeout(timeoutId));
+    }
+
+    async function fetchTarikData(options) {
+      options = options || {};
+      if (!options.afterSave && !await tarikConfirmDiscardDraft()) return;
+      if (TARIK_FETCH_RUNNING) return;
+      const tipe = $('#tarikTipe').val();
+      const link = await ensureTarikPermanentLink();
+      const periode = getTarikPeriodeString();
+      const cabang = tipe === 'Central Kitchen' ? $('#tarikCentralKitchenInput').val() : $('#tarikCabangInput').val();
+      
+      if (!link) return;
+      const payloadBulan = $('#tarikBulan').val();
+      const payloadTahun = $('#tarikTahun').val();
+      
+      // Capture scroll and height to avoid visual jumps
+      const scrollPos = $(window).scrollTop();
+      const container = $('#tarikResultSection');
+      const curHeight = container.is(':visible') ? container.outerHeight() : 0;
+      if (curHeight > 0) {
+         container.css('min-height', curHeight + 'px');
+      }
+      
+      TARIK_FETCH_RUNNING = true;
+      $('#btnFetchData').prop('disabled', true).addClass('opacity-80 cursor-not-allowed');
+      $('#btnFetchDataIcon').removeClass('bi-cloud-download').addClass('bi-arrow-repeat animate-spin');
+      beginTarikFetchFeedback();
+      const requestStartedAt = Date.now();
+      
+      const isResultSectionHidden = $('#tarikResultSection').is(':hidden');
+      if (isResultSectionHidden) {
+         $('#tarikResultSection').hide();
+      }
+      
+      try {
+        const res = await tarikFetchWithTimeout(callServer('fetchExternalData', { link, tipe, periode, cabang, bulan: payloadBulan, tahun: payloadTahun }));
+        
+        const defaultRowsCount = tipe === "Central Kitchen" ? 35 : 15;
+        const existingData = res.data || [];
+        
+        let maxDays = 31;
+        if (payloadBulan && payloadTahun) {
+          maxDays = new Date(parseInt(payloadTahun), parseInt(payloadBulan), 0).getDate();
+        }
+        
+        const payloadBulanStr = String(payloadBulan).padStart(2, '0');
+        const payloadTahunStr = String(payloadTahun);
+        const newTarikData = [];
+        
+        for (let d = 1; d <= maxDays; d++) {
+          const tglStr = `${String(d).padStart(2, '0')}-${payloadBulanStr}-${payloadTahunStr}`;
+          
+          const dayRows = existingData
+            .filter(r => tarikSameDate(r.tanggal, d, payloadBulan, payloadTahun))
+            .sort((a, b) => (Number.parseInt(a.no, 10) || 0) - (Number.parseInt(b.no, 10) || 0));
+          
+          // Append existing
+          dayRows.forEach(r => {
+             newTarikData.push({
+                ...r,
+                originalFotoUrl:r.fotoUrl || '',
+                isNew: false,
+                isEdited: false,
+                _placeholder: false
+             });
+          });
+          
+          // Append placeholders to meet defaultRowsCount
+          const placeholdersNeeded = Math.max(0, defaultRowsCount - dayRows.length);
+          const usedNos = new Set(dayRows.map(row => Number.parseInt(row.no, 10)).filter(no => Number.isInteger(no) && no > 0));
+          let nextPlaceholderNo = 1;
+          for (let placeholderIndex = 0; placeholderIndex < placeholdersNeeded; placeholderIndex++) {
+             while (usedNos.has(nextPlaceholderNo)) nextPlaceholderNo += 1;
+             const placeholderNo = nextPlaceholderNo;
+             usedNos.add(placeholderNo);
+             nextPlaceholderNo += 1;
+                newTarikData.push({
+                   sheetRowIndex: null,
+                   no: placeholderNo,
+                   tanggal: tglStr,
+                   cabang: tipe === "Central Kitchen" ? "" : (cabang || "").toUpperCase(),
+                   keterangan: "",
+                   jenis: "",
+                   jumlah: "",
+                   nominal: 0,
+                   eliminasi: "TIDAK",
+                   fotoUrl: "",
+                   base64: "",
+                   isNew: true,
+                   _placeholder: true
+                });
+          }
+        }
+        
+        TARIK_DATA = newTarikData;
+        $('#tarikSpreadsheetName').text(res.spreadsheetName);
+        $('#tarikSpreadsheetInfo').removeClass('hidden');
+        renderTarikSummaryCard(res.rekapPengeluaranData, tipe);
+        renderTarikTable();
+        if (isResultSectionHidden) {
+           $('#tarikResultSection').fadeIn(300);
+        }
+        const elapsedSeconds = Math.max(1, Math.round((Date.now() - requestStartedAt) / 1000));
+        setTarikFetchStatus(`Selesai: ${existingData.length} baris dimuat dalam ${elapsedSeconds} detik.`, 'success');
+        return true;
+      } catch (e) {
+        const timedOut = e && e.code === 'TARIK_FETCH_TIMEOUT';
+        setTarikFetchStatus(timedOut ? 'Waktu tunggu habis. Silakan coba lagi.' : 'Tarik data gagal. Periksa pesan kesalahan.', 'error');
+        if (!options.afterSave) Swal.fire(timedOut ? 'Proses lebih lama dari biasanya' : 'Error', e.message, timedOut ? 'warning' : 'error');
+        return false;
+      } finally {
+        TARIK_FETCH_RUNNING = false;
+        clearTarikFetchStatusTimers();
+        $('#btnFetchData').prop('disabled', false).removeClass('opacity-80 cursor-not-allowed');
+        $('#btnFetchDataIcon').removeClass('bi-arrow-repeat animate-spin').addClass('bi-cloud-download');
+        $('#btnFetchDataText').text('Tarik Data');
+        if (curHeight > 0) {
+           $(window).scrollTop(scrollPos);
+           setTimeout(() => {
+              container.css('min-height', '');
+           }, 100);
+        }
+      }
+    }
+
+     window.__lastExpandedDate = 1;
+     window.__expandedDates = new Set([1]);
+     window.toggleTarikDate = function(d) {
+       syncTarikVisibleInputsToModel();
+       d = parseInt(d);
+       if (window.__expandedDates.has(d)) window.__expandedDates.delete(d);
+       else window.__expandedDates.add(d);
+       window.__lastExpandedDate = d;
+       renderTarikTable();
+     };
+    window.renderTarikSummaryCard = function(data, tipe) {
+      const container = $('#tarikSummaryCardContainer').empty().addClass('hidden');
+      if (!data) {
+         return;
+      }
+      
+      // Helper function to format percentages
+      function fmtPct(val) {
+         if (val === null || val === undefined || val === '') return '0%';
+         if (typeof val === 'number') {
+            return (val * 100).toFixed(1) + '%';
+         }
+         let s = String(val).trim();
+         if (!s.includes('%')) {
+            let num = parseFloat(s.replace(',', '.'));
+            if (!isNaN(num)) {
+               if (num < 1 && num > 0) {
+                  return (num * 100).toFixed(1) + '%';
+               }
+               return num.toFixed(1) + '%';
+            }
+         }
+         return s;
+      }
+      
+      const cats = [
+         { label: 'Bahan Baku', key: 'bahanBaku' },
+         { label: 'Telur', key: 'telur' },
+         { label: 'Air Galon', key: 'airGalon' },
+         { label: 'Gas', key: 'gas' },
+         { label: 'Bahan Kemas', key: 'bahanKemas' },
+         { label: 'Lain-lain', key: 'lainLain' },
+         { label: 'Operasional Toko', key: 'operasionalToko' }
+      ];
+
+      if (tipe === 'Mandiri') {
+         const totalReal = Math.round(data.nominal.totalReal || 0);
+         const totalTarget = Math.round(data.nominal.totalTarget || 0);
+         const diff = Math.round(totalReal - totalTarget);
+         const diffStr = (diff >= 0 ? '+' : '-') + 'Rp ' + fmtRp(Math.abs(diff));
+         const diffClass = diff > 0 ? 'text-red-500' : (diff < 0 ? 'text-green-500' : 'text-brand-muted');
+         
+         let gridHTML = '';
+         cats.forEach(c => {
+            const catData = data.categories[c.key] || { real: 0, target: 0 };
+            const realVal = catData.real;
+            const targetVal = catData.target;
+            const realPct = fmtPct(realVal);
+            const targetPct = fmtPct(targetVal);
+            
+            const isOver = realVal > targetVal;
+            const ratio = targetVal > 0 ? (realVal / targetVal) : (realVal > 0 ? 1 : 0);
+            const realWidth = Math.min(100, Math.max(0, ratio * 100));
+            const barClass = isOver ? 'bg-gradient-danger' : 'bg-gradient-primary';
+            
+            gridHTML += `
+              <div class="bg-white border border-brand-stone p-4 rounded-2xl flex flex-col justify-between shadow-sm min-h-[145px] hover:shadow-md transition-shadow">
+                <div class="flex flex-col gap-0.5">
+                  <span class="text-[9px] font-black text-brand-muted uppercase tracking-wider truncate" title="${c.label}">${c.label}</span>
+                </div>
+                
+                <!-- Progress Bar Track -->
+                <div class="relative w-full h-2.5 bg-[#F2F2F5] rounded-full my-3 overflow-hidden">
+                  <!-- Real Progress Fill -->
+                  <div class="h-full rounded-full ${barClass} z-10"
+                       style="width: ${realWidth}%;"
+                       title="Realisasi: ${realPct}"></div>
+                </div>
+                
+                <!-- Percentage Values -->
+                <div class="flex flex-col gap-0.5 mt-1 text-[11px] font-bold text-brand-black/80">
+                   <div class="flex justify-between items-center">
+                     <span class="opacity-60 text-[10px]">Real</span>
+                     <span class="${isOver ? 'text-red-500 font-black' : 'text-[#7651FF]'}">${realPct}</span>
+                   </div>
+                   <div class="flex justify-between items-center">
+                     <span class="opacity-60 text-[10px]">Target</span>
+                     <span class="text-brand-muted">${targetPct}</span>
+                   </div>
+                </div>
+              </div>
+            `;
+         });
+         
+         const html = `
+           <div class="bg-white rounded-[2rem] border border-brand-stone p-6 flex flex-col xl:flex-row gap-6 shadow-[0_8px_30px_rgba(0,0,0,0.02)] w-full">
+             <!-- Nominal Summary Card -->
+             <div class="flex-1 min-w-[280px] bg-[#F8F9FC] rounded-[1.5rem] p-5 border border-brand-stone flex flex-col justify-between min-h-[180px]">
+               <div>
+                 <h4 class="text-[10px] font-black text-brand-muted uppercase tracking-widest mb-4 flex items-center gap-2"><i class="bi bi-wallet2 text-brand-coral"></i> Laporan Nominal Toko</h4>
+                 <div class="space-y-3.5">
+                   <div class="flex justify-between items-center">
+                     <span class="text-xs font-bold text-brand-black/70">Total Real</span>
+                     <span class="text-sm font-black text-brand-black">Rp ${fmtRp(totalReal)}</span>
+                   </div>
+                   <div class="flex justify-between items-center">
+                     <span class="text-xs font-bold text-brand-black/70">Total Target</span>
+                     <span class="text-sm font-black text-brand-black">Rp ${fmtRp(totalTarget)}</span>
+                   </div>
+                 </div>
+               </div>
+               <div class="border-t border-brand-stone/60 pt-3.5 mt-4 flex justify-between items-center">
+                 <span class="text-xs font-black text-brand-black/80">Selisih</span>
+                 <span class="text-sm font-black ${diffClass}">${diffStr}</span>
+               </div>
+             </div>
+             
+             <!-- Categories Visual Column Grid -->
+             <div class="flex-[3.5] grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
+               ${gridHTML}
+             </div>
+           </div>
+         `;
+         container.html(html).removeClass('hidden');
+      } else if (tipe === 'Central Kitchen' && Array.isArray(data)) {
+         let grandReal = 0;
+         let grandTarget = 0;
+         data.forEach(b => {
+            grandReal += b.real.nominalTotal;
+            grandTarget += b.target.nominalTotal;
+         });
+         const grandDiff = grandReal - grandTarget;
+         const grandDiffStr = (grandDiff >= 0 ? '+' : '-') + 'Rp ' + fmtRp(Math.abs(grandDiff));
+         const grandDiffClass = grandDiff > 0 ? 'text-red-500' : (grandDiff < 0 ? 'text-green-500' : 'text-brand-muted');
+         
+         let cardsHTML = '';
+         data.forEach(b => {
+            let catHTML = '';
+            cats.forEach(c => {
+               const realVal = b.real[c.key];
+               const targetVal = b.target[c.key];
+               const realPct = fmtPct(realVal);
+               const targetPct = fmtPct(targetVal);
+               
+               const isOver = realVal > targetVal;
+               const ratio = targetVal > 0 ? (realVal / targetVal) : (realVal > 0 ? 1 : 0);
+               const realWidth = Math.min(100, Math.max(0, ratio * 100));
+               const barClass = isOver ? 'bg-gradient-danger' : 'bg-gradient-primary';
+               
+               catHTML += `
+                 <div class="flex flex-col gap-0.5">
+                   <div class="flex justify-between items-center text-[9px] font-bold">
+                     <span class="opacity-60 truncate" title="${c.label}">${c.label}</span>
+                     <span class="${isOver ? 'text-red-500 font-black' : 'text-brand-muted'}">${realPct} / ${targetPct}</span>
+                   </div>
+                   <div class="w-full h-1.5 bg-[#F2F2F5] rounded-full overflow-hidden relative">
+                     <div class="h-full rounded-full ${barClass}" style="width: ${realWidth}%;"></div>
+                   </div>
+                 </div>
+               `;
+            });
+            
+            cardsHTML += `
+              <div class="bg-white border border-brand-stone p-5 rounded-2xl flex flex-col justify-between shadow-sm hover:shadow-md transition-all">
+                <div class="flex justify-between items-center border-b border-brand-stone/60 pb-3 mb-3">
+                   <span class="text-xs font-black text-[#7651FF] uppercase tracking-wider">${tarikEscapeHtml(b.cabang)}</span>
+                  <span class="text-[10px] font-black ${b.selisih > 0 ? 'text-red-500' : (b.selisih < 0 ? 'text-green-500' : 'text-brand-muted')} bg-brand-paper px-2.5 py-1 rounded-full border border-brand-stone/40">
+                    ${b.selisih >= 0 ? '+' : '-'}Rp ${fmtRp(Math.abs(b.selisih))}
+                  </span>
+                </div>
+                
+                <!-- Categories Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2.5 my-2">
+                  ${catHTML}
+                </div>
+                
+                <!-- Totals Row -->
+                <div class="border-t border-brand-stone/60 pt-3 mt-3 flex justify-between items-center text-[10px] font-bold">
+                  <div class="flex flex-col">
+                    <span class="opacity-60 text-[8px] uppercase tracking-wider">Total Real</span>
+                    <span class="text-brand-black font-black text-xs">Rp ${fmtRp(b.real.nominalTotal)}</span>
+                  </div>
+                  <div class="flex flex-col text-right">
+                    <span class="opacity-60 text-[8px] uppercase tracking-wider">Total Target</span>
+                    <span class="text-brand-muted text-xs">Rp ${fmtRp(b.target.nominalTotal)}</span>
+                  </div>
+                </div>
+              </div>
+            `;
+         });
+         
+         const html = `
+           <div class="bg-white rounded-[2rem] border border-brand-stone p-6 shadow-[0_8px_30px_rgba(0,0,0,0.02)] w-full">
+             <!-- Categories Visual Column Grid (Full Width) -->
+             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+               ${cardsHTML}
+             </div>
+           </div>
+         `;
+         container.html(html).removeClass('hidden');
+      }
+    };
+
+    function renderTarikTable(dateToExpand) {
+      if (dateToExpand) {
+         window.__expandedDates.add(parseInt(dateToExpand));
+      }
+      $('#tarikBadgeCount').text(`${TARIK_DATA.length} Baris`);
+      const tbody = $('#tarikTableBody').empty();
+      const tipe = $('#tarikTipe').val();
+      
+      const payloadBulan = parseInt($('#tarikBulan').val());
+      const payloadTahun = parseInt($('#tarikTahun').val());
+      let maxDays = 31;
+      if (!isNaN(payloadBulan) && !isNaN(payloadTahun)) {
+        maxDays = new Date(payloadTahun, payloadBulan, 0).getDate();
+      }
+      
+      // Group by Tanggal (1 to maxDays)
+      const groupedData = {};
+      for (let i = 1; i <= maxDays; i++) groupedData[i] = [];
+      
+      TARIK_DATA.forEach((r, idx) => {
+        let day = -1;
+        if (r.tanggal && typeof r.tanggal === 'string') {
+           day = parseInt(r.tanggal.split(/[-/]/)[0]);
+        }
+        if (!isNaN(day) && groupedData[day]) {
+           groupedData[day].push({ ...r, _originalIndex: idx });
+        } else {
+           if (!groupedData["Lainnya"]) groupedData["Lainnya"] = [];
+           groupedData["Lainnya"].push({ ...r, _originalIndex: idx });
+        }
+      });
+      
+      let html = '';
+      const dates = Object.keys(groupedData).map(k => k === "Lainnya" ? k : parseInt(k)).sort((a, b) => a === "Lainnya" ? 1 : b === "Lainnya" ? -1 : a - b);
+      
+      for (const d of dates) {
+        const rows = groupedData[d]
+          .filter(r => !r.isDeleted)
+          .sort((a, b) => (Number.parseInt(a.no, 10) || Number.MAX_SAFE_INTEGER) - (Number.parseInt(b.no, 10) || Number.MAX_SAFE_INTEGER));
+        const isLainnya = d === "Lainnya";
+        const dateLabel = isLainnya ? "TANPA TANGGAL / FORMAT LAIN" : `TANGGAL ${d}`;
+        const activeRowsWithData = rows.filter(r => (r.keterangan && r.keterangan.trim() !== "") || (r.nominal && r.nominal > 0) || r.fotoUrl || r.base64);
+        const badgeCount = activeRowsWithData.length > 0 ? `<span class="bg-[#7651FF] text-white px-2.5 py-0.5 rounded-full text-[10px] ml-3">${activeRowsWithData.length}</span>` : '';
+        
+        // Subheader row for date (Accordion Header)
+        if (d !== dates[0]) {
+           html += `<tr class="h-4 bg-transparent border-0"><td colspan="9"></td></tr>`;
+        }
+        html += `<tr data-tarik-action="toggle-date" data-tarik-value="${tarikEncodeData(d)}" class="bg-[#F8F9FC] border border-brand-stone cursor-pointer hover:bg-[#F2F0FF] transition-colors group">
+            <td colspan="9" class="p-4 pl-8 text-[11px] font-black text-[#7651FF] uppercase tracking-widest relative">
+               <div class="flex items-center justify-between">
+                 <div class="flex items-center"><i class="bi bi-calendar-event mr-3 text-[14px]"></i> ${tarikEscapeHtml(dateLabel)} ${badgeCount}</div>
+                 <div id="btn-tarik-date-${d}" class="w-8 h-8 rounded-full bg-[#EAEBFA] text-[#7651FF] group-hover:bg-[#7651FF] group-hover:text-white flex items-center justify-center transition-all duration-300">
+                    <i class="bi bi-chevron-down transition-transform duration-300" id="icon-tarik-date-${d}"></i>
+                 </div>
+               </div>
+            </td>
+          </tr>`;
+          
+        if (!window.__expandedDates.has(Number(d))) continue;
+        if (rows.length === 0) {
+          html += `<tr class="tarik-date-row-${d} hidden bg-white">
+            <td colspan="9" class="p-6 text-center text-brand-muted font-bold text-xs">Belum ada data untuk tanggal ini.</td>
+          </tr>`;
+        } else {
+          rows.forEach((r) => {
+            let iconHTML = '';
+            if (r.fotoUrl && r.fotoUrl.startsWith('http')) {
+              iconHTML = `<button data-tarik-action="image" data-tarik-value="${tarikEncodeData(r.fotoUrl)}" class="text-green-500 hover:text-green-700 hover:scale-110 transition-transform" title="Lihat Foto"><i class="bi bi-check-circle-fill text-xl"></i></button>`;
+              iconHTML += `<button data-tarik-action="photo" data-tarik-index="${Number(r._originalIndex)}" class="ml-2.5 text-brand-stone hover:text-[#7651FF] hover:scale-110 transition-transform" title="Ganti/Replace Foto"><i class="bi bi-pencil-square text-lg"></i></button>`;
+            } else if (r.base64) {
+              iconHTML = `<button data-tarik-action="photo" data-tarik-index="${Number(r._originalIndex)}" class="text-brand-coral hover:text-brand-light hover:scale-110 transition-transform relative" title="Foto Siap Disubmit"><i class="bi bi-file-earmark-image-fill text-xl"></i><div class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white"></div></button>`;
+            } else {
+              iconHTML = `<button data-tarik-action="photo" data-tarik-index="${Number(r._originalIndex)}" class="text-brand-stone hover:text-brand-coral hover:scale-110 transition-transform" title="Upload Foto"><i class="bi bi-file-earmark-plus-fill text-xl"></i></button>`;
+            }
+            
+            iconHTML += ` <button data-tarik-action="delete" data-tarik-index="${Number(r._originalIndex)}" class="ml-3 text-brand-stone hover:text-red-500 hover:scale-110 transition-transform" title="Hapus Data"><i class="bi bi-trash text-lg"></i></button>`;
+            
+            // Render input fields for spreadsheet style
+            const inputClass = "w-full bg-[#FAFAFA] focus:bg-white border border-[#EAEBFA] hover:border-[#7651FF] focus:border-[#7651FF] focus:ring-2 focus:ring-[#7651FF]/10 rounded-lg px-2.5 py-1 font-bold text-[11px] text-brand-black outline-none transition-all shadow-sm";
+            
+            // Cek keaktifan baris (jika bukan placeholder atau jika ada salah satu data terisi)
+            const isRowActive = !r._placeholder || (r.keterangan && r.keterangan.trim() !== "") || (r.nominal && r.nominal > 0) || r.base64 || (r.jenis && r.jenis.trim() !== "");
+            
+            // Status validasi kolom wajib
+            const isKeteranganInvalid = isRowActive && (!r.keterangan || r.keterangan.trim() === "");
+            const isNominalInvalid = isRowActive && (!r.nominal || Number(r.nominal) <= 0);
+            
+            let isCabangInvalid = false;
+            if (tipe === "Central Kitchen") {
+              isCabangInvalid = isRowActive && (!r.cabang || r.cabang.trim() === "");
+            }
+            
+            let isJenisInvalid = false;
+            if (isRowActive) {
+               let validJenis = (APP_DATA.jenisPengeluaran || []).map(j => String(j).trim().toUpperCase());
+               if (validJenis.length === 0) {
+                  validJenis = ["LAIN-LAIN", "OPERASIONAL", "OPERASIONAL TOKO", "BAHAN BAKU", "TELUR", "AIR GALON", "GAS", "BAHAN KEMAS", "BAHAN BAKU & KEMAS"];
+               }
+               const inputJenis = String(r.jenis || "").trim().toUpperCase();
+               isJenisInvalid = !validJenis.includes(inputJenis);
+            }
+
+            const getBorderClass = (isInvalid) => isInvalid ? "w-full bg-[#FFF5F5] border border-red-300 hover:border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-500/10 rounded-lg px-2.5 py-1 font-bold text-[11px] text-brand-black outline-none transition-all shadow-sm" : inputClass;
+
+            let cabangHTML = '';
+            if (tipe === "Central Kitchen") {
+              cabangHTML = `<div class="relative w-full">
+                <input type="text" id="tarik-cabang-${Number(r._originalIndex)}" data-row="${Number(r._originalIndex)}" data-col="0" data-tarik-field="cabang" data-tarik-autocomplete="cabang" value="${tarikEscapeHtml(r.cabang || '')}" class="${getBorderClass(isCabangInvalid)} tarik-grid-input uppercase font-bold" placeholder="..." autocomplete="off">
+                <div class="absolute top-full left-0 mt-1 bg-white border border-brand-stone rounded-xl shadow-xl max-h-48 overflow-y-auto hidden z-50 flex flex-col p-1 min-w-[200px] text-left" id="tarik-cabang-list-${r._originalIndex}"></div>
+              </div>`;
+            } else {
+              cabangHTML = `<span class="px-2 py-1 font-bold text-brand-black opacity-60 text-[11px]">${tarikEscapeHtml(r.cabang || '-')}</span>`;
+            }
+            
+            const keteranganHTML = `<input type="text" data-row="${Number(r._originalIndex)}" data-col="1" data-tarik-field="keterangan" value="${tarikEscapeHtml(r.keterangan || '')}" class="${getBorderClass(isKeteranganInvalid)} tarik-grid-input" placeholder="..." autocomplete="off">`;
+            const jenisHTML = `<div class="relative w-full">
+              <input type="text" id="tarik-jenis-${Number(r._originalIndex)}" data-row="${Number(r._originalIndex)}" data-col="2" data-tarik-field="jenis" data-tarik-autocomplete="jenis" value="${tarikEscapeHtml(r.jenis || '')}" class="${getBorderClass(isJenisInvalid)} tarik-grid-input uppercase" placeholder="..." autocomplete="off">
+              <div class="absolute top-full left-0 mt-1 bg-white border border-brand-stone rounded-xl shadow-xl max-h-48 overflow-y-auto hidden z-50 flex flex-col p-1 min-w-[200px] text-left" id="tarik-jenis-list-${r._originalIndex}"></div>
+            </div>`;
+            const jumlahHTML = `<input type="text" data-row="${Number(r._originalIndex)}" data-col="3" data-tarik-field="jumlah" value="${tarikEscapeHtml(r.jumlah || '')}" class="${inputClass} tarik-grid-input" placeholder="..." autocomplete="off">`;
+            
+            const formattedNominal = r.nominal > 0 ? fmtRp(r.nominal) : '';
+            const nominalHTML = `<input type="text" data-row="${Number(r._originalIndex)}" data-col="4" data-tarik-field="nominal" data-tarik-money="true" value="${tarikEscapeHtml(formattedNominal)}" class="${getBorderClass(isNominalInvalid)} tarik-grid-input text-right" placeholder="0" autocomplete="off">`;
+            
+            const elimHTML = `<div class="flex items-center justify-center py-1">
+              <button data-tarik-action="eliminate" data-tarik-index="${Number(r._originalIndex)}" class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${r.eliminasi === 'YA' ? 'bg-[#FF5A5F]' : 'bg-[#E2E8F0]'}">
+                <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${r.eliminasi === 'YA' ? 'translate-x-6' : 'translate-x-1'}"></span>
+              </button>
+              <span class="ml-2 text-[11px] font-bold ${r.eliminasi === 'YA' ? 'text-red-500' : 'text-green-500'} w-12 text-left">${tarikEscapeHtml(r.eliminasi || 'TIDAK')}</span>
+            </div>`;
+
+            // Adding row indicator for missing photo
+            const needsPhoto = (!r.fotoUrl || r.fotoUrl === "-") && !r.base64 && ((r.keterangan && r.keterangan.trim() !== "") || (r.nominal && r.nominal > 0));
+            const rowClassInfo = needsPhoto ? "bg-red-50/30" : "";
+
+            html += `<tr class="tarik-date-row-${d} hidden hover:bg-brand-paper transition-colors bg-white ${rowClassInfo}">
+              <td class="p-2 pl-8 font-bold text-brand-black text-xs">${tarikEscapeHtml(r.no)}</td>
+              <td class="p-2 font-bold text-brand-black opacity-40 text-[11px] whitespace-nowrap">${tarikEscapeHtml(fmtTarikTgl(r.tanggal))}</td>
+              <td class="p-2 text-[11px]">${cabangHTML}</td>
+              <td class="p-2 text-[11px]">${keteranganHTML}</td>
+              <td class="p-2 text-[11px]">${jenisHTML}</td>
+              <td class="p-2 text-[11px]">${jumlahHTML}</td>
+              <td class="p-2 text-[11px]">${nominalHTML}</td>
+              <td class="p-2 text-center text-[11px]">${elimHTML}</td>
+              <td class="p-2 text-center">${iconHTML}</td>
+            </tr>`;
+          });
+        }
+        
+        // Add "Tambah Data" button at the end of each date group (adds directly now)
+        if (!isLainnya) {
+           html += `<tr class="tarik-date-row-${d} hidden bg-[#FAFAFA] border-b border-brand-stone">
+            <td colspan="9" class="p-3 text-center">
+              <button data-tarik-action="add-row" data-tarik-value="${tarikEncodeData(d)}" class="text-brand-coral hover:text-brand-light hover:bg-[#F2F0FF] border border-dashed border-brand-coral/50 transition-all font-bold text-[11px] px-6 py-2 rounded-lg w-full max-w-sm mx-auto flex items-center justify-center gap-2">
+                <i class="bi bi-plus-circle-fill"></i> Tambah Baris Tanggal ${d}
+              </button>
+            </td>
+          </tr>`;
+        }
+      }
+      tbody.html(html);
+      
+      window.__expandedDates.forEach(d => {
+        $('.tarik-date-row-' + d).removeClass('hidden');
+        $('#icon-tarik-date-' + d).css('transform', 'rotate(180deg)');
+        $('#btn-tarik-date-' + d).data('expanded', true);
+      });
+    }
+
+    window.updateTarikField = function(idx, field, val) {
+      const r = TARIK_DATA[idx];
+      r[field] = val;
+      if (!r.isNew) {
+         r.isEdited = true;
+      }
+    };
+
+    window.showTableAutocomplete = function(input, type, idx) {
+       const val = input.value.toLowerCase();
+       let source = [];
+       let listId = "";
+       if (type === 'cabang') {
+          source = APP_DATA.cabangCentralKitchen || [];
+          listId = `#tarik-cabang-list-${idx}`;
+       } else if (type === 'jenis') {
+          source = APP_DATA.jenisPengeluaran || [];
+          listId = `#tarik-jenis-list-${idx}`;
+       } else if (type === 'eliminasi') {
+          source = ['TIDAK', 'YA'];
+          listId = `#tarik-eliminasi-list-${idx}`;
+       }
+       
+       const listEl = $(listId).empty();
+       
+       let matches = source.filter(item => item.toLowerCase().includes(val));
+       if (val === '' || type === 'eliminasi') {
+          matches = source;
+       }
+       
+       // Limit to top 15 results to prevent performance issues
+       const displayedMatches = matches.slice(0, 15);
+       
+       displayedMatches.forEach(m => {
+          const opt = $('<div class="p-1.5 px-2.5 hover:bg-[#F2F0FF] hover:text-[#7651FF] cursor-pointer text-[11px] font-bold text-[#1E1E2F] transition-colors rounded-lg text-left"></div>').text(m);
+          if (type === 'eliminasi') {
+             opt.removeClass('text-left').addClass('text-center');
+             if (m === 'YA') opt.addClass('text-red-500');
+             else opt.addClass('text-green-500');
+          }
+          opt.on('mousedown', function(e) {
+             e.preventDefault();
+             $(input).val(m);
+             updateTarikField(Number(idx), type, m);
+             input.dispatchEvent(new Event('input', { bubbles: true }));
+             listEl.addClass('hidden');
+          });
+          listEl.append(opt);
+       });
+       
+       if (matches.length > displayedMatches.length) {
+          const dots = $('<div class="p-1.5 text-center text-[10px] font-bold text-brand-muted italic border-t border-brand-stone">...</div>');
+          listEl.append(dots);
+       }
+       
+       if (matches.length > 0) {
+          listEl.removeClass('hidden');
+       } else {
+          listEl.addClass('hidden');
+       }
+    };
+
+    window.filterTableAutocomplete = function(input, type, idx) {
+       window.showTableAutocomplete(input, type, idx);
+    };
+
+    window.hideTableAutocomplete = function(input) {
+       const parent = $(input).parent();
+       const listEl = parent.find('.absolute');
+       setTimeout(() => {
+          listEl.addClass('hidden');
+       }, 180);
+    };
+
+    window.toggleEliminasiDirectly = async function(idx, btn) {
+       const r = TARIK_DATA[idx];
+       const newVal = r.eliminasi === 'YA' ? 'TIDAK' : 'YA';
+       
+       if (r.receiptId) {
+         if (!await tarikConfirmReceiptScope(r, newVal === 'YA' ? 'Eliminasi' : 'Batalkan eliminasi')) return;
+         TARIK_DATA.forEach((row, index) => { if (row.receiptId === r.receiptId) updateTarikField(index, 'eliminasi', newVal); });
+         renderTarikTable(); return;
+       }
+       // Update internal model
+       updateTarikField(idx, 'eliminasi', newVal);
+       
+       // Update UI state directly
+       const circle = $(btn).find('span');
+       const label = $(btn).next('span');
+       
+       if (newVal === 'YA') {
+          $(btn).removeClass('bg-[#E2E8F0]').addClass('bg-[#FF5A5F]');
+          circle.removeClass('translate-x-1').addClass('translate-x-6');
+          label.removeClass('text-green-500').addClass('text-red-500').text('YA');
+       } else {
+          $(btn).removeClass('bg-[#FF5A5F]').addClass('bg-[#E2E8F0]');
+          circle.removeClass('translate-x-6').addClass('translate-x-1');
+          label.removeClass('text-red-500').addClass('text-green-500').text('TIDAK');
+       }
+    };
+    
+    window.updateTarikNominalField = function(idx, val) {
+      const r = TARIK_DATA[idx];
+      r.nominal = parseIndoNumber(val);
+      if (!r.isNew) {
+         r.isEdited = true;
+      }
+    };
+
+    window.updateElimSelectColor = function(selectEl) {
+      const val = $(selectEl).val();
+      if (val === 'YA') {
+        $(selectEl).removeClass('text-green-500').addClass('text-red-500');
+      } else {
+        $(selectEl).removeClass('text-red-500').addClass('text-green-500');
+      }
+    };
+
+    window.addTarikRowDirectly = function(d) {
+       const payloadBulanStr = String($('#tarikBulan').val()).padStart(2, '0');
+       const payloadTahunStr = $('#tarikTahun').val();
+       const tglStr = `${String(d).padStart(2, '0')}-${payloadBulanStr}-${payloadTahunStr}`;
+       const tipe = $('#tarikTipe').val();
+       const cabang = $('#tarikCabangInput').val();
+
+       const dayRows = TARIK_DATA.filter(r => tarikSameDate(r.tanggal, d, payloadBulanStr, payloadTahunStr) && !r.isDeleted);
+       
+       const nextNo = tarikNextAvailableNo(dayRows);
+       
+       const newRow = {
+          sheetRowIndex: null,
+          no: nextNo,
+          tanggal: tglStr,
+          cabang: tipe === "Central Kitchen" ? "" : (cabang || "").toUpperCase(),
+          keterangan: "",
+          jenis: "",
+          jumlah: "",
+          nominal: 0,
+          eliminasi: "TIDAK",
+          fotoUrl: "",
+          base64: "",
+          isNew: true,
+          _placeholder: false
+       };
+       
+       let insertIdx = -1;
+       for (let i = TARIK_DATA.length - 1; i >= 0; i--) {
+          if (tarikSameDate(TARIK_DATA[i].tanggal, d, payloadBulanStr, payloadTahunStr)) {
+             insertIdx = i + 1;
+             break;
+          }
+       }
+       
+       if (insertIdx !== -1) {
+          TARIK_DATA.splice(insertIdx, 0, newRow);
+       } else {
+          TARIK_DATA.push(newRow);
+       }
+       
+       window.__lastExpandedDate = d;
+       const scrollPos = $(window).scrollTop();
+       renderTarikTable(d);
+       $(window).scrollTop(scrollPos);
+    };
+
+    async function openTarikModal(idx) {
+      const row = TARIK_DATA[idx];
+      $('#tarikRowIndex').val(idx);
+      $('#tarikModalDesc').text(`Tgl ${row.tanggal} | ${row.cabang} | Rp ${fmtRp(row.nominal)}`);
+      
+      if (row.base64) {
+        $('#tarikPreviewImg').attr('src', row.base64);
+        $('#tarikImagePreview').removeClass('hidden');
+        $('#tarikUploadPrompt').addClass('hidden');
+      } else if (row.fotoUrl && row.fotoUrl.startsWith('http')) {
+        clearTarikPreview();
+        try {
+          const photo = await callServer('getLegacyPhoto', row.fotoUrl);
+          const dataUrl = typeof photo === 'string' ? photo : photo && photo.dataUrl;
+          const safeUrl = window.legacySafeImageUrl ? window.legacySafeImageUrl(dataUrl) : '';
+          if (!safeUrl) throw new Error('Data foto tidak valid.');
+          $('#tarikPreviewImg').attr('src', safeUrl);
+          $('#tarikImagePreview').removeClass('hidden');
+          $('#tarikUploadPrompt').addClass('hidden');
+        } catch (error) {
+          Swal.fire('Foto gagal dimuat', error.message, 'error');
+        }
+      } else {
+        clearTarikPreview();
+      }
+      
+      $('#tarikUploadModal').addClass('active');
+    }
+
+    function clearTarikPreview(e) {
+      if (e) e.stopPropagation();
+      $('#tarikFileInput').val('');
+      $('#tarikPreviewImg').attr('src', '');
+      $('#tarikImagePreview').addClass('hidden');
+      $('#tarikUploadPrompt').removeClass('hidden');
+    }
+
+    $(document).ready(function() {
+      // Tipe onChange Reset Link
+      $('.tarik-tipe-btn').on('click', function() {
+        $('#tarikLinkInput').val(''); // Reset link
+      });
+      $('#tarikPasteZone').on('click', function(e) {
+        if (e.target.id === 'tarikFileInput' || $(e.target).closest('button').length) return;
+        document.getElementById('tarikFileInput').click();
+      });
+      
+      $('#tarikFileInput').on('change', async function(e) {
+        if (this.files && this.files[0]) {
+          const b64 = await compressImage(this.files[0]);
+          $('#tarikPreviewImg').attr('src', 'data:image/jpeg;base64,' + b64);
+          $('#tarikImagePreview').removeClass('hidden');
+          $('#tarikUploadPrompt').addClass('hidden');
+        }
+      });
+      
+      $(document).on('paste', async function(e) {
+        // 1. Tarik Data Upload Modal
+        if ($('#tarikUploadModal').hasClass('active')) {
+          const items = (e.originalEvent.clipboardData || e.clipboardData).items;
+          for (let index in items) {
+            const item = items[index];
+            if (item.kind === 'file') {
+              e.preventDefault();
+              const blob = item.getAsFile();
+              const b64 = await compressImage(blob);
+              $('#tarikPreviewImg').attr('src', 'data:image/jpeg;base64,' + b64);
+              $('#tarikImagePreview').removeClass('hidden');
+              $('#tarikUploadPrompt').addClass('hidden');
+              break;
+            }
+          }
+          return;
+        }
+        
+        // 2. Listrik / Nota Manual Modal
+        if ($('#listrikModal').hasClass('active')) {
+          const items = (e.originalEvent.clipboardData || e.clipboardData).items;
+          for (let index in items) {
+            const item = items[index];
+            if (item.kind === 'file') {
+              e.preventDefault();
+              const blob = item.getAsFile();
+              const b64 = await compressImage(blob);
+              $('#listrikPreviewImg').attr('src', 'data:image/jpeg;base64,' + b64);
+              $('#listrikImagePreview').removeClass('hidden');
+              $('#listrikUploadPrompt').addClass('hidden');
+              break;
+            }
+          }
+          return;
+        }
+        
+        // 3. Main Input Page (Deteksi Foto)
+        const activePage = $('.nav-item.active-page').data('page') || 'inputPage';
+        const openModals = $('.modal-overlay.active').length;
+        if (activePage === 'inputPage' && openModals === 0) {
+          const items = (e.originalEvent.clipboardData || e.clipboardData).items;
+          const filesToHandle = [];
+          for (let index in items) {
+            const item = items[index];
+            if (item.kind === 'file') {
+              const blob = item.getAsFile();
+              filesToHandle.push(blob);
+            }
+          }
+          if (filesToHandle.length > 0) {
+            e.preventDefault();
+            handleFiles(filesToHandle);
+          }
+        }
+      });
+    });
+
+    function saveTarikFotoLocally() {
+      const idx = $('#tarikRowIndex').val();
+      const src = $('#tarikPreviewImg').attr('src') || "";
+      if (src.startsWith('data:image')) {
+        // HAPUS URL foto lama jika ada agar dianggap sebagai upload foto baru (replace)
+        TARIK_DATA[idx].fotoUrl = "";
+        TARIK_DATA[idx].base64 = src;
+        TARIK_DATA[idx].isEdited = true;
+        renderTarikTable(window.__lastExpandedDate);
+        closeModal('tarikUploadModal');
+        // Tampilkan toast bahwa foto berhasil disimpan secara lokal
+        Toast.fire({ icon: 'success', title: 'Foto berhasil disimpan secara lokal. Tekan tombol Push Data untuk mengirim ke spreadsheet.' });
+      } else if (src === "") {
+        // Pengguna sengaja mengosongkan/menghapus foto
+        TARIK_DATA[idx].fotoUrl = "";
+        TARIK_DATA[idx].base64 = "";
+        TARIK_DATA[idx].isEdited = true;
+        renderTarikTable(window.__lastExpandedDate);
+        closeModal('tarikUploadModal');
+        Toast.fire({ icon: 'success', title: 'Foto berhasil dihapus secara lokal. Tekan tombol Push Data untuk menyimpan perubahan.' });
+      } else if (src.startsWith('http')) {
+        // Foto tidak berubah (tetap menggunakan fotoUrl yang lama)
+        closeModal('tarikUploadModal');
+      } else {
+        Swal.fire('Oops', 'Pilih atau paste foto terlebih dahulu.', 'warning');
+      }
+    }
+    const TARIK_RECEIPT_CONFIRMATIONS = {};
+    function tarikConfirmedReceipts() { return Object.values(TARIK_RECEIPT_CONFIRMATIONS); }
+    async function tarikConfirmReceiptScope(row, action) {
+      const items = TARIK_DATA.filter(item => item.receiptId === row.receiptId);
+      const result = await Swal.fire({ title:action + ' seluruh nota?', html:'<p>Semua ' + items.length + ' item berikut ikut berubah:</p><ul>' + items.map(item => '<li>' + tarikEscapeHtml(item.tanggal + ' — ' + item.keterangan + ' — ' + fmtRp(item.nominal)) + '</li>').join('') + '</ul>', icon:'warning', showCancelButton:true, confirmButtonText:action + ' seluruh nota', cancelButtonText:'Batal' });
+      if (!result.isConfirmed) return false;
+      TARIK_RECEIPT_CONFIRMATIONS[row.receiptId] = { receiptId:row.receiptId, version:row.receiptVersion, itemIds:items.map(item => item.itemId).sort() };
+      return true;
+    }
+    function tarikHasPhoto(url) { return Boolean(url && String(url).trim() !== '-'); }
+    function tarikPhotoRemoved(row) { return tarikHasPhoto(row.originalFotoUrl) && !tarikHasPhoto(row.fotoUrl) && !row.base64; }
+    function tarikPhotoChangeCounts(rows) {
+      return { uploads:rows.filter(row => !row.isDeleted && row.base64).length,
+        removals:rows.filter(row => !row.isNew && (row.isDeleted ? tarikHasPhoto(row.originalFotoUrl) : tarikPhotoRemoved(row))).length };
+    }
+    function tarikHasUnsavedChanges() {
+      syncTarikVisibleInputsToModel();
+      return TARIK_DATA.some(row => row.isNew ? !row.isDeleted && Boolean(String(row.keterangan || '').trim() || Number(row.nominal) || row.base64 || row.fotoUrl || row.jenis || row.jumlah) : Boolean(row.isEdited || row.isDeleted || row.base64 || tarikPhotoRemoved(row)));
+    }
+    async function tarikConfirmDiscardDraft() {
+      if (!tarikHasUnsavedChanges()) return true;
+      const answer = await Swal.fire({title:'Ada perubahan belum dikirim', text:'Memuat ulang atau mereset data akan mengganti isian di halaman ini. Pilih Kembali untuk menyimpan perubahan terlebih dahulu.', icon:'warning', showCancelButton:true, confirmButtonText:'Lanjut tanpa menyimpan', cancelButtonText:'Kembali', focusCancel:true});
+      return answer.isConfirmed;
+    }
+    window.addEventListener('beforeunload', function(event) {
+      if (tarikHasUnsavedChanges()) { event.preventDefault(); event.returnValue = ''; }
+    });
+    async function tarikShowResult(result, title) {
+      const summary = result && result.summary;
+      const lines = summary ? [
+        'Baris ditambah: ' + summary.added, 'Baris diperbarui (termasuk foto): ' + summary.updated,
+        'Baris dihapus: ' + summary.deleted, 'File foto tersimpan: ' + summary.uploadedFiles,
+        'Baris memakai foto baru/pengganti: ' + summary.photoRows, 'Referensi foto dilepas: ' + summary.detachedPhotoRows + ' baris'
+      ] : ['Pengiriman sudah selesai.', 'Baris diproses: ' + Number(result && (result.itemCount || result.progress) || 0), 'Rincian terpisah tidak tersedia untuk pekerjaan versi lama.'];
+      if (result && result.warning) lines.push(result.warning);
+      lines.push('Data sudah tersimpan di server.');
+      await Swal.fire({title:title || 'Perubahan berhasil disimpan', html:'<div style="text-align:left">' + lines.map(line => '<p style="margin:8px 0">' + tarikEscapeHtml(line) + '</p>').join('') + '</div>', icon:result && result.warning ? 'warning' : 'success', confirmButtonText:'Selesai'});
+    }
+    async function tarikRefreshSavedResult(result, title, allowDiscard) {
+      const refreshed = await fetchTarikData({afterSave:Boolean(allowDiscard)});
+      const display = Object.assign({}, result);
+      if (refreshed === false) display.warning = [display.warning, 'Data tersimpan, tetapi tampilan belum berhasil diperbarui. Tarik ulang data sebelum mengedit lagi.'].filter(Boolean).join(' ');
+      await tarikShowResult(display, title);
+    }
+    async function tarikCheckPendingRecovery() {
+      try {
+        let cursor = '';
+        do {
+          Swal.fire({title:'Memeriksa pengiriman di server...', allowOutsideClick:false, showConfirmButton:false, didOpen:() => Swal.showLoading()});
+          const page = await window.PortalCore.api('LIST_PENDING_TARIK_JOBS', {cursor});
+          cursor = page.nextCursor || '';
+          const jobs = page.jobs || [];
+          if (!jobs.length && !cursor) return Swal.fire({title:'Tidak ada pengiriman tertunda', text:'Semua pengiriman yang dapat diakses akun Anda sudah selesai atau dibatalkan.', icon:'success', confirmButtonText:'Tutup', customClass:{popup:'portal-pending-empty-dialog'}});
+          let selectedId = '';
+          const answer = await Swal.fire({title:'Pengiriman tertunda',
+            html:'<div class="portal-pending-intro">Pilih satu pengiriman untuk melihat rincian dan menentukan tindakan.</div><div class="portal-pending-list">' + jobs.map(tarikPendingJobCard).join('') + '</div>',
+            customClass:{popup:'portal-pending-dialog', htmlContainer:'portal-pending-html'},
+            showConfirmButton:jobs.length > 0, confirmButtonText:'Lihat rincian', showDenyButton:!!cursor, denyButtonText:'Halaman berikutnya', showCancelButton:true, cancelButtonText:'Tutup',
+            didOpen:popup => {
+              const confirm = Swal.getConfirmButton();
+              if (confirm) confirm.disabled = true;
+              popup.querySelectorAll('[data-pending-job]').forEach(button => button.addEventListener('click', () => {
+                selectedId = button.dataset.pendingJob;
+                popup.querySelectorAll('[data-pending-job]').forEach(card => { const active = card === button; card.classList.toggle('is-selected', active); card.setAttribute('aria-pressed', active ? 'true' : 'false'); });
+                if (confirm) confirm.disabled = false;
+              }));
+            },
+            preConfirm:() => selectedId || false});
+          if (answer.isConfirmed && answer.value) return tarikOfferRecovery({status:'RECOVERY_REQUIRED', operationId:answer.value});
+          if (!answer.isDenied) return;
+        } while (cursor);
+      } catch(error) {
+        await Swal.fire('Status belum dapat dipastikan',error.message,'warning');
+      }
+    }
+
+    function tarikJobLabel(status) {
+      return ({COMPLETED:'Selesai', RECOVERY_REQUIRED:'Perlu dilanjutkan', PREPARED:'Disiapkan', PROCESSING:'Sedang diproses', FAILED:'Gagal'})[status] || status || 'Perlu diperiksa';
+    }
+
+    function tarikPendingPeriod(period) {
+      const text = String(period || '');
+      if (!/^\d{6}$/.test(text)) return text || 'Periode belum tersedia';
+      const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+      return months[Number(text.slice(4, 6)) - 1] + ' ' + text.slice(0, 4);
+    }
+
+    function tarikPendingJobCard(job) {
+      const esc = tarikEscapeHtml;
+      const statusClass = job.status === 'PREPARED' ? 'is-prepared' : job.status === 'RECOVERY_REQUIRED' ? 'is-recovery' : job.status === 'FAILED' ? 'is-failed' : 'is-processing';
+      const created = job.createdAt ? new Date(job.createdAt).toLocaleString('id-ID', {day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : 'Waktu tidak tersedia';
+      return '<button type="button" class="portal-pending-card" data-pending-job="' + esc(job.operationId) + '" aria-pressed="false">' +
+        '<span class="portal-pending-card-top"><span class="portal-pending-branch">' + esc(job.branchName) + '</span><span class="portal-pending-status ' + statusClass + '">' + esc(tarikJobLabel(job.status)) + '</span></span>' +
+        '<span class="portal-pending-meta"><span><i class="bi bi-calendar3"></i>' + esc(tarikPendingPeriod(job.period)) + '</span><span><i class="bi bi-clock"></i>' + esc(created) + '</span></span>' +
+        '<span class="portal-pending-progress"><span><b>' + Number(job.total || 0) + '</b> baris dalam pengiriman</span><span><b>' + Number(job.progress || 0) + '</b> sudah tercatat</span></span>' +
+        '<span class="portal-pending-card-action">Pilih pengiriman <i class="bi bi-chevron-right"></i></span></button>';
+    }
+
+    function tarikRecoveryDetails(status) {
+      const esc = tarikEscapeHtml;
+      const rows = (status.items || []).map(item => '<tr><td>' + esc(item.date) + '</td><td>' + esc(item.description) + '<br><small>Baris ' + esc(item.rowIndex) + ' | ' + esc(item.action) + '</small></td><td style="text-align:right;white-space:nowrap">Rp' + Number(item.amount || 0).toLocaleString('id-ID') + '</td><td>' + esc(item.status) + '</td></tr>').join('');
+      return '<div style="text-align:left"><p><b>' + esc(status.branchName) + '</b> | Periode ' + esc(status.period) + '</p><p>' + esc(tarikJobLabel(status.status)) + ' | Progres tercatat ' + Number(status.progress || 0) + '/' + Number(status.total || 0) + ' baris</p>' +
+        (status.createdAt ? '<p>Dibuat: ' + esc(new Date(status.createdAt).toLocaleString('id-ID')) + '</p>' : '') +
+        '<div style="max-height:320px;overflow:auto"><table style="width:100%;font-size:12px"><thead><tr><th>Tanggal</th><th>Perubahan</th><th>Nominal</th><th>Status</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+        '<p>Progres belum terkonfirmasi tidak berarti baris pasti belum ditulis. Pemulihan memakai pekerjaan yang sama untuk memeriksa dan melanjutkan penyimpanan.</p>' +
+        (status.validationError ? '<p>' + esc(status.validationError) + '</p>' : '') + '<details><summary>Kode operasi</summary>' + esc(status.operationId) + '</details></div>';
+    }
+
+    async function tarikCancelPendingJob(status) {
+      const answer = await Swal.fire({title:'Batalkan pengiriman tertunda?',
+        text:'Server akan membatalkan hanya jika belum ada perubahan pada Spreadsheet atau database. Setelah dibatalkan, isian tersebut tidak akan dikirim.',
+        icon:'warning', showCancelButton:true, confirmButtonText:'Periksa dan batalkan', cancelButtonText:'Kembali', focusCancel:true});
+      if (!answer.isConfirmed) return false;
+      Swal.fire({title:'Memeriksa keamanan pembatalan...', allowOutsideClick:false, showConfirmButton:false, didOpen:() => Swal.showLoading()});
+      try {
+        const cancelled = await window.PortalCore.api('CANCEL_TARIK_JOB', {operationId:status.operationId});
+        window.sessionStorage.removeItem('nota-tarik-recovery');
+        await Swal.fire('Pengiriman dibatalkan', Number(cancelled.total || status.total || 0) + ' baris tidak dikirim. Anda dapat melakukan Push Data baru.', 'success');
+        return true;
+      } catch (error) {
+        await Swal.fire('Tidak dapat dibatalkan otomatis', String(error.message || error), 'warning');
+        return false;
+      }
+    }
+
+    async function tarikResolvePendingFromSpreadsheet(status) {
+      const answer = await Swal.fire({title:'Selaraskan pekerjaan tertunda?',
+        html:'<div style="text-align:left"><p>Baris yang sudah diubah manual mengikuti Spreadsheet.</p><p>Baris yang belum berubah tetap memakai input pekerjaan webapp agar data yang belum tertulis tidak hilang.</p><p>Setelah selesai, database disesuaikan dan pekerjaan ditutup.</p></div>',
+        icon:'question', showCancelButton:true, confirmButtonText:'Selaraskan data', cancelButtonText:'Kembali'});
+      if (!answer.isConfirmed) return false;
+      Swal.fire({title:'Menyelaraskan data Spreadsheet...', text:'Jangan menutup halaman sampai proses selesai.', allowOutsideClick:false, showConfirmButton:false, didOpen:() => Swal.showLoading()});
+      try {
+        const resolved = await window.PortalCore.api('RESOLVE_TARIK_JOB_FROM_SPREADSHEET', {operationId:status.operationId});
+        if (!resolved || !resolved.success) throw new Error(resolved && resolved.message || 'Penyelarasan belum selesai.');
+        window.sessionStorage.removeItem('nota-tarik-recovery');
+        await tarikRefreshSavedResult(resolved, 'Database sudah mengikuti Spreadsheet');
+        return true;
+      } catch (error) {
+        await Swal.fire('Data belum dapat diselaraskan', String(error.message || error), 'warning');
+        return false;
+      }
+    }
+
+    async function tarikShowRecoveryError(error) {
+      const message = String(error && error.message || error);
+      const match = message.match(/TARIK-[A-Za-z0-9_-]+/);
+      const answer = await Swal.fire({title:match ? 'Pengiriman terhalang pekerjaan sebelumnya' : 'Status belum dapat dipastikan',
+        text:match ? 'Ada pekerjaan sebelumnya yang belum selesai atau perlu pemulihan. Buka rinciannya sebelum mengirim ulang. ' + message : message,
+        icon:'warning', showCancelButton:!!match, confirmButtonText:match ? 'Lihat pengiriman yang menghalangi' : 'OK', cancelButtonText:'Tutup'});
+      if (match && answer.isConfirmed) {
+        try { const status = await window.PortalCore.api('GET_TARIK_JOB', {operationId:match[0]});
+          await Swal.fire({title:'Rincian pengiriman yang menghalangi', html:tarikRecoveryDetails(status), width:760, confirmButtonText:'Tutup'});
+        } catch(detailError) { await Swal.fire('Rincian belum dapat dibuka', String(detailError.message) + ' Jika pekerjaan milik pengguna lain, minta Admin memeriksanya.', 'warning'); }
+      }
+    }
+
+    let TARIK_RECOVERY_RUNNING = false;
+    async function tarikOfferRecovery(result) {
+      if (TARIK_RECOVERY_RUNNING) return;
+      if (!result || result.status !== 'RECOVERY_REQUIRED') return;
+      const identity = result.operationId ? {operationId:result.operationId} : {clientRequestId:result.clientRequestId};
+      window.sessionStorage.setItem('nota-tarik-recovery', JSON.stringify(identity));
+      TARIK_RECOVERY_RUNNING = true;
+      try {
+        const status = await window.PortalCore.api('GET_TARIK_JOB', identity);
+        if (status.status !== 'COMPLETED') {
+          let cancelPending = false;
+          const answer = await Swal.fire({title:'Rincian pengiriman tertunda', html:tarikRecoveryDetails(status), width:760,
+            showConfirmButton:true, showDenyButton:!status.validationError, showCancelButton:true,
+            confirmButtonText:'Selaraskan, Spreadsheet prioritas', denyButtonText:'Lanjutkan versi webapp', cancelButtonText:'Tutup',
+            footer:'<button type="button" class="portal-pending-cancel" data-cancel-pending>Batalkan jika belum ada perubahan</button>',
+            didOpen:popup => {
+              const button = popup.querySelector('[data-cancel-pending]');
+              if (button) button.addEventListener('click', () => { cancelPending = true; Swal.close(); });
+            }});
+          if (cancelPending) { await tarikCancelPendingJob(status); return; }
+          if (answer.isConfirmed) { await tarikResolvePendingFromSpreadsheet(status); return; }
+          if (!answer.isDenied || status.validationError) return;
+        }
+        Swal.fire({title:'Melanjutkan pekerjaan...', allowOutsideClick:false, showConfirmButton:false, didOpen:() => Swal.showLoading()});
+        const resumed = status.status === 'COMPLETED' ? status.result : await window.PortalCore.api('RESUME_TARIK_JOB', {operationId:status.operationId});
+        Swal.close();
+        if (resumed && resumed.success) { window.sessionStorage.removeItem('nota-tarik-recovery'); await tarikRefreshSavedResult(resumed); }
+        else await Swal.fire('Perlu dilanjutkan', resumed && resumed.message || 'Pekerjaan belum selesai.', 'warning');
+      } catch (error) {
+        await tarikShowRecoveryError(error);
+      } finally { TARIK_RECOVERY_RUNNING = false; }
+    }
+
+    let _isTarikSubmitting = false;
+    async function submitTarikData() {
+      let saveCompleted = false;
+      let savedResult = null;
+      // --- PROTEKSI DOUBLE-SUBMIT ---
+      if (_isTarikSubmitting) {
+        return Swal.fire('Harap Tunggu', 'Proses push data sedang berlangsung, mohon tunggu hingga selesai.', 'warning');
+      }
+
+      // Sinkronkan DOM ke model sebelum menyusun payload. Ini juga menangkap
+      // pilihan autocomplete yang nilainya diisi secara programatis.
+      syncTarikVisibleInputsToModel();
+      const dataWithIndex = TARIK_DATA.map((r, idx) => ({ ...r, _originalIndex: idx }));
+      
+      const newItems = dataWithIndex.filter(r => r.isNew && !r.isDeleted && ((r.keterangan && r.keterangan.trim() !== "") || (r.nominal && Number(r.nominal) > 0) || r.base64));
+      const editedItems = dataWithIndex.filter(r => r.isEdited && !r.isNew && !r.isDeleted);
+      // photoItems: hanya item yang yang punya base64 atau ingin dihapus (fotoUrl === "")
+      // Foto dari item isNew dihandle via clientIndex di server setelah row dibuat
+      const photoItems = dataWithIndex.filter(r => !r.isDeleted && !r.isNew && (r.base64 || tarikPhotoRemoved(r)));
+      const photoCounts = tarikPhotoChangeCounts(dataWithIndex);
+      const deletedItems = dataWithIndex.filter(r => r.isDeleted && !r.isNew);
+      
+      if (newItems.length === 0 && editedItems.length === 0 && photoItems.length === 0 && deletedItems.length === 0) {
+        return Swal.fire('Info', 'Tidak ada data baru, perubahan, foto, atau hapusan untuk disubmit.', 'info');
+      }
+      
+      // --- VALIDASI FRONTEND SEBELUM PUSH ---
+      const tipeValForCheck = $('#tarikTipe').val();
+      const activeItemsToValidate = [...newItems, ...editedItems];
+      for (const item of activeItemsToValidate) {
+         const tglDay = parseInt(String(item.tanggal).split(/[-/]/)[0]) || "Baru";
+         const displayNo = item.no || "Baru";
+         
+         // 1. Validasi Keterangan
+         if (!item.keterangan || String(item.keterangan).trim() === "") {
+            return Swal.fire('Validasi Gagal', `Baris pada Tanggal ${tglDay} Nomor ${displayNo} memiliki Keterangan kosong. Harap isi terlebih dahulu.`, 'error');
+         }
+         
+         // 2. Validasi Jenis
+         if (!item.jenis || String(item.jenis).trim() === "") {
+            return Swal.fire('Validasi Gagal', `Baris pada Tanggal ${tglDay} Nomor ${displayNo} memiliki Jenis/Kategori kosong. Harap pilih dari dropdown.`, 'error');
+         }
+         let validJenis = (APP_DATA.jenisPengeluaran || []).map(j => String(j).trim().toUpperCase());
+         if (validJenis.length === 0) {
+            validJenis = ["LAIN-LAIN", "OPERASIONAL", "OPERASIONAL TOKO", "BAHAN BAKU", "TELUR", "AIR GALON", "GAS", "BAHAN KEMAS", "BAHAN BAKU & KEMAS"];
+         }
+         const inputJenis = String(item.jenis).trim().toUpperCase();
+         if (!validJenis.includes(inputJenis)) {
+            return Swal.fire('Validasi Gagal', `Baris pada Tanggal ${tglDay} Nomor ${displayNo} memiliki Jenis '${item.jenis}' yang tidak valid. Harap pilih kategori resmi dari dropdown.`, 'error');
+         }
+         
+         // 3. Validasi Nominal
+         const nominalNum = Number(item.nominal);
+         if (isNaN(nominalNum) || nominalNum <= 0) {
+            return Swal.fire('Validasi Gagal', `Baris pada Tanggal ${tglDay} Nomor ${displayNo} memiliki Nominal yang tidak valid (harus lebih besar dari 0).`, 'error');
+         }
+         
+         // 4. Validasi Cabang (Hanya Central Kitchen) - Boleh Kosong
+         if (tipeValForCheck === "Central Kitchen" && item.cabang && String(item.cabang).trim() !== "") {
+            const validCabang = (APP_DATA.cabangCentralKitchen || []).map(c => String(c).trim().toUpperCase());
+            const inputCabang = String(item.cabang).trim().toUpperCase();
+            if (!validCabang.includes(inputCabang)) {
+               return Swal.fire('Validasi Gagal', `Baris pada Tanggal ${tglDay} Nomor ${displayNo} memiliki Cabang '${item.cabang}' yang tidak valid. Harap pilih cabang resmi dari dropdown.`, 'error');
+            }
+         }
+      }
+      // --- END VALIDASI FRONTEND ---
+      
+      // --- DIALOG RINGKASAN KONFIRMASI (FITUR BARU) ---
+      let confirmationHtml = `
+         <div class="text-[13px] text-left space-y-2 text-[#1E1E2F]">
+            <p class="font-bold text-[14px] text-brand-black mb-3">Berikut adalah ringkasan perubahan yang akan Anda push:</p>
+            <div class="grid grid-cols-2 gap-2 bg-[#F8F9FC] p-4 rounded-xl border border-brand-stone/60">
+               <div class="flex flex-col">
+                  <span class="text-[10px] text-brand-muted uppercase font-black tracking-wider">Baris Baru</span>
+                  <span class="text-sm font-black text-[#20C997]">+ ${newItems.length} Baris</span>
+               </div>
+               <div class="flex flex-col">
+                  <span class="text-[10px] text-brand-muted uppercase font-black tracking-wider">Perubahan</span>
+                  <span class="text-sm font-black text-[#7651FF]">${editedItems.length} Baris</span>
+               </div>
+               <div class="flex flex-col mt-2">
+                  <span class="text-[10px] text-brand-muted uppercase font-black tracking-wider">Dihapus</span>
+                  <span class="text-sm font-black text-[#FF6B6B]">- ${deletedItems.length} Baris</span>
+               </div>
+               <div class="flex flex-col mt-2">
+                  <span class="text-[10px] text-brand-muted uppercase font-black tracking-wider">Baris dengan foto baru/pengganti</span>
+                  <span class="text-sm font-black text-yellow-600">${photoCounts.uploads} Baris</span>
+               </div>
+            </div>
+            <p class="text-[11px] text-brand-muted mt-3 italic font-semibold"><i class="bi bi-info-circle mr-1"></i> Foto dilepas dari ${photoCounts.removals} baris. Satu file foto dapat digunakan beberapa item.</p>
+         </div>
+      `;
+
+      const confirmResult = await Swal.fire({
+         title: 'Kirim Perubahan Data?',
+         html: confirmationHtml,
+         icon: 'question',
+         showCancelButton: true,
+         confirmButtonColor: '#7651FF',
+         cancelButtonColor: '#EAEBFA',
+         confirmButtonText: 'Ya, Push Data!',
+         cancelButtonText: 'Batal',
+         customClass: { cancelButton: 'text-brand-black font-bold' }
+      });
+
+      if (!confirmResult.isConfirmed) return;
+      // --- END DIALOG RINGKASAN KONFIRMASI ---
+      
+      _isTarikSubmitting = true;
+      toggleBtnState('btnSubmitTarik', true);
+      Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'Menyimpan perubahan...', showConfirmButton: false, didOpen: () => { Swal.showLoading() } });
+      
+      try {
+        const tipe = $('#tarikTipe').val();
+        const link = await ensureTarikPermanentLink();
+        if (!link) { Swal.close(); return; }
+        const periode = getTarikPeriodeString();
+        
+        const batchPayload = {
+           link,
+           tipe,
+           periode,
+           bulan: $('#tarikBulan').val(),
+           tahun: $('#tarikTahun').val(),
+           confirmedReceipts: tarikConfirmedReceipts(),
+           deletedItems: deletedItems.map(item => ({ sheetRowIndex: item.sheetRowIndex, tanggal: item.tanggal, rowId:item.rowId, version:item.version })),
+           editedItems: editedItems.map(item => ({
+              sheetRowIndex: item.sheetRowIndex,
+              rowId:item.rowId, version:item.version, tanggal:item.tanggal,
+              cabang: item.cabang,
+              keterangan: item.keterangan,
+              jenis: item.jenis,
+              jumlah: item.jumlah,
+              nominal: item.nominal,
+              eliminasi: item.eliminasi,
+              removePhoto:tarikPhotoRemoved(item),
+              fotoUrl: item.fotoUrl || ""
+           })),
+
+           // photoItems untuk foto yang ada di item LAMA (bukan isNew)
+           // Foto item BARU diproses di server via clientIndex setelah row dibuat
+           photoItemsExisting: photoItems.map(item => ({
+              clientIndex: item._originalIndex,
+              isNew: item.isNew,
+              sheetRowIndex: item.sheetRowIndex,
+              rowId:item.rowId, version:item.version, tanggal:item.tanggal,
+              tanggal: item.tanggal,
+              cabang: item.cabang,
+              keterangan: item.keterangan,
+              jenis: item.jenis,
+              jumlah: item.jumlah,
+              nominal: item.nominal,
+              no: item.no,
+              base64: item.base64,
+              removePhoto:tarikPhotoRemoved(item),
+              fotoUrl: item.fotoUrl
+           })),
+           // Foto item baru diproses via newItems dengan flag hasPhoto
+           newItems: newItems.map(item => ({
+              clientIndex: item._originalIndex,
+              tanggal: item.tanggal,
+              cabang: item.cabang,
+              keterangan: item.keterangan,
+              jenis: item.jenis,
+              jumlah: item.jumlah,
+              nominal: item.nominal,
+              eliminasi: item.eliminasi,
+              hasPhoto: !!(item.base64 && !item.fotoUrl),
+              base64: (item.base64 && !item.fotoUrl) ? item.base64 : null
+           }))
+        };
+
+        const res = await callServer('submitTarikDataBatch', batchPayload);
+        if (!res.success) {
+           if (res.status === 'RECOVERY_REQUIRED') { await tarikOfferRecovery(res); return; }
+           throw new Error(res.message || "Gagal memproses data.");
+        }
+
+        // Warnings remain visible in the final result dialog.
+        saveCompleted = true;
+        savedResult = res;
+        // 1. Update added items
+        if (res.addedResults && res.addedResults.length > 0) {
+           res.addedResults.forEach(added => {
+              const idx = added.clientIndex;
+              if (TARIK_DATA[idx]) {
+                 TARIK_DATA[idx].isNew = false;
+                 TARIK_DATA[idx].sheetRowIndex = added.sheetRowIndex;
+                 TARIK_DATA[idx].no = added.no;
+                 TARIK_DATA[idx].rowId = added.rowId;
+                 TARIK_DATA[idx]._placeholder = false;
+              }
+           });
+        }
+
+        // 2. Update photo URLs
+        if (res.photoResults && res.photoResults.length > 0) {
+           res.photoResults.forEach(photo => {
+              const idx = photo.clientIndex;
+              if (TARIK_DATA[idx]) {
+                 TARIK_DATA[idx].fotoUrl = photo.fotoUrl;
+                 TARIK_DATA[idx].base64 = ""; 
+              }
+           });
+        }
+
+        // 3. Reset edited flag
+        TARIK_DATA.forEach(r => {
+           if (r.isEdited) r.isEdited = false;
+        });
+
+        // 4. Filter out deleted items
+        TARIK_DATA = TARIK_DATA.filter(r => !r.isDeleted);
+
+        // 4b. Bersihkan baris placeholder kosong yang tidak pernah diisi
+        TARIK_DATA = TARIK_DATA.filter(r => {
+           if (r._placeholder) {
+              const hasKet = r.keterangan && String(r.keterangan).trim() !== '';
+              const hasNom = r.nominal && Number(r.nominal) > 0;
+              const hasPhoto = r.fotoUrl || r.base64;
+              const hasJenis = r.jenis && String(r.jenis).trim() !== '';
+              return hasKet || hasNom || hasPhoto || hasJenis;
+           }
+           return true;
+        });
+
+        // 4c. Regenerasi placeholder kosong baru di bawah data riil hingga mencapai defaultRowsCount
+        const defaultRowsCount = tipe === "Central Kitchen" ? 35 : 15;
+        const payloadBulan = parseInt($('#tarikBulan').val());
+        const payloadTahun = parseInt($('#tarikTahun').val());
+        let maxDays = 31;
+        if (!isNaN(payloadBulan) && !isNaN(payloadTahun)) {
+           maxDays = new Date(payloadTahun, payloadBulan, 0).getDate();
+        }
+        const payloadBulanStr = String(payloadBulan).padStart(2, '0');
+        const payloadTahunStr = String(payloadTahun);
+        const cabangVal = (tipe === "Central Kitchen" ? "" : ($('#tarikCabang').val() || "")).toUpperCase();
+
+        for (let d = 1; d <= maxDays; d++) {
+           const dayRows = TARIK_DATA.filter(r => tarikSameDate(r.tanggal, d, payloadBulan, payloadTahun));
+           const placeholdersNeeded = Math.max(0, defaultRowsCount - dayRows.length);
+           const usedNos = new Set(dayRows.map(row => Number.parseInt(row.no, 10)).filter(no => Number.isInteger(no) && no > 0));
+           let nextPlaceholderNo = 1;
+
+           const tglStr = `${String(d).padStart(2, '0')}-${payloadBulanStr}-${payloadTahunStr}`;
+
+           for (let placeholderIndex = 0; placeholderIndex < placeholdersNeeded; placeholderIndex++) {
+              while (usedNos.has(nextPlaceholderNo)) nextPlaceholderNo += 1;
+              const placeholderNo = nextPlaceholderNo;
+              usedNos.add(placeholderNo);
+              nextPlaceholderNo += 1;
+              TARIK_DATA.push({
+                 sheetRowIndex: null,
+                 no: placeholderNo,
+                 tanggal: tglStr,
+                 cabang: cabangVal,
+                 keterangan: "",
+                 jenis: "",
+                 jumlah: "",
+                 nominal: 0,
+                 eliminasi: "TIDAK",
+                 fotoUrl: "",
+                 base64: "",
+                 isNew: true,
+                 _placeholder: true
+              });
+           }
+        }
+
+        // 5. Update summary card data
+        if (res.rekapPengeluaranData) {
+           renderTarikSummaryCard(res.rekapPengeluaranData, tipe);
+        }
+
+        // 6. Re-render table locally
+        renderTarikTable(window.__lastExpandedDate);
+
+        // The confirmed result is shown after refresh.
+      } catch (e) {
+        await tarikShowRecoveryError(e);
+      } finally {
+        _isTarikSubmitting = false;
+        toggleBtnState('btnSubmitTarik', false);
+        if (saveCompleted) await tarikRefreshSavedResult(savedResult, '', true);
+      }
+    }
+
+    
+    window.deleteTarikDataLocal = async function(idx) {
+      if (TARIK_DATA[idx].receiptId) {
+        if (!await tarikConfirmReceiptScope(TARIK_DATA[idx], 'Hapus')) return;
+        TARIK_DATA.filter(row => row.receiptId === TARIK_DATA[idx].receiptId).forEach(row => { row.isDeleted = true; });
+        renderTarikTable(); return;
+      }
+      Swal.fire({
+        title: 'Hapus data ini?',
+        text: "Data akan disembunyikan dan akan dihapus dari Spreadsheet saat Anda menekan Push Data.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        confirmButtonText: 'Ya, Hapus!',
+        cancelButtonText: 'Batal'
+      }).then((result) => {
+        if (result.isConfirmed) {
+           TARIK_DATA[idx].isDeleted = true;
+           // Nomor adalah posisi slot pada template spreadsheet. Jangan ubah
+           // nomor baris lain sebelum penghapusan benar-benar dipush.
+           
+           let tgl = parseInt(String(TARIK_DATA[idx].tanggal).split(/[-/]/)[0]);
+           window.__lastExpandedDate = isNaN(tgl) ? 1 : tgl;
+           const scrollPos = $(window).scrollTop();
+           renderTarikTable(window.__lastExpandedDate);
+           $(window).scrollTop(scrollPos);
+           Toast.fire({ icon: 'success', title: 'Data ditandai untuk dihapus.' });
+        }
+      });
+    }
+
+    // --- TAMBAH DATA (PUSH) MODAL LOGIC ---
+    window.openTambahTarikModal = function(tanggal) {
+       $('#tambahTarikTgl').val(tanggal);
+       $('#tambahTarikModalTitle').text(`Tambah Data - Tanggal ${tanggal}`);
+       
+       // Reset form
+       $('#tambahKeterangan').val('');
+       $('#tambahJenis').val('');
+       $('#tambahJumlah').val('');
+       $('#tambahNominal').val('');
+       $('#tambahEliminasi').val('TIDAK').trigger('change');
+       
+       if ($('#tarikTipe').val() === 'Central Kitchen') {
+          $('#tambahCabangContainer').show();
+       } else {
+          $('#tambahCabangContainer').hide();
+       }
+       
+       clearModalPreview(null, 'tambah');
+       $('#tambahTarikModal').addClass('active');
+       setTimeout(() => $('#tambahKeterangan').focus(), 100);
+    }
+
+    async function submitTambahTarikData() {
+       const tanggal = $('#tambahTarikTgl').val();
+       const keterangan = $('#tambahKeterangan').val();
+       const jenis = $('#tambahJenis').val();
+       const jumlah = $('#tambahJumlah').val();
+       const nominal = parseIndoNumber($('#tambahNominal').val());
+       const eliminasi = $('#tambahEliminasi').val();
+
+       if (!keterangan && !nominal) {
+          return Swal.fire('Oops', 'Isi Keterangan atau Nominal minimal!', 'warning');
+       }
+
+       toggleBtnState('btnSubmitTambahTarik', true);
+
+       try {
+         const tipe = $('#tarikTipe').val();
+         const cabang = tipe === 'Central Kitchen' ? $('#tambahCabang').val() : $('#tarikCabangInput').val();
+         
+         const payloadBulan = String($('#tarikBulan').val()).padStart(2, '0');
+         const payloadTahun = $('#tarikTahun').val();
+         const tglStr = `${String(tanggal).padStart(2, '0')}-${payloadBulan}-${payloadTahun}`;
+
+         const newItem = {
+           _originalIndex: TARIK_DATA.length,
+           tanggal: tglStr,
+           cabang: (cabang || "").toUpperCase(),
+           keterangan: keterangan,
+           jenis: jenis,
+           jumlah: jumlah,
+           nominal: nominal,
+           eliminasi: eliminasi,
+           isNew: true
+         };
+
+         const fileInput = document.getElementById('tambahFileInput');
+         if (fileInput && fileInput.files && fileInput.files.length > 0) {
+            newItem.base64 = await compressImage(fileInput.files[0]);
+         }
+
+         const targetDay = parseInt(String(tglStr).split(/[-/]/)[0]);
+         const sameDateRows = TARIK_DATA.filter(row => tarikSameDate(row.tanggal, targetDay, payloadBulan, payloadTahun) && !row.isDeleted);
+         newItem.no = tarikNextAvailableNo(sameDateRows);
+
+         TARIK_DATA.push(newItem);
+         
+         Toast.fire({ icon: 'success', title: 'Data ditambahkan secara lokal.' });
+         closeModal('tambahTarikModal');
+         window.__lastExpandedDate = parseInt(tanggal);
+         renderTarikTable(window.__lastExpandedDate);
+       } catch (e) {
+         Swal.fire('Error', e.message, 'error');
+       } finally {
+         toggleBtnState('btnSubmitTambahTarik', false);
+       }
+    }
+
+    // --- EDIT DATA (TARIK) MODAL LOGIC ---
+    window.openEditTarikModal = function(idx) {
+       const r = TARIK_DATA[idx];
+       $('#editTarikIdx').val(idx);
+       $('#editTarikModalTitle').text(`Edit Data - No ${r.no}`);
+       
+       $('#editKeterangan').val(r.keterangan || '');
+       $('#editJenis').val(r.jenis || '');
+       $('#editJumlah').val(r.jumlah || '');
+       $('#editNominal').val(fmtRp(r.nominal || 0));
+       $('#editEliminasi').val((r.eliminasi || 'TIDAK').toUpperCase()).trigger('change');
+       
+       if ($('#tarikTipe').val() === 'Central Kitchen') {
+          $('#editCabangContainer').show();
+          $('#editCabang').val(r.cabang || '');
+       } else {
+          $('#editCabangContainer').hide();
+       }
+       
+       $('#editTarikModal').addClass('active');
+       setTimeout(() => $('#editKeterangan').focus(), 100);
+    }
+
+    async function submitEditTarikData() {
+       const idx = $('#editTarikIdx').val();
+       const r = TARIK_DATA[idx];
+       
+       const keterangan = $('#editKeterangan').val();
+       const jenis = $('#editJenis').val();
+       const jumlah = $('#editJumlah').val();
+       const nominal = parseIndoNumber($('#editNominal').val());
+       const eliminasi = $('#editEliminasi').val();
+
+       if (!keterangan && !nominal) {
+          return Swal.fire('Oops', 'Isi Keterangan atau Nominal minimal!', 'warning');
+       }
+
+       toggleBtnState('btnSubmitEditTarik', true);
+
+       try {
+         const tipe = $('#tarikTipe').val();
+         const cabang = tipe === 'Central Kitchen' ? $('#editCabang').val() : '';
+         
+         r.keterangan = keterangan;
+         r.jenis = jenis;
+         r.jumlah = jumlah;
+         r.nominal = nominal;
+         r.eliminasi = eliminasi;
+         r.cabang = (cabang || "").trim().toUpperCase();
+         r.isEdited = true;
+         
+         const fileInput = document.getElementById('editFileInput');
+         if (fileInput && fileInput.files && fileInput.files.length > 0) {
+            r.base64 = await compressImage(fileInput.files[0]);
+         }
+
+         Toast.fire({ icon: 'success', title: 'Perubahan disimpan secara lokal.' });
+         closeModal('editTarikModal');
+         let tgl = parseInt(String(r.tanggal).split(/[-/]/)[0]);
+         window.__lastExpandedDate = isNaN(tgl) ? 1 : tgl;
+         renderTarikTable(window.__lastExpandedDate);
+       } catch (e) {
+         Swal.fire('Error', e.message, 'error');
+       } finally {
+         toggleBtnState('btnSubmitEditTarik', false);
+       }
+    }
+
+    function parseDateRangeInput(inputStr) {
+        let str = String(inputStr).trim().toLowerCase();
+        if (str === "all") {
+           return Array.from({length: 31}, (_, i) => i + 1);
+        }
+        
+        const dates = new Set();
+        const parts = str.split(",");
+        
+        parts.forEach(part => {
+           let p = part.trim();
+           if (p.includes("-")) {
+              let bounds = p.split("-");
+              let start = parseInt(bounds[0]);
+              let end = parseInt(bounds[1]);
+              if (!isNaN(start) && !isNaN(end) && start <= end && start >= 1 && end <= 31) {
+                 for (let i = start; i <= end; i++) {
+                    dates.add(i);
+                 }
+              }
+           } else {
+              let num = parseInt(p);
+              if (!isNaN(num) && num >= 1 && num <= 31) {
+                 dates.add(num);
+              }
+           }
+        });
+        
+        return Array.from(dates).sort((a, b) => a - b);
+    }
+
+    async function openResetTarikModal() {
+        const { value: formValues } = await Swal.fire({
+           title: 'Reset Data Tarik',
+           html: `
+              <div class="text-[13px] text-left text-brand-black space-y-3">
+                 <p class="font-bold text-[14px]">Masukkan Tanggal yang ingin di-reset:</p>
+                 <input id="swalResetDates" class="swal2-input w-full p-3 border border-[#D5D5E0] rounded-xl font-bold text-sm" placeholder="Contoh: 1 atau 2-5 atau 1,3,5-8 atau All" style="margin: 0;">
+                 <div class="bg-[#F8F9FC] p-4 rounded-xl border border-brand-stone/60 space-y-1 text-brand-muted text-[11px] font-semibold leading-relaxed">
+                    <p class="font-black text-brand-black uppercase tracking-wider text-[10px] mb-1">Panduan Pengisian:</p>
+                    <p>• <strong>Angka tunggal:</strong> Tulis <code>5</code> untuk mereset tanggal 5 saja.</p>
+                    <p>• <strong>Rentang tanggal:</strong> Tulis <code>2-5</code> untuk mereset tanggal 2, 3, 4, dan 5.</p>
+                    <p>• <strong>Kombinasi:</strong> Tulis <code>1, 3, 5-8</code> untuk tanggal 1, 3, 5, 6, 7, dan 8.</p>
+                    <p>• <strong>Semua tanggal:</strong> Tulis <code>All</code> untuk mereset seluruh bulan.</p>
+                 </div>
+                 <div class="text-brand-danger text-[11px] font-bold"><i class="bi bi-exclamation-triangle-fill mr-1"></i> Perhatian: Data di spreadsheet eksternal akan dihapus, dan file foto Drive terkait akan dipindahkan ke Sampah.</div>
+              </div>
+           `,
+           icon: 'warning',
+           showCancelButton: true,
+           confirmButtonColor: '#FF6B6B',
+           cancelButtonColor: '#EAEBFA',
+           confirmButtonText: 'Proses Reset',
+           cancelButtonText: 'Batal',
+           customClass: { cancelButton: 'text-brand-black font-bold' },
+           preConfirm: () => {
+              const input = document.getElementById('swalResetDates').value;
+              if (!input || input.trim() === "") {
+                 Swal.showValidationMessage('Harap masukkan tanggal atau All!');
+                 return false;
+              }
+              const parsed = parseDateRangeInput(input);
+              if (parsed.length === 0) {
+                 Swal.showValidationMessage('Format input tidak valid! Gunakan angka (1-31), rentang (2-5), atau All.');
+                 return false;
+              }
+              return { input: input, dates: parsed };
+           }
+        });
+
+        if (!formValues) return;
+
+        let datesToResetStr = formValues.dates.join(", ");
+        if (formValues.dates.length === 31) datesToResetStr = "Semua Tanggal (1-31)";
+
+        const resetRows = TARIK_DATA.filter(row => !row.isNew && formValues.dates.map(Number).includes(parseInt(row.tanggal)));
+        for (const row of resetRows.filter((row, index, all) => row.receiptId && all.findIndex(item => item.receiptId === row.receiptId) === index)) { if (!await tarikConfirmReceiptScope(row, 'Hapus')) return; }
+        const finalConfirm = await Swal.fire({
+           title: 'Konfirmasi Reset Permanen',
+           text: `Anda akan menghapus seluruh data transaksi dan melepas referensi foto pada Tanggal: ${datesToResetStr}. Cakupan: ${resetRows.length} baris, ${resetRows.filter(row => tarikHasPhoto(row.originalFotoUrl || row.fotoUrl)).length} baris dengan foto. File foto tidak otomatis dihapus dari Drive. Apakah Anda yakin?`,
+           icon: 'warning',
+           showCancelButton: true,
+           confirmButtonColor: '#FF6B6B',
+           cancelButtonColor: '#EAEBFA',
+           confirmButtonText: 'Ya, Reset Sekarang!',
+           cancelButtonText: 'Batal',
+           customClass: { cancelButton: 'text-brand-black font-bold' }
+        });
+
+        if (finalConfirm.isConfirmed) {
+           submitResetTarikData(formValues.dates);
+        }
+    }
+
+    async function submitResetTarikData(datesArray) {
+        if (!await tarikConfirmDiscardDraft()) return;
+        toggleBtnState('btnResetTarik', true);
+        Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'Mereset data...', showConfirmButton: false, didOpen: () => { Swal.showLoading() } });
+        
+        try {
+           const tipe = $('#tarikTipe').val();
+           const link = await ensureTarikPermanentLink();
+           if (!link) { Swal.close(); return; }
+           const periode = getTarikPeriodeString();
+           
+           const payload = {
+              link: link,
+              tipe: tipe,
+              periode: periode,
+              bulan: $('#tarikBulan').val(),
+              tahun: $('#tarikTahun').val(),
+              dates: datesArray,
+              confirmedReceipts:tarikConfirmedReceipts(),
+              deletedItems:TARIK_DATA.filter(row => !row.isNew && datesArray.includes(parseInt(row.tanggal))).map(row => ({ sheetRowIndex:row.sheetRowIndex, rowId:row.rowId, version:row.version, tanggal:row.tanggal }))
+           };
+
+           const res = await callServer('resetTarikDataBatch', payload);
+           if (!res.success) {
+              if (res.status === 'RECOVERY_REQUIRED') { await tarikOfferRecovery(res); return; }
+              throw new Error(res.message || "Gagal mereset data.");
+           }
+
+           await tarikRefreshSavedResult(res, 'Reset selesai', true);
+        } catch (e) {
+           await tarikShowRecoveryError(e);
+        } finally {
+           toggleBtnState('btnResetTarik', false);
+        }
+    }
+  </script>

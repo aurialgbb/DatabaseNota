@@ -1,0 +1,39 @@
+.nota-preview { display:flex; padding-top:60px; height:100dvh; overflow:hidden; }
+.nota-preview-bar { position:fixed; inset:0 0 auto; z-index:1000; height:60px; display:flex; align-items:center; gap:16px; padding:10px 24px; border-bottom:1px solid #e2e6ed; background:#fff; font-size:12px; }
+.nota-preview-bar select { max-width:240px; min-height:38px; border:1px solid #c5cdd9; border-radius:6px; padding:6px 10px; background:#fff; }
+.nota-preview-bar label { margin-left:auto; }
+.nota-preview-bar a { color:#2456c5; text-decoration:underline; }
+body.nota-preview #sidebar { height:calc(100dvh - 60px); overflow-y:auto; }
+body.nota-preview #sidebar > nav { flex-shrink:0; }
+body.nota-preview #sidebar > div:last-child { display:none; }
+body.nota-preview #mainContent { height:calc(100dvh - 60px); min-width:0; flex:1; }
+.nota-preview button:disabled { cursor:default; }
+.nota-preview-notice { width:min(440px,calc(100vw - 32px)); padding:24px; border:1px solid #e2e6ed; border-radius:14px; color:#202b3d; box-shadow:0 20px 64px #202b3d26; }
+.nota-preview-notice::backdrop { background:#202b3d66; }
+.nota-preview-notice h2 { margin:0 0 12px; font-size:20px; }
+.nota-preview-notice p { color:#596579; line-height:1.6; margin:0 0 24px; }
+.nota-preview-notice button { min-height:44px; padding:10px 20px; color:#fff; background:#2456c5; border-radius:8px; }
+.nota-preview #listrikPage button[aria-pressed="true"] { color:#2456c5 !important; }
+.nota-preview-nav-heading { color:#657186; font-size:10px; font-weight:600; margin:18px 12px 6px; letter-spacing:.04em; }
+.nota-select-trigger { display:flex; align-items:center; justify-content:space-between; gap:16px; width:100%; min-height:44px; padding:10px 12px; border:1px solid #c5cdd9; border-radius:8px; color:#202b3d; background:#fff; font-size:13px; text-align:left; }
+.nota-select-trigger::after { content:''; width:7px; height:7px; border-right:1.5px solid #657186; border-bottom:1.5px solid #657186; transform:rotate(45deg); flex-shrink:0; margin:0 3px 4px; }
+.nota-select-trigger:hover { border-color:#849bc6; }
+.nota-select-trigger[aria-expanded="true"] { border-color:#2456c5; box-shadow:0 0 0 3px #2456c518; }
+.nota-select-menu { position:fixed; z-index:10000; max-height:min(280px,60vh); overflow:auto; padding:5px; border:1px solid #e2e6ed; border-radius:10px; background:#fff; box-shadow:0 10px 32px #202b3d24; }
+.nota-select-menu[hidden] { display:none; }
+.nota-select-menu button { display:block; width:100%; min-height:40px; padding:10px 12px; border-radius:6px; text-align:left; color:#39485e; font-size:13px; }
+.nota-select-menu button:hover,.nota-select-menu button:focus-visible { background:#f2f5fc; outline:none; }
+.nota-select-menu button[aria-selected="true"] { background:#eaf0fc; color:#1c4299; font-weight:600; }
+.nota-preview-page-status { color:#657186; font-size:12px; }
+.nota-preview-bar .nota-select-trigger { max-width:240px; width:240px; }
+@media(max-width:760px) { .nota-preview-bar .nota-select-trigger { flex:1; min-width:0; width:140px; font-size:12px; } .nota-select-menu button { min-height:44px; } }
+.nota-preview #inputPage .legacy-input-v3-tabs button[aria-pressed="true"] { background:#2456c5 !important; color:#fff !important; }
+@media(max-width:760px) {
+  body.nota-preview #sidebar { display:none !important; }
+  .nota-preview-bar { padding:8px 16px; gap:8px; }
+  .nota-preview-bar > label { display:none; }
+  .nota-preview-bar > span { position:absolute; top:60px; left:0; right:0; padding:5px 16px; background:#f0f4fc; font-size:10px; border-bottom:1px solid #e2e6ed; }
+  body.nota-preview #mainContent { padding-top:42px; }
+  .nota-preview-bar select { min-width:0; flex:1; width:140px; min-height:44px; }
+  .nota-preview-bar strong { font-size:11px; }
+}

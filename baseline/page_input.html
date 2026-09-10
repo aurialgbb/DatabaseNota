@@ -1,0 +1,496 @@
+      <style>
+        #inputPage .legacy-input-v3-head { display:flex; align-items:flex-end; justify-content:space-between; gap:24px; margin-bottom:22px; }
+        #inputPage .legacy-input-v3-title { min-width:0; }
+        #inputPage .legacy-input-v3-eyebrow { display:inline-flex; align-items:center; gap:7px; margin-bottom:7px; color:var(--ui-primary,var(--portal-primary)); font-size:9px; font-weight:800; letter-spacing:.13em; text-transform:uppercase; }
+        #inputPage .legacy-input-v3-eyebrow::before { content:''; width:18px; height:2px; border-radius:999px; background:currentColor; }
+        #inputPage .legacy-input-v3-title h1 { margin:0 0 5px; color:var(--ui-ink,var(--portal-ink)); font-size:26px; line-height:1.15; font-weight:800; letter-spacing:-.04em; }
+        #inputPage .legacy-input-v3-title p { margin:0; color:var(--ui-muted,var(--portal-muted)); font-size:11px; line-height:1.55; font-weight:600; }
+        #inputPage .legacy-input-v3-hero-art { min-width:180px; max-width:330px; height:76px; flex:1 1 260px; margin-left:auto; border-radius:16px; background-position:center right; background-repeat:no-repeat; background-size:contain; mix-blend-mode:multiply; }
+        #inputPage .legacy-input-v3-tabs { position:relative; display:flex; flex:0 0 auto; padding:4px; border:1px solid var(--ui-border,var(--portal-border)); border-radius:13px; background:var(--ui-surface-subtle,#f8f8fd); box-shadow:0 3px 12px rgba(27,25,65,.035); }
+        #inputPage .legacy-input-v3-tabs button { width:142px; min-height:36px; padding:7px 12px; border-radius:9px; font-size:10px; font-weight:800; }
+        #inputPage .legacy-input-v3-workspace { display:grid; grid-template-columns:minmax(280px,.7fr) minmax(430px,1.3fr); gap:14px; margin-bottom:24px; }
+        #inputPage .legacy-input-v3-panel { min-width:0; border:1px solid var(--ui-border,var(--portal-border)); border-radius:20px; background:#fff; box-shadow:0 8px 24px rgba(27,25,65,.045); }
+        #inputPage .legacy-input-v3-context { padding:20px; }
+        #inputPage .legacy-input-v3-upload { display:flex; min-height:100%; flex-direction:column; padding:20px; }
+        #inputPage .legacy-input-v3-panel-head { display:flex; align-items:flex-start; gap:10px; margin-bottom:17px; }
+        #inputPage .legacy-input-v3-step { display:grid; width:30px; height:30px; flex:0 0 30px; place-items:center; border-radius:10px; color:#fff; background:var(--ui-gradient,linear-gradient(135deg,#6d5dfb,#3f7cff)); font-size:9px; font-weight:800; box-shadow:0 7px 16px rgba(88,70,238,.18); }
+        #inputPage .legacy-input-v3-panel-head strong { display:block; color:var(--ui-ink,var(--portal-ink)); font-size:13px; font-weight:800; letter-spacing:-.02em; }
+        #inputPage .legacy-input-v3-panel-head small { display:block; margin-top:3px; color:var(--ui-muted,var(--portal-muted)); font-size:9px; line-height:1.45; font-weight:600; }
+        #inputPage .legacy-input-v3-field { position:relative; z-index:20; margin-bottom:13px; }
+        #inputPage .legacy-input-v3-field:last-child { margin-bottom:0; }
+        #inputPage .legacy-input-v3-field-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+        #inputPage .legacy-input-v3-label { display:block; margin:0 0 6px; color:var(--ui-ink-soft,var(--portal-ink)); font-size:9px; font-weight:800; letter-spacing:.065em; text-transform:uppercase; }
+        #inputPage .legacy-input-v3-control { min-height:42px; padding:9px 12px; border:1px solid var(--ui-border-strong,#dddceb); border-radius:12px; background:#fff; box-shadow:0 2px 8px rgba(27,25,65,.025); font-size:11px; font-weight:650; }
+        #inputPage .legacy-input-v3-control.is-readonly { color:var(--ui-muted,var(--portal-muted)); background:var(--ui-surface-subtle,#f8f8fd); box-shadow:none; }
+        #inputPage .legacy-input-v3-control:focus { border-color:var(--ui-primary,var(--portal-primary)); box-shadow:var(--ui-focus,0 0 0 4px rgba(109,93,251,.13)); background:#fff; }
+        #inputPage .legacy-input-v3-drop { display:flex; min-height:260px; flex:1 1 auto; flex-direction:column; align-items:center; justify-content:center; padding:25px 20px; border:1.5px dashed #d7d3e8; border-radius:17px; background:radial-gradient(circle at 50% 0,rgba(109,93,251,.055),transparent 43%),#fdfdff; }
+        #inputPage .legacy-input-v3-drop:hover { border-color:#bdb4ff; background-color:#fbfaff; }
+        #inputPage .legacy-input-v3-drop-icon { display:grid; width:50px; height:50px; place-items:center; margin:0 auto 12px; border-radius:15px; color:var(--ui-primary,var(--portal-primary)); background:var(--ui-primary-soft,#f1efff); font-size:21px; }
+        #inputPage .legacy-input-v3-drop h4 { margin:0 0 5px; color:var(--ui-ink,var(--portal-ink)); font-size:14px; font-weight:800; }
+        #inputPage .legacy-input-v3-drop p { margin:0; color:var(--ui-muted,var(--portal-muted)); font-size:10px; line-height:1.55; font-weight:600; }
+        #inputPage .legacy-input-v3-drop #previewContainer { width:100%; margin-top:15px; gap:9px; }
+        #inputPage .legacy-input-v3-drop #fileInfo { margin-top:14px; padding:6px 11px; font-size:9px; }
+        #inputPage .legacy-input-v3-analyze { display:flex; align-items:center; justify-content:space-between; gap:14px; margin-top:14px; padding-top:14px; border-top:1px solid var(--ui-border,var(--portal-border)); }
+        #inputPage .legacy-input-v3-analyze p { max-width:260px; margin:0; color:var(--ui-muted,var(--portal-muted)); font-size:9px; line-height:1.5; font-weight:600; }
+        #inputPage .legacy-input-v3-analyze button { min-height:40px; padding:9px 17px; border-radius:12px; font-size:10px; letter-spacing:.045em; }
+        #inputPage .legacy-input-v3-review { padding-bottom:54px; }
+        #inputPage .legacy-input-v3-review-head { display:flex; align-items:end; justify-content:space-between; gap:16px; margin:0 0 12px; }
+        #inputPage .legacy-input-v3-review-head span { display:block; color:var(--ui-primary,var(--portal-primary)); font-size:9px; font-weight:800; letter-spacing:.09em; text-transform:uppercase; }
+        #inputPage .legacy-input-v3-review-head h3 { margin:3px 0 0; color:var(--ui-ink,var(--portal-ink)); font-size:16px; font-weight:800; letter-spacing:-.025em; }
+        #inputPage .legacy-input-v3-review-card { overflow:hidden; border:1px solid var(--ui-border,var(--portal-border)); border-radius:20px; background:#fff; box-shadow:0 8px 24px rgba(27,25,65,.045); }
+        #inputPage .legacy-input-v3-review-card th { padding:12px 14px; font-size:9px; }
+        #inputPage .legacy-input-v3-review-actions { padding:13px 15px; gap:12px; border-top:1px solid var(--ui-border,var(--portal-border)); background:var(--ui-surface-subtle,#f8f8fd); }
+        #inputPage .legacy-input-v3-review-actions button { min-height:38px; padding:8px 14px; border-radius:11px; font-size:10px; }
+        #inputPage .legacy-pull-v3-shell { display:grid; grid-template-columns:minmax(250px,.62fr) minmax(430px,1.38fr); gap:14px; margin-bottom:22px; }
+        #inputPage .legacy-pull-v3-aside,#inputPage .legacy-pull-v3-form { min-width:0; padding:20px; border:1px solid var(--ui-border,var(--portal-border)); border-radius:20px; background:#fff; box-shadow:0 8px 24px rgba(27,25,65,.045); }
+        #inputPage .legacy-pull-v3-aside { display:flex; flex-direction:column; background:linear-gradient(155deg,#fff 0,#fbfaff 100%); }
+        #inputPage .legacy-pull-v3-kicker { display:inline-flex; width:max-content; align-items:center; gap:6px; padding:5px 8px; border-radius:999px; color:var(--ui-primary,var(--portal-primary)); background:var(--ui-primary-soft,#f1efff); font-size:8px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+        #inputPage .legacy-pull-v3-aside h2 { margin:13px 0 6px; color:var(--ui-ink,var(--portal-ink)); font-size:18px; line-height:1.2; font-weight:800; letter-spacing:-.035em; }
+        #inputPage .legacy-pull-v3-intro p { margin:0 0 17px; color:var(--ui-muted,var(--portal-muted)); font-size:10px; line-height:1.6; font-weight:600; }
+        #inputPage .legacy-pull-v3-link { margin-top:auto; }
+        #inputPage .legacy-pull-v3-link .legacy-input-v3-label { margin-bottom:6px; }
+        #inputPage .legacy-pull-v3-link #tarikLinkStatus { min-height:42px; padding:9px 11px; border:1px solid var(--ui-border,var(--portal-border)); border-radius:12px; background:#fff; font-size:9px; line-height:1.45; }
+        #inputPage .legacy-pull-v3-submit { display:flex; justify-content:flex-end; margin-top:12px; }
+        #inputPage .legacy-pull-v3-submit button { width:100%; min-height:40px; padding:9px 14px; border-radius:12px; font-size:10px; letter-spacing:.045em; }
+        #inputPage .legacy-pull-v3-form-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; }
+        #inputPage .legacy-pull-v3-form-head strong { color:var(--ui-ink,var(--portal-ink)); font-size:13px; font-weight:800; }
+        #inputPage .legacy-pull-v3-form-head span { color:var(--ui-muted,var(--portal-muted)); font-size:9px; font-weight:600; }
+        #inputPage .legacy-pull-v3-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+        #inputPage .legacy-pull-v3-grid .legacy-input-v3-field { z-index:auto !important; margin:0; }
+        #inputPage .legacy-pull-v3-grid .legacy-pull-v3-wide { grid-column:1/-1; }
+        #inputPage .legacy-pull-v3-trigger { min-height:42px; padding:9px 12px; border:1px solid var(--ui-border-strong,#dddceb); border-radius:12px; background:#fff; font-size:11px; box-shadow:0 2px 8px rgba(27,25,65,.025); }
+        #inputPage .legacy-pull-v3-grid #dropTarikTipe:not(.hidden),#inputPage .legacy-pull-v3-grid #tarikCabangDropdown:not(.hidden),#inputPage .legacy-pull-v3-grid #tarikCentralKitchenDropdown:not(.hidden),#inputPage .legacy-pull-v3-grid #dropTarikBulan:not(.hidden),#inputPage .legacy-pull-v3-grid #dropTarikTahun:not(.hidden) { max-height:220px; overflow-y:auto; border-color:var(--ui-border-strong,#dddceb); border-radius:11px; box-shadow:0 12px 28px rgba(27,25,65,.13); }
+        #inputPage .legacy-pull-v3-result-head { margin-bottom:12px; }
+        #inputPage .legacy-pull-v3-result-card { overflow:hidden; border:1px solid var(--ui-border,var(--portal-border)); border-radius:20px; background:#fff; box-shadow:0 8px 24px rgba(27,25,65,.045); }
+        #inputPage .legacy-pull-v3-result-card th { padding:11px 12px; font-size:9px; }
+        #inputPage .legacy-pull-v3-result-actions { padding:13px 15px; background:var(--ui-surface-subtle,#f8f8fd); }
+        #inputPage .legacy-pull-v3-result-actions button { min-height:38px; padding:8px 13px; font-size:10px; }
+        @media (max-width:1100px) { #inputPage .legacy-input-v3-hero-art { display:none; } #inputPage .legacy-input-v3-workspace,#inputPage .legacy-pull-v3-shell { grid-template-columns:1fr; } #inputPage .legacy-pull-v3-aside { display:grid; grid-template-columns:minmax(220px,.7fr) minmax(280px,1.3fr); gap:18px; } #inputPage .legacy-pull-v3-aside .legacy-pull-v3-link { margin-top:0; } }
+        @media (max-width:720px) { #inputPage .legacy-input-v3-head { align-items:stretch; flex-direction:column; gap:14px; } #inputPage .legacy-input-v3-tabs { width:100%; } #inputPage .legacy-input-v3-tabs button { width:50%; } #inputPage .legacy-input-v3-workspace,#inputPage .legacy-pull-v3-shell { gap:11px; } #inputPage .legacy-input-v3-context,#inputPage .legacy-input-v3-upload,#inputPage .legacy-pull-v3-aside,#inputPage .legacy-pull-v3-form { padding:15px; border-radius:17px; } #inputPage .legacy-input-v3-field-grid,#inputPage .legacy-pull-v3-grid,#inputPage .legacy-pull-v3-aside { grid-template-columns:1fr; } #inputPage .legacy-input-v3-drop { min-height:220px; padding:22px 14px; } #inputPage .legacy-input-v3-analyze { align-items:stretch; flex-direction:column; } #inputPage .legacy-input-v3-analyze button { width:100%; } #inputPage .legacy-input-v3-review-actions,#inputPage .legacy-pull-v3-result-actions { align-items:stretch; } #inputPage .legacy-input-v3-review-actions button,#inputPage .legacy-pull-v3-result-actions button { flex:1; } }
+      </style>
+
+      <div class="legacy-input-v3-head">
+        <div class="legacy-input-v3-title">
+          <span class="legacy-input-v3-eyebrow">Finance workspace</span>
+          <h1>Input Transaksi</h1>
+          <p>Tarik data operasional atau baca nota melalui AI dalam satu ruang kerja.</p>
+        </div>
+        <div class="legacy-input-v3-hero-art portal-workspace-art" aria-hidden="true"></div>
+        <div class="legacy-input-v3-tabs">
+          <div id="inputSlideBg" class="absolute inset-y-1 left-1 bg-white rounded-lg shadow-sm transition-all duration-300 ease-out z-0" style="width: calc(50% - 4px); transform: translateX(0);"></div>
+          <button id="btnTabTarik" onclick="switchInputTab('tarik')" class="relative z-10 text-center text-brand-coral transition-colors focus:outline-none"><i class="bi bi-cloud-download mr-1"></i> Tarik Data</button>
+          <button id="btnTabUpload" onclick="switchInputTab('upload')" class="relative z-10 text-brand-muted hover:text-brand-black text-center transition-colors focus:outline-none"><i class="bi bi-stars mr-1"></i> Deteksi Foto</button>
+        </div>
+      </div>
+      
+      <!-- Tab: Deteksi Foto (Original) -->
+      <div id="tabInputUpload" class="hidden animate-[fadeIn_0.4s_ease-out]">
+        <div class="legacy-input-v3-workspace">
+          <section class="legacy-input-v3-panel legacy-input-v3-context">
+            <div class="legacy-input-v3-panel-head"><span class="legacy-input-v3-step">01</span><div><strong>Konteks nota</strong><small>Tentukan cabang dan tanggal transaksi sebelum membaca foto.</small></div></div>
+            <div class="legacy-input-v3-field">
+              <label class="legacy-input-v3-label">Cabang Toko <span class="text-brand-coral">*</span></label>
+              <div class="relative flex items-center">
+                <input type="text" id="tokoInput" class="legacy-input-v3-control w-full pl-4 pr-10 text-brand-black outline-none transition-all" placeholder="Ketik nama cabang..." autocomplete="off" aria-label="Cari cabang toko">
+                <i class="bi bi-search absolute right-4 text-brand-muted pointer-events-none text-[11px]"></i>
+              </div>
+              <div id="tokoDropdown" class="legacy-typeahead-menu hidden"></div>
+              <small class="legacy-input-v3-hint">Mulai ketik nama cabang untuk menampilkan hasil.</small>
+            </div>
+            <div class="legacy-input-v3-field-grid">
+              <div class="legacy-input-v3-field">
+                <label class="legacy-input-v3-label">Nama CV</label>
+                <input type="text" id="cvDisplay" class="legacy-input-v3-control is-readonly w-full outline-none cursor-not-allowed" readonly>
+              </div>
+              <div class="legacy-input-v3-field">
+                <label class="legacy-input-v3-label">Tanggal Nota <span class="text-brand-coral">*</span></label>
+                <div class="relative flex items-center">
+                  <input type="text" id="dateInput" class="legacy-input-v3-control w-full pl-4 pr-10 text-brand-black outline-none cursor-pointer transition-all" placeholder="Pilih Tanggal">
+                  <i class="bi bi-calendar-event absolute right-4 text-brand-muted pointer-events-none text-[11px]"></i>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="legacy-input-v3-panel legacy-input-v3-upload">
+            <div class="legacy-input-v3-panel-head"><span class="legacy-input-v3-step">02</span><div><strong>Foto nota</strong><small>Maksimal 5 foto. Anda juga dapat menempel gambar dari clipboard.</small></div></div>
+            <div id="dropZone" class="legacy-input-v3-drop text-center cursor-pointer transition-all group relative focus:outline-none" tabindex="0">
+              <input type="file" id="fileInput" class="hidden" accept="image/*" multiple>
+              <div class="legacy-input-v3-drop-icon group-hover:scale-105 transition-transform"><i class="bi bi-cloud-arrow-up-fill"></i></div>
+              <h4>Upload atau Paste Nota</h4>
+              <p>Klik, seret foto, atau tekan <span class="bg-brand-stone px-2 py-0.5 rounded text-brand-black">CTRL+V</span></p>
+              
+              <div id="previewContainer" class="flex flex-wrap justify-center" onclick="event.stopPropagation()"></div>
+              
+              <div id="fileInfo" class="inline-flex items-center gap-2 bg-[#F2F0FF] text-brand-coral border border-[#DCD5FF] rounded-full font-bold hidden shadow-sm"></div>
+            </div>
+            <div class="legacy-input-v3-analyze">
+              <p>Foto akan dibaca satu per satu. Data belum tersimpan sampai Anda menekan Submit Record.</p>
+              <button id="btnAnalyze" onclick="analyzePhoto()" class="bg-gradient-primary text-white disabled:opacity-50 disabled:cursor-not-allowed font-black shadow-[0_8px_20px_rgba(118,81,255,0.22)] transition-all flex items-center justify-center gap-2 uppercase relative" disabled>
+               <i class="bi bi-stars btn-icon"></i> <span class="btn-text">Mulai Analisa</span>
+              </button>
+            </div>
+          </section>
+        </div>
+        
+        <div id="reviewSection" class="legacy-input-v3-review hidden animate-[fadeIn_0.5s_ease-out]">
+          <div class="legacy-input-v3-review-head"><div><span>Hasil deteksi</span><h3>Periksa Ekstraksi AI</h3></div></div>
+          <div class="legacy-input-v3-review-card">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse min-w-[1000px]">
+                <thead class="bg-brand-paper border-b border-brand-stone text-brand-muted text-[10px] font-black uppercase tracking-widest">
+                  <tr><th>Nama Toko</th><th>Nama Item</th><th class="text-center">Qty</th><th class="text-center">Unit</th><th class="text-right">Total Harga</th><th class="text-center">Action</th></tr>
+                </thead>
+                <tbody id="itemTableBody" class="divide-y divide-brand-stone/50"></tbody>
+              </table>
+            </div>
+            <div class="legacy-input-v3-review-actions flex flex-col sm:flex-row justify-between border-brand-stone items-center">
+              <button onclick="improveItemNames()" class="font-bold bg-white border border-brand-stone text-brand-black hover:border-brand-coral transition-colors shadow-sm flex items-center gap-2"><i class="bi bi-magic text-brand-coral"></i> Rapikan Nama</button>
+              <button id="btnSubmitData" onclick="submitData()" class="font-black bg-brand-black text-white hover:bg-[#2A2A3D] shadow-lg transition-transform uppercase tracking-widest relative">
+                 <span class="btn-text">Submit Record <i class="bi bi-check2-circle ml-1"></i></span>
+                 <span class="btn-spinner hidden absolute inset-0 flex items-center justify-center">
+                    <i class="bi bi-arrow-repeat animate-spin text-lg"></i>
+                 </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+<script>
+    const inputEscapeHtml = value => window.legacyEscapeHtml ? window.legacyEscapeHtml(value) : String(value == null ? '' : value).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+    document.addEventListener('click', event => {
+      const control = event.target.closest && event.target.closest('[data-input-action]');
+      if (!control) return;
+      const index = Number(control.dataset.inputIndex);
+      if (control.dataset.inputAction === 'remove-upload') window.removeFile(event, Number(control.dataset.inputId));
+      else if (control.dataset.inputAction === 'preview-review' && REVIEW_ITEMS[index]) window.previewSingleImage(REVIEW_ITEMS[index].base64);
+      else if (control.dataset.inputAction === 'edit-review') openEditRow(index, true);
+      else if (control.dataset.inputAction === 'delete-review') delRev(index);
+    });
+
+    window.showModalPreview = function(file, prefix) {
+       const reader = new FileReader();
+       reader.onload = function(e) {
+          $(`#${prefix}PreviewImg`).attr('src', e.target.result);
+          $(`#${prefix}ImagePreview`).removeClass('hidden');
+          $(`#${prefix}UploadPrompt`).addClass('hidden');
+       }
+       reader.readAsDataURL(file);
+    }
+    window.clearModalPreview = function(e, prefix) {
+       if (e) e.stopPropagation();
+       $(`#${prefix}FileInput`).val('');
+       $(`#${prefix}PreviewImg`).attr('src', '');
+       $(`#${prefix}ImagePreview`).addClass('hidden');
+       $(`#${prefix}UploadPrompt`).addClass('hidden');
+    }
+
+    function compressImage(file) {
+      return new Promise((resolve) => {
+        const r = new FileReader(); r.onload = (e) => {
+          const img = new Image(); img.onload = () => {
+            const cvs = document.createElement('canvas'); const MAX = 1200;
+            let w = img.width; let h = img.height;
+            if (w > h) { if (w > MAX) { h *= MAX / w; w = MAX; } } else { if (h > MAX) { w *= MAX / h; h = MAX; } }
+            cvs.width = w; cvs.height = h; cvs.getContext('2d').drawImage(img, 0, 0, w, h);
+            resolve(cvs.toDataURL('image/jpeg', 0.7).split(',')[1]);
+          }; img.src = e.target.result;
+        }; r.readAsDataURL(file);
+      });
+    }
+
+    async function handleFiles(filesArray) {
+      let currentCount = UPLOADED_FILES.length;
+      let arr = filesArray.slice(0, 5 - currentCount); 
+      if(arr.length === 0) return Swal.fire('Maksimal Upload', 'Maksimal 5 nota.', 'info');
+      $('#fileInfo').html(`<i class="bi bi-arrow-repeat animate-spin"></i> Memproses gambar...`).removeClass('hidden'); 
+      $('#btnAnalyze').prop('disabled', true);
+      const b64s = await Promise.all(arr.map(f => compressImage(f)));
+      b64s.forEach((b, idx) => { UPLOADED_FILES.push({ id: Date.now() + idx, base64: b, fileObj: arr[idx] }); });
+      renderFilePreviews();
+    }
+
+    function renderFilePreviews() {
+      const c = $('#previewContainer').empty();
+      if (UPLOADED_FILES.length === 0) { $('#fileInfo').addClass('hidden'); $('#btnAnalyze').prop('disabled', true); return; }
+      UPLOADED_FILES.forEach(f => { c.append(`<div class="relative w-24 h-24 rounded-2xl overflow-hidden border-2 border-brand-stone shadow-sm group"><img src="data:image/jpeg;base64,${String(f.base64 || '').replace(/[^a-zA-Z0-9+/=]/g, '')}" class="w-full h-full object-cover"><div class="absolute inset-0 bg-brand-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm"><button type="button" data-input-action="remove-upload" data-input-id="${Number(f.id)}" class="text-white bg-brand-danger hover:bg-red-600 rounded-full w-8 h-8 flex items-center justify-center shadow-md transition-transform hover:scale-110"><i class="bi bi-x-lg text-sm font-bold"></i></button></div></div>`); });
+      $('#fileInfo').html(`<i class="bi bi-check-circle-fill text-brand-success text-lg"></i> ${UPLOADED_FILES.length} Nota Siap Analisa`).removeClass('hidden');
+      $('#btnAnalyze').prop('disabled', false);
+    }
+
+    window.removeFile = function(e, id) { e.stopPropagation(); UPLOADED_FILES = UPLOADED_FILES.filter(f => f.id !== id); renderFilePreviews(); }
+    
+    // Custom loader khusus untuk proses yang lama seperti AI Analysis
+    function showCustomLoader(title, desc, showProgress = false) {
+      $('#loaderTitle').text(title);
+      $('#loaderDesc').text(desc);
+      if (showProgress) $('#loaderProgressWrapper').show();
+      else $('#loaderProgressWrapper').hide();
+      $('#ai-loader').css('display', 'flex').hide().fadeIn(300);
+    }
+
+    function hideCustomLoader() {
+      $('#ai-loader').fadeOut(300);
+    }
+
+    function applyDefaultUnits(items) {
+        const defaults = {
+            'TEPUNG': 'BAL',
+            'TELUR': 'PETI',
+            'GALON': 'PCS',
+            'GAS': 'TABUNG',
+            'SOSIS': 'PACK'
+        };
+
+        items.forEach(item => {
+            if(item.name) {
+                let upperName = String(item.name).toUpperCase();
+                let upperUnit = item.unit ? String(item.unit).toUpperCase() : 'PCS';
+                
+                for (const [key, unit] of Object.entries(defaults)) {
+                    if (upperName.includes(key)) {
+                        upperUnit = unit;
+                        break; 
+                    }
+                }
+                
+                if (upperName.includes('GAS')) upperUnit = 'TABUNG';
+                
+                item.name = upperName;
+                item.unit = upperUnit;
+            }
+        });
+    }
+
+    async function processWithRetry(base64Data, maxRetries = 3) {
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                const res = await callServer('processOCRWithGemini', [base64Data]);
+                return res; 
+            } catch (err) {
+                if (attempt === maxRetries) throw err; 
+                $('#loaderDesc').html(`<span class="text-brand-coral">Server sibuk. Mencoba ulang (${attempt}/${maxRetries})...</span>`);
+                await new Promise(r => setTimeout(r, 2000)); 
+            }
+        }
+    }
+
+    async function analyzePhoto() {
+      if(!$('#tokoInput').val()) return Swal.fire('Error', 'Pilih Cabang!', 'warning');
+      
+      showCustomLoader('Menganalisa Nota', 'Menyiapkan AI Engine...', true);
+      $('#loaderProgress').css('width', '0%');
+      $('#loaderPercentage').text('0%');
+      
+      const totalFiles = UPLOADED_FILES.length;
+      let allResults = [];
+
+      try { 
+        for(let i=0; i<totalFiles; i++) {
+           $('#loaderDesc').text(`Memproses nota ${i + 1} dari ${totalFiles}...`);
+           const currentProgress = (i / totalFiles) * 100;
+           $('#loaderProgress').css('width', `${currentProgress}%`);
+           $('#loaderPercentage').text(`${Math.round(currentProgress)}%`);
+
+           try {
+              const res = await processWithRetry(UPLOADED_FILES[i].base64); 
+              if(res && res.length > 0) {
+                 res[0].originalIndex = i; 
+                 allResults.push(res[0]);
+              }
+           } catch(e) {
+              allResults.push({ success: false, originalIndex: i, error: e.message });
+           }
+        }
+        
+        $('#loaderProgress').css('width', '100%');
+        $('#loaderPercentage').text('100%');
+        
+        setTimeout(() => {
+           hideCustomLoader(); 
+           renderReview(allResults); 
+        }, 500);
+
+      } catch(err) { 
+        hideCustomLoader(); 
+        Swal.fire('Gagal!', err.message, 'error'); 
+      }
+    }
+    
+    function renderReview(results) {
+      REVIEW_ITEMS = [];
+      results.forEach((res) => {
+        const fileData = UPLOADED_FILES[res.originalIndex];
+        if (res.success) {
+           const glob = (res.data && res.data.supplier) ? res.data.supplier : '-'; 
+           if(res.data && res.data.items) {
+               applyDefaultUnits(res.data.items);
+               res.data.items.forEach(i => REVIEW_ITEMS.push({ isError: false, toko: i.toko || glob, name: i.name || '', qty: i.qty || 1, unit: i.unit || 'pcs', total: i.total || 0, base64: fileData.base64 }));
+           }
+        } else { REVIEW_ITEMS.push({ isError: true, errorMsg: res.error, base64: fileData.base64 }); }
+      });
+      renderReviewTable();
+      $('#reviewSection').removeClass('hidden'); window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+
+    function renderReviewTable() {
+      const b = $('#itemTableBody').empty(); let rowsHtml = '';
+      REVIEW_ITEMS.forEach((i, idx) => {
+        if (i.isError) {
+           rowsHtml += `<tr class="bg-[#FFF0ED] border-b border-[#FAD6D1]"><td colspan="5" class="p-5 pl-8 text-[12px] font-bold text-brand-danger"><i class="bi bi-exclamation-triangle-fill mr-2"></i> Gagal menganalisa nota. Error: ${inputEscapeHtml(i.errorMsg)}</td><td class="p-5 text-center"><div class="flex gap-2 justify-center"><button class="w-8 h-8 rounded-lg bg-white border border-brand-stone text-brand-black hover:bg-brand-paper flex items-center justify-center shadow-sm" data-input-action="preview-review" data-input-index="${idx}"><i class="bi bi-eye-fill"></i></button><button class="w-8 h-8 rounded-lg bg-white border border-brand-danger text-brand-danger hover:bg-brand-danger hover:text-white flex items-center justify-center shadow-sm transition-colors" data-input-action="delete-review" data-input-index="${idx}"><i class="bi bi-trash3-fill"></i></button></div></td></tr>`;
+        } else {
+           rowsHtml += `<tr class="hover:bg-brand-paper transition-colors"><td class="p-5 pl-8 text-[11px] font-bold text-brand-black">${inputEscapeHtml(i.toko)}</td><td class="p-5 text-[11px] font-semibold text-brand-black/80">${inputEscapeHtml(i.name)}</td><td class="p-5 text-center font-black text-[12px]">${inputEscapeHtml(fmtRp(i.qty))}</td><td class="p-5 text-center text-[10px] font-bold uppercase text-brand-muted tracking-wider">${inputEscapeHtml(i.unit)}</td><td class="p-5 text-right text-[12px] font-black text-brand-black">Rp ${inputEscapeHtml(fmtRp(i.total))}</td><td class="p-5 text-center"><div class="flex gap-2 justify-center"><button class="w-8 h-8 rounded-lg bg-white border border-brand-stone text-brand-black hover:bg-brand-paper flex items-center justify-center shadow-sm transition-colors" data-input-action="preview-review" data-input-index="${idx}"><i class="bi bi-eye-fill"></i></button><button class="w-8 h-8 rounded-lg bg-white border border-brand-stone text-brand-coral hover:border-brand-coral hover:text-brand-coral flex items-center justify-center shadow-sm transition-colors" data-input-action="edit-review" data-input-index="${idx}"><i class="bi bi-pencil-square"></i></button><button class="w-8 h-8 rounded-lg bg-white border border-brand-stone text-brand-danger hover:bg-brand-danger hover:border-brand-danger hover:text-white flex items-center justify-center shadow-sm transition-colors" data-input-action="delete-review" data-input-index="${idx}"><i class="bi bi-trash3-fill"></i></button></div></td></tr>`;
+        }
+      }); b.html(rowsHtml);
+    }
+
+    window.previewSingleImage = function(b64) {
+      const cleanBase64 = String(b64 || '').replace(/[^a-zA-Z0-9+/=]/g, '');
+      $('#modalImgContainer').html(`<img src="data:image/jpeg;base64,${cleanBase64}" class="max-w-full max-h-[75vh] object-contain rounded-xl shadow-lg border-2 border-white">`);
+      $('#previewModal').addClass('active');
+    }
+    
+    function openEditRow(id, isRev) {
+      $('#isReviewPhase').val(isRev ? 1 : 0);
+      if (isRev) { 
+          $('#editDateContainer').hide();
+          currentEditReviewIndex = parseInt(id); 
+          const i = REVIEW_ITEMS[currentEditReviewIndex]; 
+          $('#editTokoName').val(i.toko); 
+          $('#editItemName').val(i.name); 
+          $('#editItemQty').val(fmtRp(i.qty)); 
+          $('#editItemUnit').val(i.unit); 
+          $('#editItemTotal').val(fmtRp(i.total)); 
+      }
+      else { 
+          $('#editDateContainer').show();
+          const d = GLOBAL_HISTORY.find(row => String(row && row[0]) === String(id));
+          if (!d) {
+            Swal.fire('Data tidak ditemukan', 'Baris mungkin sudah berubah. Muat ulang tabel lalu coba kembali.', 'warning');
+            return;
+          }
+          $('#editRowId').val(d[0]); 
+          if(FP_EDIT_INSTANCE && d[2]) FP_EDIT_INSTANCE.setDate(d[2]);
+          $('#editTokoName').val(d[5]); 
+          $('#editItemName').val(d[6]); 
+          $('#editItemQty').val(fmtRp(d[7])); 
+          $('#editItemUnit').val(d[10]); 
+          $('#editItemTotal').val(fmtRp(d[8])); 
+      }
+      $('#editRowModal').addClass('active');
+    }
+    
+    async function saveRowEdit() {
+      const isRev = $('#isReviewPhase').val() == "1";
+      if(isRev) { 
+         REVIEW_ITEMS[currentEditReviewIndex].toko = $('#editTokoName').val().toUpperCase(); 
+         REVIEW_ITEMS[currentEditReviewIndex].name = $('#editItemName').val().toUpperCase(); 
+         REVIEW_ITEMS[currentEditReviewIndex].qty = parseIndoNumber($('#editItemQty').val()); 
+         REVIEW_ITEMS[currentEditReviewIndex].unit = $('#editItemUnit').val().toUpperCase(); 
+         REVIEW_ITEMS[currentEditReviewIndex].total = parseIndoNumber($('#editItemTotal').val()); 
+         
+         applyDefaultUnits([REVIEW_ITEMS[currentEditReviewIndex]]);
+         renderReviewTable(); 
+         closeModal('editRowModal'); 
+      }
+      else { 
+        const dateVal = (FP_EDIT_INSTANCE && FP_EDIT_INSTANCE.selectedDates && FP_EDIT_INSTANCE.selectedDates.length > 0) ? FP_EDIT_INSTANCE.selectedDates[0].getTime() : new Date().getTime();
+
+        const p = { 
+            tanggal: dateVal,
+            supplier: $('#editTokoName').val().toUpperCase(),
+            name: $('#editItemName').val().toUpperCase(), 
+            qty: parseIndoNumber($('#editItemQty').val()), 
+            unit: $('#editItemUnit').val().toUpperCase(), 
+            total: parseIndoNumber($('#editItemTotal').val()) 
+        }; 
+        
+        applyDefaultUnits([p]);
+
+        toggleBtnState('btnSaveRowEdit', true);
+        Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'Menyimpan data...', showConfirmButton: false, didOpen: () => { Swal.showLoading() } });
+        try { 
+          await callServer('updateTransaction', $('#editRowId').val(), p); 
+          Toast.fire({ icon: 'success', title: 'Data berhasil diperbarui' });
+          const idToUpdate = $('#editRowId').val();
+          const targetIndex = GLOBAL_HISTORY.findIndex(x => x[0] === idToUpdate);
+          if (targetIndex > -1) { 
+              GLOBAL_HISTORY[targetIndex][2] = p.tanggal; 
+              GLOBAL_HISTORY[targetIndex][5] = p.supplier; 
+              GLOBAL_HISTORY[targetIndex][6] = p.name; 
+              GLOBAL_HISTORY[targetIndex][7] = p.qty; 
+              GLOBAL_HISTORY[targetIndex][8] = p.total; 
+              GLOBAL_HISTORY[targetIndex][10] = p.unit; 
+          }
+          applyHistoryFilters(); 
+          closeModal('editRowModal'); 
+        } catch(e) { Toast.fire({ icon: 'error', title: e.message }); } 
+        finally { toggleBtnState('btnSaveRowEdit', false); }
+      }
+    }
+    function delRev(idx) { REVIEW_ITEMS.splice(idx, 1); renderReviewTable(); }
+    
+    window.deleteHistoryRow = async function(id) {
+       const result = await Swal.fire({
+          title: 'Hapus Data?',
+          text: "Data transaksi ini akan dihapus permanen!",
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#FF6B6B', 
+          cancelButtonColor: '#EAEBFA', 
+          confirmButtonText: 'Ya, Hapus!',
+          cancelButtonText: 'Batal',
+          customClass: { cancelButton: 'text-brand-black font-bold' }
+       });
+
+       if (result.isConfirmed) {
+          try {
+             Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'Menghapus data...', showConfirmButton: false, didOpen: () => { Swal.showLoading() } });
+             await callServer('deleteTransaction', id);
+             GLOBAL_HISTORY = GLOBAL_HISTORY.filter(r => r[0] !== id);
+             applyHistoryFilters(); 
+             Toast.fire({ icon: 'success', title: 'Data berhasil dihapus' });
+          } catch(e) {
+             Toast.fire({ icon: 'error', title: e.message });
+          }
+       }
+    }
+
+    async function submitData() {
+      const validItems = REVIEW_ITEMS.filter(i => !i.isError);
+      if(validItems.length === 0) return Swal.fire('Error', 'Tidak ada data valid.', 'error'); 
+      
+      const uniqueBase64s = [];
+      validItems.forEach(i => { if (uniqueBase64s.indexOf(i.base64) === -1) uniqueBase64s.push(i.base64); });
+      
+      const payloadItems = validItems.map(i => {
+         const base64Index = uniqueBase64s.indexOf(i.base64);
+         return { toko: i.toko, name: i.name, qty: i.qty, unit: i.unit, total: i.total, base64Index: base64Index };
+      });
+
+      toggleBtnState('btnSubmitData', true);
+      Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'Menyimpan data...', showConfirmButton: false, didOpen: () => { Swal.showLoading() } });
+      try { 
+        const validToko = (validItems[0] && validItems[0].toko) ? validItems[0].toko : "";
+        await callServer('saveTransactions', { toko:$('#tokoInput').val(), cv:$('#cvDisplay').val(), tanggal:$('#dateInput').val(), supplier: validToko, items: payloadItems, base64: uniqueBase64s }); 
+        HISTORY_LOADED = false;
+        Toast.fire({ icon: 'success', title: 'Data berhasil dimasukkan' });
+        resetUI(); $('.nav-item[data-page="historyPage"]').click(); 
+      } catch(e) { Toast.fire({ icon: 'error', title: e.message }); }
+      finally { toggleBtnState('btnSubmitData', false); }
+    }
+    function resetUI() { $('#reviewSection').addClass('hidden'); $('#fileInput').val(''); UPLOADED_FILES = []; renderFilePreviews(); REVIEW_ITEMS = []; }
+    async function improveItemNames() {
+      const v = REVIEW_ITEMS.filter(i => !i.isError); if(v.length === 0) return; 
+      toggleBtnState('btnSubmitData', true); 
+      try { 
+        const txt = await callServer('processLLM', `Rapikan nama barang: ${JSON.stringify(v.map((i,idx)=>({idx: idx, original:i.name})))}. HANYA JSON: [{"idx":0,"improved":"..."}]`, true); 
+        JSON.parse(txt).forEach(f => { if(v[f.idx]) v[f.idx].name = String(f.improved).toUpperCase(); }); 
+        applyDefaultUnits(REVIEW_ITEMS);
+        renderReviewTable(); 
+        Toast.fire({ icon: 'success', title: 'Nama dirapikan AI' });
+      } catch(e) { Toast.fire({ icon: 'error', title: e.message }); }
+      finally { toggleBtnState('btnSubmitData', false); }
+    }
+</script>

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <title>Database Nota</title>
+  <path d="M12 6h40v51l-7-4-7 5-6-5-6 5-7-5-7 4V6Z" fill="#2456c5"/>
+  <path d="M22 40V20l20 20V20" stroke="#FAFCF8" stroke-width="6" stroke-linecap="square" stroke-linejoin="round"/>
+  <path d="M42 6h10v10H42z" fill="#9bb9f1"/>
+</svg>

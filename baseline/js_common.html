@@ -1,0 +1,1158 @@
+<script>
+    if (typeof flatpickr !== "undefined") {
+        const Indonesian = {
+            weekdays: { shorthand: ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"], longhand: ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"] },
+            months: { shorthand: ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agt", "Sep", "Okt", "Nov", "Des"], longhand: ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"] },
+            firstDayOfWeek: 1,
+            ordinal: function() { return ""; }
+        };
+        flatpickr.localize(Indonesian);
+    }
+
+    let APP_DATA = { branches: [] }; 
+    let GLOBAL_HISTORY = []; 
+    let FILTERED_HISTORY = [];
+    let LISTRIK_HISTORY = [];
+    let FILTERED_LISTRIK = [];
+    let UMUM_HISTORY = [];
+    let FILTERED_UMUM = [];
+    let HISTORY_LOADED = false;
+    let HISTORY_META = { total: 0, totalAmount: 0, page: 1, limit: 10 };
+    let EXPENSE_META = {
+      listrik: { total: 0, totalAmount: 0, page: 1, limit: 50, loaded: false },
+      umum: { total: 0, totalAmount: 0, page: 1, limit: 50, loaded: false }
+    };
+    let EXPENSE_REQUEST_SEQUENCE = { listrik: 0, umum: 0 };
+    let KONTROL_SUMMARY = { year: null, branches: [], summary: {}, loaded: false };
+    let XLSX_LOAD_PROMISE = null;
+    
+    let UPLOADED_FILES = []; 
+    let CURRENT_PAGE = 1; 
+    let REVIEW_ITEMS = []; 
+    let currentEditReviewIndex = -1; 
+    let FP_INSTANCE = null;
+    let FP_EDIT_INSTANCE = null;
+    let currentSuggestionIndex = -1;
+    const LEGACY_BRANCH_SEARCH_CACHE = { source: null, items: [] };
+    const isGAS = (typeof google !== 'undefined' && google.script && google.script.run);
+    
+    let SORT_STATE = {
+      history: { col: -1, asc: true },
+      listrik: { col: -1, asc: true },
+      umum: { col: -1, asc: true }
+    };
+
+    const Toast = Swal.mixin({
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 3000,
+      timerProgressBar: true,
+      didOpen: (toast) => {
+        toast.addEventListener('mouseenter', Swal.stopTimer)
+        toast.addEventListener('mouseleave', Swal.resumeTimer)
+      }
+    });
+    function toggleBtnState(btnId, isLoading) {
+       const btn = $(`#${btnId}`);
+       if (isLoading) {
+          btn.addClass('btn-loading').prop('disabled', true);
+       } else {
+          btn.removeClass('btn-loading').prop('disabled', false);
+       }
+    }
+
+    const LEGACY_REFRESH_STATE = { button: null, page: null, forceFresh: false, pending: 0 };
+    function beginLegacyRefresh(button) {
+      if (!button || button.getAttribute('aria-busy') === 'true') return;
+      LEGACY_REFRESH_STATE.button = button;
+      LEGACY_REFRESH_STATE.page = button.closest('.page-section');
+      LEGACY_REFRESH_STATE.forceFresh = true;
+      LEGACY_REFRESH_STATE.pending = 0;
+      button.setAttribute('aria-busy', 'true');
+      button.classList.add('legacy-refresh-busy');
+      if (LEGACY_REFRESH_STATE.page) LEGACY_REFRESH_STATE.page.classList.add('legacy-region-refreshing');
+      // Menunda disabled agar onclick inline pada klik yang sama tetap berjalan.
+      setTimeout(() => { if (button.getAttribute('aria-busy') === 'true') button.disabled = true; }, 0);
+    }
+    function trackLegacyRefreshPromise(promise) {
+      if (!LEGACY_REFRESH_STATE.button) return promise;
+      LEGACY_REFRESH_STATE.pending += 1;
+      let succeeded = false;
+      return Promise.resolve(promise).then(value => { succeeded = true; return value; }).finally(() => {
+        LEGACY_REFRESH_STATE.pending = Math.max(0, LEGACY_REFRESH_STATE.pending - 1);
+        if (LEGACY_REFRESH_STATE.pending > 0) return;
+        const button = LEGACY_REFRESH_STATE.button;
+        const page = LEGACY_REFRESH_STATE.page;
+        LEGACY_REFRESH_STATE.button = null;
+        LEGACY_REFRESH_STATE.page = null;
+        LEGACY_REFRESH_STATE.forceFresh = false;
+        if (button) {
+          button.disabled = false;
+          button.removeAttribute('aria-busy');
+          button.classList.remove('legacy-refresh-busy');
+        }
+        if (page) page.classList.remove('legacy-region-refreshing');
+        if (succeeded && typeof Toast !== 'undefined') Toast.fire({ icon:'success', title:'Data berhasil diperbarui' });
+      });
+    }
+    document.addEventListener('click', event => {
+      const button = event.target.closest && event.target.closest('[data-portal-refresh]');
+      if (!button || button.disabled || button.getAttribute('aria-busy') === 'true') return;
+      beginLegacyRefresh(button);
+    }, true);
+
+    const LEGACY_FLOATING_POPOVER = { trigger: null, menu: null, scrollY: 0 };
+    function closeLegacyFloatingPopoverInternal(menu) {
+      const target = menu || LEGACY_FLOATING_POPOVER.menu;
+      if (target && target.__legacyPositionFrame) {
+        window.cancelAnimationFrame(target.__legacyPositionFrame);
+        target.__legacyPositionFrame = null;
+      }
+      if (target) target.classList.add('hidden');
+      const trigger = target && target.__legacyPopoverTrigger || LEGACY_FLOATING_POPOVER.trigger;
+      if (trigger) trigger.setAttribute('aria-expanded', 'false');
+      if (!menu || target === LEGACY_FLOATING_POPOVER.menu) {
+        LEGACY_FLOATING_POPOVER.trigger = null;
+        LEGACY_FLOATING_POPOVER.menu = null;
+      }
+    }
+    function positionLegacyFloatingPopoverInternal(trigger, menu) {
+      if (!trigger || !menu || menu.classList.contains('hidden')) return;
+      const rect = trigger.getBoundingClientRect();
+      const margin = 7;
+      const viewportPad = 12;
+      const below = window.innerHeight - rect.bottom - viewportPad;
+      const above = rect.top - viewportPad;
+      const desired = Math.min(Math.max(menu.scrollHeight || 0, 48), 220);
+      const openAbove = below < Math.min(desired, 150) && above > below;
+      const available = Math.max(72, Math.min(220, openAbove ? above - margin : below - margin));
+      menu.style.left = `${Math.max(viewportPad, Math.min(rect.left, window.innerWidth - rect.width - viewportPad))}px`;
+      menu.style.width = `${Math.min(rect.width, window.innerWidth - viewportPad * 2)}px`;
+      menu.style.maxHeight = `${available}px`;
+      menu.style.top = openAbove
+        ? `${Math.max(viewportPad, rect.top - Math.min(desired, available) - margin)}px`
+        : `${Math.min(window.innerHeight - viewportPad, rect.bottom + margin)}px`;
+      menu.dataset.placement = openAbove ? 'top' : 'bottom';
+    }
+    function scheduleLegacyFloatingPopoverPosition(trigger, menu) {
+      if (!trigger || !menu) return;
+      if (menu.__legacyPositionFrame) window.cancelAnimationFrame(menu.__legacyPositionFrame);
+      menu.__legacyPositionFrame = window.requestAnimationFrame(() => {
+        menu.__legacyPositionFrame = null;
+        positionLegacyFloatingPopoverInternal(trigger, menu);
+      });
+    }
+    function openLegacyFloatingPopoverInternal(trigger, menu) {
+      if (!trigger || !menu) return;
+      if (LEGACY_FLOATING_POPOVER.menu && LEGACY_FLOATING_POPOVER.menu !== menu) closeLegacyFloatingPopoverInternal();
+      if (menu.parentNode !== document.body) document.body.appendChild(menu);
+      menu.__legacyPopoverTrigger = trigger;
+      menu.classList.add('legacy-floating-popover');
+      menu.classList.remove('hidden');
+      trigger.setAttribute('aria-expanded', 'true');
+      LEGACY_FLOATING_POPOVER.trigger = trigger;
+      LEGACY_FLOATING_POPOVER.menu = menu;
+      LEGACY_FLOATING_POPOVER.scrollY = window.scrollY;
+      scheduleLegacyFloatingPopoverPosition(trigger, menu);
+    }
+    window.toggleLegacyFloatingPopover = function(triggerId, menuId) {
+      const trigger = document.getElementById(triggerId);
+      const menu = document.getElementById(menuId);
+      if (!trigger || !menu) return;
+      if (!menu.classList.contains('hidden')) closeLegacyFloatingPopoverInternal(menu);
+      else openLegacyFloatingPopoverInternal(trigger, menu);
+    };
+    window.openLegacyFloatingPopover = function(triggerOrId, menuOrId) {
+      const trigger = typeof triggerOrId === 'string' ? document.getElementById(triggerOrId) : triggerOrId;
+      const menu = typeof menuOrId === 'string' ? document.getElementById(menuOrId) : menuOrId;
+      openLegacyFloatingPopoverInternal(trigger, menu);
+    };
+    window.closeLegacyFloatingPopover = function(menuOrId) {
+      const menu = typeof menuOrId === 'string' ? document.getElementById(menuOrId) : menuOrId;
+      closeLegacyFloatingPopoverInternal(menu);
+    };
+    window.bindLegacyPopoverKeyboard = function(triggerId, menuId) {
+      const trigger = document.getElementById(triggerId);
+      const menu = document.getElementById(menuId);
+      if (!trigger || !menu || trigger.dataset.legacyKeyboardBound === 'true') return;
+      trigger.dataset.legacyKeyboardBound = 'true';
+      let index = -1;
+      trigger.addEventListener('keydown', event => {
+        if (!['ArrowDown','ArrowUp','Enter','Escape'].includes(event.key)) return;
+        if (event.key === 'Escape') {
+          if (!menu.classList.contains('hidden')) { event.preventDefault(); event.stopPropagation(); closeLegacyFloatingPopoverInternal(menu); }
+          return;
+        }
+        if (menu.classList.contains('hidden')) openLegacyFloatingPopoverInternal(trigger, menu);
+        const options = Array.from(menu.querySelectorAll('[data-tarik-action], [role="option"]'));
+        if (!options.length) return;
+        event.preventDefault();
+        if (event.key === 'ArrowDown') index = (index + 1) % options.length;
+        else if (event.key === 'ArrowUp') index = (index - 1 + options.length) % options.length;
+        else if (event.key === 'Enter') { options[Math.max(0, index)].click(); return; }
+        options.forEach((item, itemIndex) => item.classList.toggle('legacy-popover-active', itemIndex === index));
+        options[index].scrollIntoView({ block:'nearest' });
+      });
+    };
+    window.addEventListener('resize', () => positionLegacyFloatingPopoverInternal(LEGACY_FLOATING_POPOVER.trigger, LEGACY_FLOATING_POPOVER.menu), { passive:true });
+    window.addEventListener('scroll', event => {
+      if (!LEGACY_FLOATING_POPOVER.menu) return;
+      const scrollTarget = event && event.target;
+      if (scrollTarget && scrollTarget !== document && scrollTarget !== document.documentElement && scrollTarget !== document.body && scrollTarget !== window) return;
+      LEGACY_FLOATING_POPOVER.scrollY = window.scrollY;
+      positionLegacyFloatingPopoverInternal(LEGACY_FLOATING_POPOVER.trigger, LEGACY_FLOATING_POPOVER.menu);
+    }, { passive:true, capture:true });
+    document.addEventListener('click', event => {
+      const menu = LEGACY_FLOATING_POPOVER.menu;
+      const trigger = LEGACY_FLOATING_POPOVER.trigger;
+      if (!menu || menu.contains(event.target) || (trigger && trigger.contains(event.target))) return;
+      closeLegacyFloatingPopoverInternal();
+    });
+    document.addEventListener('keydown', event => {
+      if (event.key !== 'Escape' || !LEGACY_FLOATING_POPOVER.menu) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      const trigger = LEGACY_FLOATING_POPOVER.trigger;
+      closeLegacyFloatingPopoverInternal();
+      if (trigger && typeof trigger.focus === 'function') trigger.focus();
+    }, true);
+
+    async function legacyPendingRequestKey(action, args, token) {
+      const bytes = new window.TextEncoder().encode(token + '|' + action + '|' + JSON.stringify(args));
+      const digest = await window.crypto.subtle.digest('SHA-256', bytes);
+      return 'nota-pending-' + Array.from(new Uint8Array(digest)).map(value => value.toString(16).padStart(2,'0')).join('');
+    }
+
+    function callServer(f, ...args) {
+      return new Promise((resolve, reject) => {
+        if (!isGAS) {
+            setTimeout(() => {
+              if (f === 'getBootstrapData') resolve({ branches: [{ toko: "GLOBAL DEPOK", cv: "CV NUSA BAHARI ABADI" }], jenisPengeluaran: [], cabangCentralKitchen: [] });
+              else if (f === 'getHistoryPage') resolve({ rows: [
+                ['LOCAL-HISTORY-1','',Date.UTC(2026,7,29),'GLOBAL DEPOK','CV NUSA BAHARI ABADI','RUMAH TELUR','TELUR CREAM',3.5,120000,'','KG',''],
+                ['LOCAL-HISTORY-2','',Date.UTC(2026,7,28),'CABANG LOKAL','CV LOKAL','SUPPLIER LOKAL','MINYAK GORENG',2,76000,'','PCS','POSTED']
+              ], total: 2, totalAmount: 196000, page: 1, limit: 10 });
+              else if (f === 'getExpensePage') resolve({ rows: [], total: 0, totalAmount: 0, page: 1, limit: 5000 });
+              else if (f === 'getExpenseSummaryByBranchMonth') resolve({ branches: [], summary: {}, year: new Date().getFullYear() });
+              else if (f === 'getAllData') resolve({ branches: [{ toko: "GLOBAL DEPOK", cv: "CV NUSA BAHARI ABADI" }], history: [] });
+              else if (f === 'processOCRWithGemini') resolve([{ success: true, originalIndex: 0, data: { supplier: "RUMAH TELUR", items: [{ toko: "RUMAH TELUR", name: "TELUR CREAM", qty: 3.5, unit: "KG", total: 120000 }] } }]);
+              else if (f === 'deleteTransaction') resolve(true);
+              else resolve([]);
+            }, 800);
+            return;
+        }
+        let sessionToken = '';
+        try {
+          sessionToken = (window.PortalCore && window.PortalCore.Portal && window.PortalCore.Portal.token)
+            || (window.sessionStorage && window.sessionStorage.getItem('gbb_portal_session'))
+            || '';
+        } catch (storageError) {}
+        if (!sessionToken) {
+          reject(new Error('Sesi login tidak ditemukan. Silakan login kembali.'));
+          return;
+        }
+        const cacheableReads = ['getBootstrapData','getHistoryPage','getExpensePage','getExpenseSummaryByBranchMonth'];
+        if (cacheableReads.includes(f) && window.PortalCore && typeof window.PortalCore.cachedLegacyCall === 'function') {
+          const runCachedRead = async () => {
+            if (LEGACY_REFRESH_STATE.forceFresh && typeof window.PortalCore.clearPortalActionCache === 'function') {
+              await window.PortalCore.clearPortalActionCache('LEGACY_' + f);
+            }
+            return window.PortalCore.cachedLegacyCall(f, args);
+          };
+          trackLegacyRefreshPromise(runCachedRead()).then(resolve, reject);
+          return;
+        }
+        const mutationActions = ['saveTransactions','updateTransaction','deleteTransaction','saveListrikTransaction','updateListrikTransaction','deleteListrikTransaction','bulkDeleteListrikTransaction','duplicateToKategori','submitTarikDataBatch','resetTarikDataBatch'];
+        const run = async () => {
+          const mutating = mutationActions.includes(f);
+          const pendingKey = mutating ? await legacyPendingRequestKey(f, args, window.PortalCore?.Portal?.user?.uid || sessionToken) : '';
+          let requestId = pendingKey ? window.sessionStorage.getItem(pendingKey) : '';
+          if (mutating && !requestId) {
+            requestId = window.crypto.randomUUID();
+            window.sessionStorage.setItem(pendingKey, requestId);
+          }
+          if (f === 'submitTarikDataBatch' || f === 'resetTarikDataBatch') {
+            const prior = window.sessionStorage.getItem('nota-tarik-recovery');
+            if (prior) {
+              let identity; try { identity=JSON.parse(prior); } catch(error) { identity={operationId:prior}; }
+              if (identity.clientRequestId !== requestId) {
+                try {
+                  const status=await window.PortalCore.api('GET_TARIK_JOB',identity);
+                  if(status.status!=='COMPLETED') { resolve({success:false,status:'RECOVERY_REQUIRED',operationId:status.operationId,progress:status.progress,message:'Selesaikan pengiriman sebelumnya sebelum membuat pengiriman baru.'}); return; }
+                } catch(error) { if(!/Pekerjaan tidak ditemukan/.test(error.message)) throw error; }
+              }
+            }
+            window.sessionStorage.setItem('nota-tarik-recovery', JSON.stringify({clientRequestId:requestId}));
+          }
+          let settled = false;
+          const finish = (callback, value) => { if (settled) return; settled = true; clearTimeout(timer); callback(value); };
+          const timer = setTimeout(() => {
+            if (f === 'submitTarikDataBatch' || f === 'resetTarikDataBatch') finish(resolve, {success:false,status:'RECOVERY_REQUIRED',clientRequestId:requestId,progress:0,message:'Respons belum diterima. Periksa status sebelum mengirim ulang.'});
+            else finish(reject, new Error(mutating ? 'Respons penyimpanan belum dapat dipastikan. Ulangi pengiriman yang sama untuk memeriksa hasil; jangan membuat transaksi baru.' : 'Server belum merespons. Data belum diperbarui.'));
+          }, mutating ? 90000 : 40000);
+          google.script.run.withSuccessHandler(async value => {
+            try {
+              if (mutating && value !== false && !(value && (value.success === false || value.error))) {
+                window.sessionStorage.removeItem(pendingKey);
+                if ((f === 'submitTarikDataBatch' || f === 'resetTarikDataBatch') && window.sessionStorage.getItem('nota-tarik-recovery') === JSON.stringify({clientRequestId:requestId})) window.sessionStorage.removeItem('nota-tarik-recovery');
+                if (window.PortalCore && typeof window.PortalCore.clearPortalActionCache === 'function') {
+                  const actions = f.includes('Transaction') && !f.includes('Listrik') ? ['LEGACY_getHistoryPage'] : ['LEGACY_getExpensePage','LEGACY_getExpenseSummaryByBranchMonth'];
+                  if (f.includes('Tarik')) actions.push('GET_TAX_RECEIPTS','GET_STORE_HISTORY','GET_STORE_DASHBOARD');
+                  await Promise.all(actions.map(action => window.PortalCore.clearPortalActionCache(action)));
+                }
+              }
+              finish(resolve,value);
+            } catch(error) { finish(resolve,value); }
+          }).withFailureHandler(error => finish(reject,error)).portalLegacyApi(sessionToken, f, args, { clientRequestId:requestId });
+        };
+        run().catch(reject);
+      });
+    }
+
+    // Viewer bersama untuk History, Nota Listrik, Nota Umum, dan detail kontrol.
+    // Dideklarasikan di runtime umum agar ikon foto tetap bekerja walaupun user
+    // membuka halaman Listrik langsung tanpa pernah membuka History Deteksi.
+    window.closeModal = function(id) { $(`#${id}`).removeClass('active'); };
+    window.showImg = async function(rawSources) {
+      const sources = String(rawSources || '').split(/\s*,\s*|\r?\n/).map(value => value.trim()).filter(Boolean);
+      if (!sources.length || sources.every(value => value === '-')) {
+        return Swal.fire('Oops', 'Gambar tidak tersedia atau gagal tersimpan.', 'info');
+      }
+      const container = $('#modalImgContainer').empty().html('<div class="legacy-photo-loading"><i class="bi bi-arrow-repeat animate-spin"></i><span>Memuat foto...</span></div>');
+      $('#previewModal').addClass('active').attr('aria-busy', 'true');
+      try {
+        const photos = await Promise.all(sources.filter(value => value !== '-').map(async source => {
+          const direct = window.legacySafeImageUrl ? window.legacySafeImageUrl(source) : '';
+          if (direct && /^data:image\//i.test(direct)) return { fileName:'Foto transaksi', dataUrl:direct };
+          return callServer('getLegacyPhoto', source);
+        }));
+        const images = photos.map((photo, index) => {
+          const dataUrl = typeof photo === 'string' ? photo : photo && photo.dataUrl;
+          const safeUrl = window.legacySafeImageUrl ? window.legacySafeImageUrl(dataUrl) : '';
+          const fileName = String(photo && photo.fileName || `Foto transaksi ${index + 1}`);
+          return safeUrl ? `<figure class="legacy-photo-frame"><img src="${window.legacyEscapeHtml(safeUrl)}" alt="${window.legacyEscapeHtml(fileName)}"><figcaption>${window.legacyEscapeHtml(fileName)}</figcaption></figure>` : '';
+        }).join('');
+        if (!images) throw new Error('Foto tidak tersedia atau formatnya tidak valid.');
+        container.html(images);
+      } catch (error) {
+        container.html(`<div class="legacy-photo-error"><i class="bi bi-image"></i><strong>Foto gagal dimuat</strong><span>${window.legacyEscapeHtml(error && error.message || String(error))}</span></div>`);
+      } finally {
+        $('#previewModal').removeAttr('aria-busy');
+      }
+    };
+
+    let LATEST_DEBUG_INFO = [];
+    let LATEST_SS_INFO = null;
+    function updateDebugPanel() {
+       return;
+    }
+
+    function parseIndoNumber(str) {
+        if (!str) return 0;
+        return parseFloat(String(str).replace(/\./g, '').replace(',', '.'));
+    }
+
+    function fmtRp(n) {
+        if (n == null || n === '') return '0';
+        let val = Math.round(Number(n));
+        if (isNaN(val)) return '0';
+        return new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(val);
+    }
+
+    function fmtIndo(s) {
+      if (!s) return "-"; 
+      let d = new Date(s);
+      if (isNaN(d.getTime())) return s;
+      const m = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agt","Sep","Okt","Nov","Des"];
+      return `${String(d.getDate()).padStart(2, '0')} ${m[d.getMonth()]} ${String(d.getFullYear()).slice(-2)}`;
+    }
+
+    function formatCurrencyInput(el) {
+        let v = el.value.replace(/[^0-9,]/g,'');
+        if (v.startsWith(',')) v = '0' + v;
+        
+        let parts = v.split(',');
+        let intPart = parts[0].replace(/\./g, '');
+        let formattedInt = intPart === "" ? "" : new Intl.NumberFormat('id-ID').format(intPart);
+        
+        if (parts.length > 1) {
+            el.value = formattedInt + ',' + parts[1];
+        } else {
+            el.value = formattedInt;
+        }
+    }
+
+    $(document).ready(() => { 
+        try {
+            initPlugins(); 
+        } catch (e) {
+            console.error("Plugin initialization error:", e);
+        }
+        setupEvents(); 
+        if (typeof window.populateTarikPeriode === 'function') window.populateTarikPeriode();
+        if (!window.PORTAL_MANAGES_NAV) $('#skeleton-loader').hide();
+    });
+
+    // Dipanggil portal baru hanya setelah akun TAX/ADMIN berhasil login.
+    window.startLegacyTaxApp = function() {
+      fetchBootstrapData();
+    };
+
+    let FP_LISTRIK_FILTER = null;
+    let FP_UMUM_FILTER = null;
+
+    const LEGACY_MONTH_NAMES = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+    function syncLegacyFlatpickrHeader(instance) {
+      if (!instance || !instance.monthNav) return;
+      const customHeader = instance.monthNav.querySelector('.custom-fp-header');
+      if (!customHeader) return;
+      const month = customHeader.querySelector('.fp-month-text');
+      const year = customHeader.querySelector('.fp-year-text');
+      if (month && Number.isInteger(instance.currentMonth)) month.textContent = LEGACY_MONTH_NAMES[instance.currentMonth];
+      if (year && Number.isFinite(Number(instance.currentYear))) year.textContent = String(instance.currentYear);
+    }
+    window.syncLegacyFlatpickrHeader = syncLegacyFlatpickrHeader;
+    window.setLegacyFlatpickrDate = function(inputOrId, rawDate, useTodayFallback) {
+      const input = typeof inputOrId === 'string' ? document.getElementById(inputOrId) : inputOrId;
+      const instance = input && input._flatpickr;
+      if (!instance) return null;
+      let date = rawDate instanceof Date ? new Date(rawDate.getTime()) : null;
+      if (!date) {
+        const numeric = typeof rawDate === 'string' && /^\d{10,13}$/.test(rawDate.trim()) ? Number(rawDate) : rawDate;
+        date = new Date(numeric);
+      }
+      if (isNaN(date.getTime())) date = useTodayFallback ? new Date() : null;
+      if (!date) { instance.clear(false); syncLegacyFlatpickrHeader(instance); return null; }
+      instance.setDate(date, false);
+      instance.jumpToDate(date);
+      instance.redraw();
+      syncLegacyFlatpickrHeader(instance);
+      return date;
+    };
+
+    function buildCustomHeader(selectedDates, dateStr, instance) {
+        if (!instance || !instance.monthNav) return;
+        if (instance.monthNav.querySelector('.custom-fp-header')) return;
+
+        const monthsStr = LEGACY_MONTH_NAMES;
+        
+        const originalMonths = instance.monthNav.querySelectorAll('.flatpickr-month, .flatpickr-current-month');
+        originalMonths.forEach(m => { m.style.display = 'none'; });
+
+        const customHeader = document.createElement('div');
+        customHeader.className = 'custom-fp-header flex justify-between items-center w-full gap-2 relative';
+        
+        const monthWrapper = document.createElement('div');
+        monthWrapper.className = 'relative flex-1';
+        const monthBtn = document.createElement('div');
+        monthBtn.className = 'legacy-fp-select w-full border-[1.5px] border-[#EAEBFA] rounded-lg px-2 font-bold text-[#1E1E2F] cursor-pointer flex justify-between items-center text-[11px] transition-all hover:border-[#7651FF] bg-white';
+        monthBtn.innerHTML = `<span class="fp-month-text">${instance.currentMonth !== undefined ? monthsStr[instance.currentMonth] : 'Bulan'}</span><i class="bi bi-chevron-down text-[#8A8A9E]"></i>`;
+        
+        const monthList = document.createElement('div');
+        monthList.className = 'legacy-fp-list absolute top-full left-0 right-0 mt-1 bg-white border border-[#EAEBFA] rounded-lg shadow-lg overflow-y-auto hidden z-50 flex flex-col p-1';
+        monthsStr.forEach((m, idx) => {
+            const mItem = document.createElement('div');
+            mItem.className = 'legacy-fp-option hover:bg-[#F2F0FF] hover:text-[#7651FF] cursor-pointer font-bold text-[#1E1E2F] transition-colors rounded-md';
+            mItem.innerText = m;
+            mItem.onclick = (e) => {
+                e.stopPropagation();
+                instance.changeMonth(idx, false);
+                syncLegacyFlatpickrHeader(instance);
+                monthList.classList.add('hidden');
+            };
+            monthList.appendChild(mItem);
+        });
+        monthWrapper.appendChild(monthBtn);
+        monthWrapper.appendChild(monthList);
+        
+        monthBtn.onclick = (e) => { e.stopPropagation(); monthList.classList.toggle('hidden'); yearList.classList.add('hidden'); };
+
+        const yearWrapper = document.createElement('div');
+        yearWrapper.className = 'relative flex-[0.8]';
+        const yearBtn = document.createElement('div');
+        yearBtn.className = 'legacy-fp-select w-full border-[1.5px] border-[#EAEBFA] rounded-lg px-2 font-bold text-[#1E1E2F] cursor-pointer flex justify-between items-center text-[11px] transition-all hover:border-[#7651FF] bg-white';
+        yearBtn.innerHTML = `<span class="fp-year-text">${instance.currentYear !== undefined ? instance.currentYear : 'Tahun'}</span><i class="bi bi-chevron-down text-[#8A8A9E]"></i>`;
+        
+        const yearList = document.createElement('div');
+        yearList.className = 'legacy-fp-list absolute top-full left-0 right-0 mt-1 bg-white border border-[#EAEBFA] rounded-lg shadow-lg overflow-y-auto hidden z-50 flex flex-col p-1';
+        
+        const currY = new Date().getFullYear();
+        for(let y = currY - 3; y <= Math.max(currY + 5, 2035); y++) {
+            const yItem = document.createElement('div');
+            yItem.className = 'legacy-fp-option hover:bg-[#F2F0FF] hover:text-[#7651FF] cursor-pointer font-bold text-[#1E1E2F] transition-colors rounded-md';
+            yItem.innerText = y;
+            yItem.onclick = (e) => {
+                e.stopPropagation();
+                instance.changeYear(y);
+                syncLegacyFlatpickrHeader(instance);
+                yearList.classList.add('hidden');
+            };
+            yearList.appendChild(yItem);
+        }
+        yearWrapper.appendChild(yearBtn);
+        yearWrapper.appendChild(yearList);
+
+        yearBtn.onclick = (e) => { e.stopPropagation(); yearList.classList.toggle('hidden'); monthList.classList.add('hidden'); };
+
+        customHeader.appendChild(monthWrapper);
+        customHeader.appendChild(yearWrapper);
+        
+        instance.monthNav.appendChild(customHeader);
+        syncLegacyFlatpickrHeader(instance);
+
+        if (!instance.config.onMonthChange) instance.config.onMonthChange = [];
+        instance.config.onMonthChange.push(() => {
+            syncLegacyFlatpickrHeader(instance);
+        });
+        
+        if (!instance.config.onYearChange) instance.config.onYearChange = [];
+        instance.config.onYearChange.push(() => {
+            syncLegacyFlatpickrHeader(instance);
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!customHeader.contains(e.target)) { monthList.classList.add('hidden'); yearList.classList.add('hidden'); }
+        });
+    }
+    function initPlugins() {
+      const commonConfig = {
+        onReady: [buildCustomHeader, (dates, value, instance) => syncLegacyFlatpickrHeader(instance)],
+        onOpen: [(dates, value, instance) => syncLegacyFlatpickrHeader(instance)],
+        onValueUpdate: [(dates, value, instance) => syncLegacyFlatpickrHeader(instance)]
+      };
+
+      const fdi = document.getElementById("dateInput");
+      if (fdi) {
+         flatpickr(fdi, Object.assign({ dateFormat: "d M y", defaultDate: "today", disableMobile: true }, commonConfig));
+      }
+
+      const feid = document.getElementById("editItemDate");
+      if (feid) {
+         FP_EDIT_INSTANCE = flatpickr(feid, Object.assign({ dateFormat: "Y-m-d", altInput: true, altFormat: "d M y", disableMobile: true }, commonConfig));
+      }
+
+      const fldi = document.getElementById("listrikDateInput");
+      if (fldi) {
+         flatpickr(fldi, Object.assign({ dateFormat: "d M y", defaultDate: "today", disableMobile: true }, commonConfig));
+      }
+
+      const fdrf = document.getElementById("dateRangeFilter");
+      if (fdrf) {
+          FP_INSTANCE = flatpickr(fdrf, Object.assign({ mode: "range", dateFormat: "d/m/Y", disableMobile: true, onChange: (dates) => {
+              if (dates.length === 2) { 
+                $('#startDateDisplay').text(fmtIndo(dates[0])); $('#endDateDisplay').text(fmtIndo(dates[1])); 
+                $('#dateFilterWrapper').addClass('has-date'); applyHistoryFilters();
+              } else if (dates.length === 0) { 
+                $('#startDateDisplay').text('START'); $('#endDateDisplay').text('TO'); 
+                $('#dateFilterWrapper').removeClass('has-date'); applyHistoryFilters(); 
+              }
+          } }, commonConfig));
+      }
+      window.clearDateFilter = (e) => { e.stopPropagation(); if (FP_INSTANCE) FP_INSTANCE.clear(); };
+
+      const flrf = document.getElementById("listrikDateRangeFilter");
+      if (flrf) {
+          FP_LISTRIK_FILTER = flatpickr(flrf, Object.assign({ mode: "range", dateFormat: "d/m/Y", disableMobile: true, onChange: (dates) => {
+              if (dates.length === 2) { 
+                $('#listrikStartDisplay').text(fmtIndo(dates[0])); $('#listrikEndDisplay').text(fmtIndo(dates[1])); 
+                $('#listrikDateFilterWrapper').addClass('has-date'); applyListrikFilters();
+              } else if (dates.length === 0) { 
+                $('#listrikStartDisplay').text('START'); $('#listrikEndDisplay').text('TO'); 
+                $('#listrikDateFilterWrapper').removeClass('has-date'); applyListrikFilters(); 
+              }
+          } }, commonConfig));
+      }
+      window.clearListrikDateFilter = (e) => { e.stopPropagation(); if (FP_LISTRIK_FILTER) FP_LISTRIK_FILTER.clear(); };
+
+      const furf = document.getElementById("umumDateRangeFilter");
+      if (furf) {
+          FP_UMUM_FILTER = flatpickr(furf, Object.assign({ mode: "range", dateFormat: "d/m/Y", disableMobile: true, onChange: (dates) => {
+              if (dates.length === 2) { 
+                $('#umumStartDisplay').text(fmtIndo(dates[0])); $('#umumEndDisplay').text(fmtIndo(dates[1])); 
+                $('#umumDateFilterWrapper').addClass('has-date'); applyUmumFilters();
+              } else if (dates.length === 0) { 
+                $('#umumStartDisplay').text('START'); $('#umumEndDisplay').text('TO'); 
+                $('#umumDateFilterWrapper').removeClass('has-date'); applyUmumFilters(); 
+              }
+          } }, commonConfig));
+      }
+      window.clearUmumDateFilter = (e) => { e.stopPropagation(); if (FP_UMUM_FILTER) FP_UMUM_FILTER.clear(); };
+    }
+    function setupSearchableDropdown(inputId, dataArray) {
+      const input = $('#' + inputId);
+      if (!input.length) return;
+      
+      if (!input.parent().hasClass('searchable-dropdown-wrapper')) {
+         input.wrap('<div class="relative searchable-dropdown-wrapper"></div>');
+         const list = $('<div class="absolute top-full left-0 right-0 mt-1 bg-white border border-brand-stone rounded-xl shadow-lg max-h-48 overflow-y-auto hidden z-50 flex flex-col p-1"></div>');
+         input.after(list);
+         
+         if(input.parent().find('.bi-chevron-down').length === 0) {
+            input.after('<i class="bi bi-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-brand-stone pointer-events-none text-xs"></i>');
+         }
+
+         input.on('focus click input', function(e) {
+           let val = $(this).val().toLowerCase();
+           if ($(this).prop('readonly') || e.type === 'focus' || e.type === 'click') {
+               val = '';
+           }
+           
+           const source = input.data('source') || [];
+           list.empty();
+           let matches = source.filter(item => item.toLowerCase().includes(val));
+           if (val === '') matches = source;
+           
+           matches.forEach(m => {
+              const opt = $('<div class="p-2 hover:bg-[#F2F0FF] hover:text-[#7651FF] cursor-pointer text-sm font-bold text-[#1E1E2F] transition-colors rounded-lg"></div>').text(m);
+              opt.on('mousedown', function(e) {
+                 e.preventDefault();
+                 input.val(m).trigger('change');
+                 list.addClass('hidden');
+              });
+              list.append(opt);
+           });
+           
+           if(matches.length > 0) list.removeClass('hidden');
+           else list.addClass('hidden');
+         });
+
+         input.on('change', function() {
+            if (inputId.toLowerCase().includes('eliminasi')) {
+               const v = $(this).val().toUpperCase();
+               if (v === 'YA') {
+                  $(this).removeClass('text-green-600 text-brand-black').addClass('text-red-500 font-black');
+               } else if (v === 'TIDAK') {
+                  $(this).removeClass('text-red-500 text-brand-black').addClass('text-green-600 font-black');
+               } else {
+                  $(this).removeClass('text-red-500 text-green-600').addClass('text-brand-black font-bold');
+               }
+            }
+         });
+
+         input.on('blur', function() {
+           setTimeout(() => list.addClass('hidden'), 150);
+         });
+      }
+      input.data('source', dataArray);
+    }
+    function hydrateBootstrapData(res) {
+      APP_DATA.branches = (res && res.branches) ? res.branches : [];
+      LEGACY_BRANCH_SEARCH_CACHE.source = null;
+      LEGACY_BRANCH_SEARCH_CACHE.items = [];
+      APP_DATA.jenisPengeluaran = (res && res.jenisPengeluaran) ? res.jenisPengeluaran : [];
+      APP_DATA.cabangCentralKitchen = (res && res.cabangCentralKitchen) ? res.cabangCentralKitchen : [];
+
+      setupSearchableDropdown('tambahJenis', APP_DATA.jenisPengeluaran);
+      setupSearchableDropdown('tambahCabang', APP_DATA.cabangCentralKitchen);
+      setupSearchableDropdown('editJenis', APP_DATA.jenisPengeluaran);
+      setupSearchableDropdown('editCabang', APP_DATA.cabangCentralKitchen);
+      setupSearchableDropdown('tambahEliminasi', ['TIDAK', 'YA']);
+      setupSearchableDropdown('editEliminasi', ['TIDAK', 'YA']);
+
+      const ckDatalist = $('#list-cabang-ck').empty();
+      APP_DATA.cabangCentralKitchen.forEach(c => ckDatalist.append(`<option value="${c}">`));
+
+      const jenisDatalist = $('#list-jenis-pengeluaran').empty();
+      APP_DATA.jenisPengeluaran.forEach(j => jenisDatalist.append(`<option value="${j}">`));
+    }
+    async function fetchBootstrapData() {
+      try {
+         const res = await callServer('getBootstrapData');
+         if (res && res.error) {
+            Swal.fire('Server Error (Bootstrap)', res.error, 'error');
+         }
+         hydrateBootstrapData(res || {});
+      } catch(e) {
+         Swal.fire('Koneksi Error', e.message, 'error');
+      } finally {
+         if (!window.PORTAL_MANAGES_NAV) {
+           $('#skeleton-loader').hide();
+           $('.page-section').hide();
+           $('#inputPage').show();
+         }
+      }
+    }
+    function toggleSidebar() {
+      if (typeof window.portalToggleSidebar === 'function') window.portalToggleSidebar();
+    }
+    function setupEvents() {
+      if (!window.PORTAL_MANAGES_NAV) {
+        const sidebarToggleButton = document.getElementById('toggleSidebarButton');
+        if (sidebarToggleButton) sidebarToggleButton.addEventListener('click', toggleSidebar);
+        $('.nav-item').on('click.legacyNavigation', function() {
+          const p = $(this).data('page');
+          if (p) $(`#${p}`).show().siblings('.page-section').hide();
+        });
+      }
+
+      const dz = document.getElementById('dropZone'); 
+      if (dz) {
+          dz.onclick = (e) => { 
+             if(e.target.id !== 'fileInput' && $(e.target).closest('#previewContainer').length === 0) {
+                 document.getElementById('fileInput').click(); 
+             }
+          };
+          dz.ondragover = (e) => { e.preventDefault(); e.stopPropagation(); dz.classList.add('border-brand-coral', 'bg-white'); };
+          dz.ondragleave = (e) => { e.preventDefault(); e.stopPropagation(); dz.classList.remove('border-brand-coral', 'bg-white'); };
+          dz.ondrop = (e) => { 
+             e.preventDefault(); e.stopPropagation(); dz.classList.remove('border-brand-coral'); 
+             if(e.dataTransfer.files.length) handleFiles(Array.from(e.dataTransfer.files)); 
+          };
+      }
+      
+      $('#fileInput').on('change', function(e) { 
+          const files = e.target.files;
+          if (files && files.length > 0) {
+             handleFiles(Array.from(files)); 
+          }
+          setTimeout(() => { e.target.value = null; }, 100);
+      });
+      
+      setupCustomDropdown('tokoInput', 'tokoDropdown', (s) => { 
+          if(s) { $('#tokoInput').val(s.toko); $('#cvDisplay').val(s.cv); }
+      });
+      
+      setupCustomDropdown('filterCabangInput', 'filterCabangDropdown', (s) => { 
+          $('#filterCabangInput').val(s?s.toko:''); applyHistoryFilters(); 
+      }, true);
+
+      setupExpenseSearchCombobox('listrik');
+      setupExpenseSearchCombobox('umum');
+      
+      $('#filterCabangInput').on('input', function() { if ($(this).val().trim() === '') applyHistoryFilters(); });
+      let t = null; $('#searchBar').on('input', () => { clearTimeout(t); t = setTimeout(() => applyHistoryFilters(), 300); });
+      let listrikSearchTimer = null;
+      $('#listrikSearchBar').on('input', () => { clearTimeout(listrikSearchTimer); listrikSearchTimer = setTimeout(() => applyListrikFilters(), 300); });
+      let umumSearchTimer = null;
+      $('#umumSearchBar').on('input', () => { clearTimeout(umumSearchTimer); umumSearchTimer = setTimeout(() => applyUmumFilters(), 300); });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.defaultPrevented) return;
+
+        if (e.key === 'Escape') {
+          if (window.Swal && window.Swal.isVisible && window.Swal.isVisible()) return;
+
+          const openModals = document.querySelectorAll('.modal-overlay.active');
+          if (openModals.length > 0) {
+            e.preventDefault();
+            openModals.forEach(modal => {
+              if(modal.id) closeModal(modal.id);
+            });
+            return;
+          }
+
+          if (typeof window.portalHasOpenSurface === 'function' && window.portalHasOpenSurface()) return;
+
+          const tag = document.activeElement && document.activeElement.tagName;
+          if (['INPUT', 'TEXTAREA', 'SELECT'].includes(tag) || document.activeElement?.isContentEditable) return;
+          e.preventDefault();
+          toggleSidebar();
+        }
+
+        if (e.key === 'Enter') {
+          // Ignore if focused on a textarea or contenteditable element
+          if (e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
+
+          // Ignore if SweetAlert (Swal) is currently visible to prevent conflicts
+          if (window.Swal && window.Swal.isVisible && window.Swal.isVisible()) return;
+
+          // Check if any modal overlay is active
+          const activeModals = document.querySelectorAll('.modal-overlay.active');
+          if (activeModals.length > 0) {
+            // Target the last/top-most active modal
+            const topModal = activeModals[activeModals.length - 1];
+            const modalId = topModal.id;
+
+            if (modalId === 'tarikUploadModal') {
+              e.preventDefault();
+              if (typeof saveTarikFotoLocally === 'function') {
+                saveTarikFotoLocally();
+              }
+            } else if (modalId === 'tambahTarikModal') {
+              e.preventDefault();
+              if (typeof submitTambahTarikData === 'function') {
+                submitTambahTarikData();
+              }
+            } else if (modalId === 'editTarikModal') {
+              e.preventDefault();
+              if (typeof submitEditTarikData === 'function') {
+                submitEditTarikData();
+              }
+            } else if (modalId === 'listrikModal') {
+              e.preventDefault();
+              if (typeof saveListrikData === 'function') {
+                saveListrikData();
+              }
+            } else if (modalId === 'editRowModal') {
+              e.preventDefault();
+              if (typeof saveRowEdit === 'function') {
+                saveRowEdit();
+              }
+            }
+          } else {
+            // No modal active: check if on inputPage (deteksi foto page)
+            const activePage = $('.nav-item.active-page').data('page') || 'inputPage';
+            if (activePage === 'inputPage') {
+              const reviewSection = $('#reviewSection');
+              if (reviewSection.length && !reviewSection.hasClass('hidden')) {
+                // If AI review section is open, submit the record
+                e.preventDefault();
+                if (typeof submitData === 'function') {
+                  submitData();
+                }
+              } else {
+                // If not in review section, but btnAnalyze is enabled, run the AI analysis
+                const btnAnalyze = $('#btnAnalyze');
+                if (btnAnalyze.length && !btnAnalyze.prop('disabled')) {
+                  e.preventDefault();
+                  if (typeof analyzePhoto === 'function') {
+                    analyzePhoto();
+                  }
+                }
+              }
+            }
+          }
+        }
+      });
+
+      window.getClipboardImageFile = function(event) {
+          const clipboard = event && (event.clipboardData || (event.originalEvent && event.originalEvent.clipboardData));
+          const items = clipboard && clipboard.items ? Array.from(clipboard.items) : [];
+          const imageItem = items.find(item => item && item.kind === 'file' && String(item.type || '').startsWith('image/'));
+          if (!imageItem) return null;
+          const blob = imageItem.getAsFile();
+          if (!blob) return null;
+          const extension = String(blob.type || '').split('/')[1] || 'png';
+          return new File([blob], `bukti-tempel-${Date.now()}.${extension}`, { type: blob.type || 'image/png' });
+      };
+      window.assignPastedImageToInput = function(input, file) {
+          if (!input || !file) return false;
+          input.__pastedImageFile = file;
+          try {
+              const transfer = new DataTransfer();
+              transfer.items.add(file);
+              input.files = transfer.files;
+          } catch (error) {
+              console.warn('Clipboard image disimpan sebagai fallback in-memory.', error);
+          }
+          input.dispatchEvent(new Event('change', { bubbles:true }));
+          return true;
+      };
+
+      document.addEventListener('paste', function(e) {
+          const file = window.getClipboardImageFile(e);
+          if (!file) return;
+          let input = null;
+          if ($('#tarikUploadModal').hasClass('active')) input = document.getElementById('tarikFileInput');
+          else if ($('#listrikModal').hasClass('active')) input = document.getElementById('listrikFileInput');
+          else if ($('#tambahTarikModal').hasClass('active')) input = document.getElementById('tambahFileInput');
+          if (!input) return;
+          e.preventDefault();
+          window.assignPastedImageToInput(input, file);
+      });
+      
+      // Table input transaction: arrow keys navigation
+      $(document).on('keydown', '.tarik-grid-input', function(e) {
+          const col = parseInt($(this).data('col'));
+          const row = parseInt($(this).data('row'));
+          
+          let target = null;
+          if (e.key === 'ArrowUp') {
+             let r = row - 1;
+             while (r >= 0) {
+                const input = $(`.tarik-grid-input[data-row="${r}"][data-col="${col}"]:visible`);
+                if (input.length) {
+                   target = input;
+                   break;
+                }
+                r--;
+             }
+          } else if (e.key === 'ArrowDown') {
+             let r = row + 1;
+             while (r < TARIK_DATA.length) {
+                const input = $(`.tarik-grid-input[data-row="${r}"][data-col="${col}"]:visible`);
+                if (input.length) {
+                   target = input;
+                   break;
+                }
+                r++;
+             }
+          } else if (e.key === 'ArrowLeft') {
+             const start = this.selectionStart;
+             const end = this.selectionEnd;
+             // Only navigate left if cursor is at the very beginning of the input (or text is fully selected)
+             if (start === 0) {
+                const input = $(`.tarik-grid-input[data-row="${row}"][data-col="${col - 1}"]:visible`);
+                if (input.length) {
+                   target = input;
+                }
+             }
+          } else if (e.key === 'ArrowRight') {
+             const start = this.selectionStart;
+             const end = this.selectionEnd;
+             const len = this.value.length;
+             // Only navigate right if cursor is at the very end of the input (or text is fully selected)
+             if (end === len) {
+                const input = $(`.tarik-grid-input[data-row="${row}"][data-col="${col + 1}"]:visible`);
+                if (input.length) {
+                   target = input;
+                }
+             }
+          }
+          
+          if (target && target.length) {
+             e.preventDefault();
+             target.focus();
+             if (target.is('input[type="text"]')) {
+                target.select();
+             }
+          }
+      });
+    }
+    function legacyBranchSearchItems() {
+      const source = APP_DATA.branches || [];
+      if (LEGACY_BRANCH_SEARCH_CACHE.source !== source) {
+        LEGACY_BRANCH_SEARCH_CACHE.source = source;
+        LEGACY_BRANCH_SEARCH_CACHE.items = source.map(branch => ({
+          branch,
+          searchText:`${branch.toko || ''} ${branch.cv || ''}`.toLocaleLowerCase('id-ID')
+        }));
+      }
+      return LEGACY_BRANCH_SEARCH_CACHE.items;
+    }
+
+    function setupCustomDropdown(id, dropId, onSelect, addClear = false) {
+      const inp = $(`#${id}`), drop = $(`#${dropId}`);
+      if (!inp.length || !drop.length || inp.data('legacyBranchDropdownBound')) return;
+      inp.data('legacyBranchDropdownBound', true);
+      inp.attr({ role:'combobox', 'aria-autocomplete':'list', 'aria-controls':dropId, 'aria-expanded':'false', autocomplete:'off' });
+      drop.attr('role', 'listbox').addClass('legacy-typeahead-menu');
+
+      inp.on('input', function() {
+        currentSuggestionIndex = -1;
+        const v = $(this).val().trim().toLocaleLowerCase('id-ID');
+        if (!v) {
+          drop.empty();
+          if (window.closeLegacyFloatingPopover) window.closeLegacyFloatingPopover(drop[0]);
+          return;
+        }
+        const matches = legacyBranchSearchItems().filter(item => item.searchText.includes(v)).slice(0, 12).map(item => item.branch);
+        const clearOption = addClear ? '<button type="button" role="option" class="legacy-typeahead-option clr suggestion-item text-brand-coral" data-action="clear"><strong>Kosongkan filter</strong></button>' : '';
+        const matchOptions = matches.map(branch => `<button type="button" role="option" class="legacy-typeahead-option opt suggestion-item" data-toko="${encodeURIComponent(String(branch.toko || ''))}" data-cv="${encodeURIComponent(String(branch.cv || ''))}"><strong>${legacyEscapeHtml(branch.toko)}</strong>${branch.cv ? `<small>${legacyEscapeHtml(branch.cv)}</small>` : ''}</button>`).join('');
+        const emptyOption = !matches.length && !addClear ? '<div class="legacy-typeahead-empty">Cabang tidak ditemukan</div>' : '';
+        drop.html(clearOption + matchOptions + emptyOption);
+        if (window.openLegacyFloatingPopover) window.openLegacyFloatingPopover(inp[0], drop[0]);
+      });
+
+      inp.on('keydown', function(e) {
+          const items = drop.find('.suggestion-item');
+          if(drop.hasClass('hidden') || items.length === 0) return;
+
+          if (e.key === 'ArrowDown') {
+              e.preventDefault();
+              currentSuggestionIndex = (currentSuggestionIndex + 1) % items.length;
+              updateSuggestionHighlight(items);
+          } else if (e.key === 'ArrowUp') {
+              e.preventDefault();
+              currentSuggestionIndex = (currentSuggestionIndex - 1 + items.length) % items.length;
+              updateSuggestionHighlight(items);
+          } else if (e.key === 'Enter') {
+              e.preventDefault();
+              if (currentSuggestionIndex >= 0) {
+                  items.eq(currentSuggestionIndex).click();
+              }
+          }
+      });
+
+      function updateSuggestionHighlight(items) {
+          items.removeClass('active bg-brand-paper text-brand-coral');
+          if (currentSuggestionIndex >= 0) {
+              const activeItem = items.eq(currentSuggestionIndex);
+              activeItem.addClass('active bg-brand-paper text-brand-coral');
+              activeItem[0].scrollIntoView({ block: 'nearest' });
+          }
+      }
+
+      drop.on('click', '.opt', function() {
+        onSelect({ toko:decodeURIComponent(this.dataset.toko || ''), cv:decodeURIComponent(this.dataset.cv || '') });
+        if (window.closeLegacyFloatingPopover) window.closeLegacyFloatingPopover(drop[0]);
+      });
+      drop.on('click', '.clr', function() {
+        onSelect(null);
+        if (window.closeLegacyFloatingPopover) window.closeLegacyFloatingPopover(drop[0]);
+      });
+    }
+
+    function setupExpenseSearchCombobox(type) {
+      const input = document.getElementById(type === 'umum' ? 'umumSearchBar' : 'listrikSearchBar');
+      if (!input || input.dataset.expenseComboBound === 'true') return;
+      input.dataset.expenseComboBound = 'true';
+      const menu = document.createElement('div');
+      menu.id = type + 'SearchSuggestions';
+      menu.className = 'legacy-typeahead-menu hidden';
+      menu.setAttribute('role', 'listbox');
+      input.parentElement.appendChild(menu);
+      input.setAttribute('role', 'combobox');
+      input.setAttribute('aria-autocomplete', 'list');
+      input.setAttribute('aria-controls', menu.id);
+      input.setAttribute('aria-expanded', 'false');
+      input.setAttribute('autocomplete', 'off');
+      const candidateCache = { branches:null, rows:null, values:[] };
+
+      const candidates = () => {
+        const rows = type === 'umum' ? UMUM_HISTORY : LISTRIK_HISTORY;
+        const branches = APP_DATA.branches || [];
+        if (candidateCache.branches === branches && candidateCache.rows === rows) return candidateCache.values;
+        const values = [];
+        branches.forEach(branch => values.push({ value:String(branch.toko || ''), detail:String(branch.cv || '') }));
+        (rows || []).forEach(row => values.push({ value:String(row && row[3] || ''), detail:String(row && row[4] || '') }));
+        const seen = {};
+        candidateCache.branches = branches;
+        candidateCache.rows = rows;
+        candidateCache.values = values.filter(item => {
+          const key = item.value.trim().toLocaleLowerCase('id-ID');
+          if (!key || seen[key]) return false;
+          seen[key] = true;
+          return true;
+        }).sort((a,b) => a.value.localeCompare(b.value, 'id-ID'));
+        return candidateCache.values;
+      };
+
+      const render = () => {
+        const query = input.value.trim().toLocaleLowerCase('id-ID');
+        if (!query) {
+          menu.replaceChildren();
+          if (window.closeLegacyFloatingPopover) window.closeLegacyFloatingPopover(menu);
+          return;
+        }
+        const matches = candidates().filter(item => `${item.value} ${item.detail}`.toLocaleLowerCase('id-ID').includes(query)).slice(0, 12);
+        menu.replaceChildren(...matches.map(item => {
+          const option = document.createElement('button');
+          option.type = 'button';
+          option.className = 'legacy-typeahead-option';
+          option.setAttribute('role', 'option');
+          option.innerHTML = `<strong>${legacyEscapeHtml(item.value)}</strong>${item.detail ? `<small>${legacyEscapeHtml(item.detail)}</small>` : ''}`;
+          option.addEventListener('mousedown', event => event.preventDefault());
+          option.addEventListener('click', () => {
+            input.value = item.value;
+            input.dispatchEvent(new Event('input', { bubbles:true }));
+            if (window.closeLegacyFloatingPopover) window.closeLegacyFloatingPopover(menu);
+            input.focus();
+          });
+          return option;
+        }));
+        if (!matches.length) {
+          const empty = document.createElement('div');
+          empty.className = 'legacy-typeahead-empty';
+          empty.textContent = 'Toko/CV tidak ditemukan';
+          menu.appendChild(empty);
+        }
+        if (window.openLegacyFloatingPopover) window.openLegacyFloatingPopover(input, menu);
+      };
+      input.addEventListener('input', render);
+      if (window.bindLegacyPopoverKeyboard) window.bindLegacyPopoverKeyboard(input.id, menu.id);
+    }
+
+
+    function getDateFilterPayload(instance, wrapperSelector) {
+      if (!$(wrapperSelector).hasClass('has-date') || !instance || !instance.selectedDates || instance.selectedDates.length !== 2) {
+        return {};
+      }
+      return {
+        startTime: new Date(instance.selectedDates[0]).setHours(0,0,0,0),
+        endTime: new Date(instance.selectedDates[1]).setHours(23,59,59,999)
+      };
+    }
+
+    function getExpenseDatePayload(type) {
+      if (type === 'umum') return getDateFilterPayload(FP_UMUM_FILTER, '#umumDateFilterWrapper');
+      return getDateFilterPayload(FP_LISTRIK_FILTER, '#listrikDateFilterWrapper');
+    }
+
+    function getExpenseRequest(type, page) {
+      const limitButton = document.getElementById(type === 'umum' ? 'umumLimitBtn' : 'listrikLimitBtn');
+      const limitVal = parseInt(limitButton && limitButton.dataset.value) || 50;
+      const state = EXPENSE_META[type] || { limit: limitVal };
+      state.limit = limitVal;
+      const sortState = SORT_STATE[type] || { col: -1, asc: true };
+      const searchSelector = type === 'umum' ? '#umumSearchBar' : '#listrikSearchBar';
+      return {
+        type: type,
+        page: page || 1,
+        limit: limitVal,
+        filters: Object.assign({
+          search: $(searchSelector).val().toLowerCase().trim()
+        }, getExpenseDatePayload(type)),
+        sort: sortState.col === -1 ? {} : { col: sortState.col, asc: sortState.asc }
+      };
+    }
+
+    async function fetchExpensePage(type, page, showLoader = false, options = {}) {
+      const tbody = type === 'umum' ? '#umumTableBody' : '#listrikTableBody';
+      const colspan = type === 'umum' ? 10 : 6;
+      const requestSequence = ++EXPENSE_REQUEST_SEQUENCE[type];
+      const hadData = Boolean(EXPENSE_META[type] && EXPENSE_META[type].loaded);
+      if (!options.background) renderExpenseTableSkeleton(tbody, colspan);
+
+      try {
+        if (options.forceFresh && window.PortalCore && typeof window.PortalCore.clearPortalActionCache === 'function') {
+          await window.PortalCore.clearPortalActionCache('LEGACY_getExpensePage');
+        }
+        const res = await callServer('getExpensePage', getExpenseRequest(type, page));
+        if (requestSequence !== EXPENSE_REQUEST_SEQUENCE[type]) return;
+        if (res && res.error) throw new Error(res.error);
+        const rows = (res && (res.rows || res.history)) ? (res.rows || res.history) : [];
+        if (type === 'umum') {
+          UMUM_HISTORY = rows;
+          FILTERED_UMUM = rows;
+        } else {
+          LISTRIK_HISTORY = rows;
+          FILTERED_LISTRIK = rows;
+        }
+        EXPENSE_META[type] = {
+          total: Number(res && res.total) || 0,
+          totalAmount: Number(res && res.totalAmount) || 0,
+          page: Number(res && res.page) || 1,
+          limit: Number(res && res.limit) || parseInt(document.getElementById(type === 'umum' ? 'umumLimitBtn' : 'listrikLimitBtn')?.dataset.value) || 50,
+          loaded: true
+        };
+        $(tbody).removeAttr('aria-busy');
+        if (type === 'umum') renderUmumDetail();
+        else renderListrikDetail();
+        return res;
+      } catch(e) {
+        if (requestSequence === EXPENSE_REQUEST_SEQUENCE[type]) {
+          $(tbody).removeAttr('aria-busy');
+          if (hadData) { if (type === 'umum') renderUmumDetail(); else renderListrikDetail(); $(tbody).prepend('<tr><td colspan="' + colspan + '">Data lama ditampilkan; belum berhasil diperbarui.</td></tr>'); }
+          if (!hadData) $(tbody).html(`<tr><td colspan="${colspan}" class="p-12 text-center text-brand-danger font-bold text-[11px]">Data gagal dimuat. Gunakan tombol refresh untuk mencoba lagi.</td></tr>`);
+          if (!options.silentError) Swal.fire('Error', e.message, 'error');
+        }
+        if (options.propagateError) throw e;
+      }
+    }
+
+    function renderExpenseTableSkeleton(tbody, colspan) {
+      const widths = ['58%','76%','64%','70%','46%','55%','42%','62%','38%','44%'];
+      const rows = Array.from({ length:6 }, (_, rowIndex) => `<tr class="legacy-expense-skeleton-row" aria-hidden="true">${Array.from({ length:colspan }, (_, columnIndex) => `<td><span class="portal-skeleton legacy-table-skeleton" style="width:${widths[(rowIndex + columnIndex) % widths.length]}"></span></td>`).join('')}</tr>`).join('');
+      $(tbody).attr('aria-busy', 'true').html(rows);
+    }
+    
+    function renderPaginationControls(containerSelector, total, curr, limit, goPageFunc) {
+      const totalPages = Math.ceil(total / limit) || 1;
+      const c = $(containerSelector).empty();
+      if (totalPages <= 1) {
+         c.html('');
+         return;
+      }
+      let pagHtml = `<button onclick="${goPageFunc}(${curr > 1 ? curr - 1 : 1})" class="w-8 h-8 rounded-lg bg-white border border-brand-stone flex items-center justify-center font-bold shadow-sm hover:bg-brand-paper text-brand-black transition-colors" ${curr === 1 ? 'disabled' : ''}><i class="bi bi-chevron-left text-[11px]"></i></button>`;
+      for(let i=1; i<=totalPages; i++) {
+        if(i==1 || i==totalPages || (i>=curr-1 && i<=curr+1)) {
+          pagHtml += `<button onclick="${goPageFunc}(${i})" class="w-8 h-8 rounded-lg font-bold text-[11px] transition-colors ${i===curr?'bg-gradient-primary text-white shadow-md':'bg-white border border-brand-stone text-brand-black hover:bg-brand-paper'}">${i}</button>`;
+        } else if (i==curr-2 || i==curr+2) { pagHtml += `<span class="px-1 text-brand-stone font-bold text-xs">...</span>`; }
+      }
+      pagHtml += `<button onclick="${goPageFunc}(${curr < totalPages ? curr + 1 : totalPages})" class="w-8 h-8 rounded-lg bg-white border border-brand-stone flex items-center justify-center font-bold shadow-sm hover:bg-brand-paper text-brand-black transition-colors" ${curr === totalPages ? 'disabled' : ''}><i class="bi bi-chevron-right text-[11px]"></i></button>`;
+      c.html(pagHtml);
+    }
+    
+</script>

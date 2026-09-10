@@ -1,0 +1,220 @@
+<section id="tokoDashboardPage" class="page-section portal-page portal-hidden">
+  <div class="portal-page-head">
+    <div>
+      <h1>Beranda</h1>
+      <p id="tokoWelcomeText">Ringkasan nota cabang Anda.</p>
+    </div>
+    <button class="portal-btn portal-btn-primary toko-dashboard-upload" data-page-jump="tokoUploadPage"><i class="bi bi-camera-fill"></i> Upload Nota</button>
+  </div>
+  <div class="portal-grid portal-stats portal-store-stats">
+    <div class="portal-stat portal-stat-pending portal-stat-featured"><div class="portal-stat-top"><span>Pending Review</span><i class="bi bi-hourglass-split"></i></div><strong id="tokoStatPending">0</strong><small>Menunggu pemeriksaan</small><span class="portal-stat-featured-note"><i class="bi bi-arrow-right"></i> Fokus antrean hari ini</span></div>
+    <div class="portal-stat portal-stat-approved"><div class="portal-stat-top"><span>Disetujui</span><i class="bi bi-check-circle-fill"></i></div><strong id="tokoStatApproved">0</strong><small>Siap dibukukan</small></div>
+    <div class="portal-stat portal-stat-correction"><div class="portal-stat-top"><span>Perlu Diperbaiki</span><i class="bi bi-pencil-fill"></i></div><strong id="tokoStatCorrection">0</strong><small>Perlu tindakan toko</small></div>
+    <div class="portal-stat portal-stat-rejected"><div class="portal-stat-top"><span>Tidak Digunakan</span><i class="bi bi-archive-fill"></i></div><strong id="tokoStatRejected">0</strong><small>Tidak perlu diperbaiki</small></div>
+  </div>
+  <div class="portal-card" style="margin-top:18px">
+    <h2 style="font-size:16px;font-weight:900;margin:0 0 14px">Aktivitas Terbaru</h2>
+    <div id="tokoRecentList" class="portal-empty">Belum ada data.</div>
+  </div>
+</section>
+
+<div id="storeItemEditorSheet" class="portal-item-editor-sheet portal-hidden" aria-hidden="true">
+  <button class="portal-item-editor-backdrop" type="button" data-store-item-editor-close aria-label="Tutup editor item"></button>
+  <section role="dialog" aria-modal="true" aria-labelledby="storeItemEditorTitle">
+    <div class="portal-item-editor-handle"></div>
+    <div class="portal-item-editor-head">
+      <div><small>EDIT ITEM NOTA</small><h2 id="storeItemEditorTitle">Detail item</h2></div>
+      <button type="button" data-store-item-editor-close aria-label="Tutup"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <form id="storeItemEditorForm">
+      <div class="portal-item-editor-scroll">
+        <div class="portal-field portal-item-editor-description">
+          <label class="portal-label" for="storeItemDescription">Keterangan</label>
+          <textarea id="storeItemDescription" class="portal-textarea" rows="3" placeholder="Tulis nama atau keterangan item" required></textarea>
+        </div>
+        <div class="portal-field">
+          <label class="portal-label" for="storeItemCategory">Kategori</label>
+          <select id="storeItemCategory" class="portal-select" data-portal-combo></select>
+        </div>
+        <div class="portal-item-editor-grid">
+          <div class="portal-field"><label class="portal-label" for="storeItemQuantity">Qty</label><input id="storeItemQuantity" class="portal-input" type="number" min="0" step="any" inputmode="decimal" required></div>
+          <div class="portal-field"><label class="portal-label" for="storeItemUnit">Satuan</label><input id="storeItemUnit" class="portal-input" placeholder="KG, PCS, BOX"></div>
+        </div>
+        <div class="portal-field">
+          <label class="portal-label" for="storeItemAmount">Nominal sebelum diskon</label>
+          <input id="storeItemAmount" class="portal-input portal-money-input" type="text" inputmode="decimal" placeholder="0" required>
+        </div>
+      </div>
+      <div class="portal-item-editor-actions">
+        <button class="portal-btn portal-btn-soft" type="button" data-store-item-editor-close>Batal</button>
+        <button class="portal-btn portal-btn-primary" type="submit"><i class="bi bi-check-lg"></i> Simpan Perubahan</button>
+      </div>
+    </form>
+  </section>
+</div>
+
+<section id="tokoUploadPage" class="page-section portal-page portal-hidden">
+  <div class="portal-page-head">
+    <div>
+      <h1>Upload Nota</h1>
+      <p>Ambil foto atau pilih dari galeri, lalu periksa hasil pembacaan.</p>
+    </div>
+  </div>
+  <div class="portal-card">
+    <div class="portal-upload-zone">
+      <div class="portal-logo" style="margin:0 auto 16px"><i class="bi bi-images"></i></div>
+      <h2 style="margin:0 0 6px;font-size:18px;font-weight:900">Pilih foto nota</h2>
+      <p style="margin:0 0 7px;color:var(--portal-muted);font-size:12px;font-weight:700">Maksimal 5 foto dalam satu proses.</p>
+      <p id="tokoPhotoCounter" class="portal-photo-counter">0/5 foto dipilih</p>
+      <div class="portal-upload-actions">
+        <label id="tokoCameraLabel" class="portal-btn portal-btn-primary" for="tokoCameraInput"><i class="bi bi-camera-fill"></i> <span>Ambil Foto</span></label>
+        <label id="tokoGalleryLabel" class="portal-btn portal-btn-soft" for="tokoGalleryInput"><i class="bi bi-folder2-open"></i> <span>Pilih dari Galeri</span></label>
+      </div>
+      <input id="tokoCameraInput" class="portal-hidden" type="file" accept="image/*" capture="environment">
+      <input id="tokoGalleryInput" class="portal-hidden" type="file" accept="image/*" multiple>
+      <div id="tokoPhotoThumbs" class="portal-thumbs"></div>
+    </div>
+    <div class="portal-actions" style="justify-content:flex-end;margin-top:16px">
+      <button id="tokoClearPhotos" class="portal-btn portal-btn-soft" type="button"><i class="bi bi-arrow-counterclockwise"></i> Mulai ulang</button>
+      <button id="tokoProcessOcr" class="portal-btn portal-btn-dark" type="button" disabled><i class="bi bi-stars"></i> Baca Nota</button>
+    </div>
+    <div id="tokoOcrProgress" class="portal-ocr-progress portal-hidden"></div>
+  </div>
+
+  <div id="tokoOcrReview" class="portal-hidden" style="margin-top:18px">
+    <div class="portal-page-head" style="margin-bottom:12px">
+      <div><h1 style="font-size:21px">Periksa Hasil</h1><p>Edit data yang belum sesuai sebelum Submit.</p></div>
+      <button id="tokoAddReceipt" class="portal-btn portal-btn-soft"><i class="bi bi-plus-lg"></i> Tambah Nota</button>
+    </div>
+    <div id="tokoOcrWarnings"></div>
+    <div class="portal-batch-submit">
+      <div class="portal-batch-summary"><small id="tokoDraftStatus">Draft belum dikirim</small><strong><span id="tokoBatchReceiptCount">0 nota</span><b>·</b><span id="tokoBatchItemCount">0 item</span></strong><span class="portal-batch-money"><span>Subtotal <b id="tokoBatchGross">Rp0</b></span><span>Diskon <b id="tokoBatchDiscount">Rp0</b></span><em id="tokoBatchTotal">Rp0</em></span></div>
+      <button id="tokoSubmitReceipts" class="portal-btn portal-btn-primary"><i class="bi bi-send-fill"></i> Konfirmasi &amp; Kirim</button>
+    </div>
+    <div id="tokoReceiptEditors"></div>
+  </div>
+</section>
+
+<section id="tokoHistoryPage" class="page-section portal-page portal-hidden">
+  <div class="portal-page-head">
+    <div><h1>Riwayat Nota</h1><p>Pantau status nota yang sudah Anda submit.</p></div>
+    <select id="tokoHistoryStatus" class="portal-select" data-portal-combo style="width:auto;min-width:180px">
+      <option value="ALL">Semua Status</option>
+      <option value="PENDING">Pending Review</option>
+      <option value="APPROVED">Disetujui</option>
+      <option value="NEEDS_CORRECTION">Perlu Diperbaiki</option>
+      <option value="REJECTED">Tidak Digunakan</option>
+    </select>
+  </div>
+  <div class="portal-card">
+    <div id="tokoHistoryList" class="portal-empty">Memuat riwayat...</div>
+    <div id="tokoHistoryPagination" class="portal-pagination" style="margin-top:16px"></div>
+  </div>
+</section>
+
+<section id="tokoAccountPage" class="page-section portal-page portal-hidden">
+  <div class="portal-page-head portal-account-page-head">
+    <div>
+      <span class="portal-account-eyebrow">AKUN &amp; KEAMANAN</span>
+      <h1>Akun</h1>
+      <p>Kelola profil, password, dan sesi perangkat ini dalam satu tempat.</p>
+    </div>
+    <span class="portal-account-security-chip"><i class="bi bi-shield-check" aria-hidden="true"></i> Kredensial terlindungi</span>
+  </div>
+
+  <div class="portal-account-workspace" data-account-workspace>
+    <article class="portal-card portal-account-profile-card" aria-labelledby="portalAccountProfileTitle">
+      <div class="portal-account-card-head">
+        <span class="portal-account-card-icon portal-account-card-icon-profile"><i class="bi bi-person-fill" aria-hidden="true"></i></span>
+        <div>
+          <span>PROFIL PENGGUNA</span>
+          <h2 id="portalAccountProfileTitle">Identitas akun</h2>
+        </div>
+      </div>
+
+      <div class="portal-account-identity">
+        <span id="tokoAccountAvatar" class="portal-account-avatar" data-account-avatar aria-hidden="true">A</span>
+        <div>
+          <strong id="tokoAccountDisplayName" data-account-display-name>Memuat profil...</strong>
+          <span id="tokoAccountUsername" data-account-username>—</span>
+        </div>
+        <span id="tokoAccountRole" class="portal-badge portal-badge-approved" data-account-role>—</span>
+      </div>
+
+      <dl class="portal-account-facts">
+        <div>
+          <dt><i class="bi bi-shop" aria-hidden="true"></i> Cabang / akun</dt>
+          <dd><input id="tokoAccountBranch" class="portal-account-readonly" readonly aria-label="Nama cabang atau akun"></dd>
+        </div>
+        <div>
+          <dt><i class="bi bi-diagram-3" aria-hidden="true"></i> Tipe cabang</dt>
+          <dd id="tokoAccountBranchType" data-account-branch-type>—</dd>
+        </div>
+      </dl>
+
+      <div class="portal-account-access" aria-labelledby="portalAccountAccessTitle">
+        <div class="portal-account-section-title">
+          <span id="portalAccountAccessTitle">Hak akses</span>
+          <i class="bi bi-patch-check-fill" aria-hidden="true"></i>
+        </div>
+        <ul id="portalAccountAccessList" data-account-access-list aria-live="polite">
+          <li class="portal-account-access-loading">Memuat hak akses akun...</li>
+        </ul>
+      </div>
+    </article>
+
+    <article class="portal-card portal-account-security-card" aria-labelledby="portalAccountSecurityTitle">
+      <div class="portal-account-card-head">
+        <span class="portal-account-card-icon portal-account-card-icon-security"><i class="bi bi-key-fill" aria-hidden="true"></i></span>
+        <div>
+          <span>KEAMANAN LOGIN</span>
+          <h2 id="portalAccountSecurityTitle">Ganti password</h2>
+        </div>
+      </div>
+      <p class="portal-account-card-copy">Gunakan password unik. Setelah berhasil diganti, password lama tidak dapat digunakan kembali.</p>
+
+      <form id="portalChangePasswordForm" class="portal-account-password-form">
+        <div class="portal-field">
+          <label class="portal-label" for="portalNewPassword">Password Baru</label>
+          <input id="portalNewPassword" class="portal-input" type="password" minlength="6" required autocomplete="new-password" aria-describedby="portalPasswordRequirements" placeholder="Min. 6: Aa, angka &amp; simbol" title="Minimal 6 karakter dengan huruf besar, huruf kecil, angka, dan simbol khusus">
+        </div>
+        <div class="portal-field">
+          <label class="portal-label" for="portalConfirmPassword">Ulangi Password Baru</label>
+          <input id="portalConfirmPassword" class="portal-input" type="password" minlength="6" required autocomplete="new-password" aria-describedby="portalPasswordMatchHint" placeholder="Ketik ulang password baru">
+          <small id="portalPasswordMatchHint" class="portal-account-field-hint">Pastikan nilainya sama dengan password baru.</small>
+        </div>
+
+        <div id="portalPasswordRequirements" class="portal-password-requirements" aria-label="Syarat password" aria-live="polite">
+          <strong>Password harus memiliki:</strong>
+          <ul>
+            <li data-password-rule="length"><i class="bi bi-check-circle" aria-hidden="true"></i> Minimal 6 karakter</li>
+            <li data-password-rule="uppercase"><i class="bi bi-check-circle" aria-hidden="true"></i> Huruf besar</li>
+            <li data-password-rule="lowercase"><i class="bi bi-check-circle" aria-hidden="true"></i> Huruf kecil</li>
+            <li data-password-rule="number"><i class="bi bi-check-circle" aria-hidden="true"></i> Angka</li>
+            <li data-password-rule="symbol"><i class="bi bi-check-circle" aria-hidden="true"></i> Simbol khusus</li>
+          </ul>
+        </div>
+
+        <div class="portal-account-form-actions">
+          <span id="portalPasswordFormStatus" class="portal-account-form-status" role="status" aria-live="polite"></span>
+          <button id="portalChangePasswordButton" class="portal-btn portal-btn-primary" type="submit">
+            <i class="bi bi-shield-lock" aria-hidden="true"></i>
+            <span>Perbarui Password</span>
+          </button>
+        </div>
+      </form>
+    </article>
+
+    <aside id="portalAccountSessionStrip" class="portal-account-session-strip" data-account-session aria-labelledby="portalAccountSessionTitle">
+      <span class="portal-account-session-icon"><i class="bi bi-laptop" aria-hidden="true"></i></span>
+      <div class="portal-account-session-copy">
+        <strong id="portalAccountSessionTitle">Sesi perangkat ini</strong>
+        <span id="portalAccountSessionExpiry" data-account-session-expiry aria-live="polite">Memuat detail kedaluwarsa sesi...</span>
+      </div>
+      <span class="portal-account-session-state"><i class="bi bi-circle-fill" aria-hidden="true"></i> Aktif</span>
+      <button id="portalAccountLogoutButton" class="portal-btn portal-btn-soft" type="button" data-account-logout>
+        <i class="bi bi-box-arrow-right" aria-hidden="true"></i> Keluar dari perangkat ini
+      </button>
+    </aside>
+  </div>
+</section>

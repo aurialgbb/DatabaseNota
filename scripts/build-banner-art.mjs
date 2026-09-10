@@ -1,0 +1,25 @@
+import fs from 'node:fs';
+import path from 'node:path';
+const dir = path.resolve(import.meta.dirname, '../public/brand/banners');
+fs.mkdirSync(dir, {recursive:true});
+const paper = (x,y,w=54,h=74) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="5" fill="white" stroke="#9bb5df" stroke-width="2"/><path d="M${x+12} ${y+20}h${w-24}m-${w-24} 12h${w-24}m-${w-24} 12h${w-32}" stroke="#bed0ec" stroke-width="3" stroke-linecap="round"/>`;
+const check = (x,y) => `<circle cx="${x}" cy="${y}" r="17" fill="#2456c5"/><path d="m${x-8} ${y} 5 5 10-11" stroke="white" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+const clock = (x,y) => `<circle cx="${x}" cy="${y}" r="25" fill="white" stroke="#2456c5" stroke-width="3"/><path d="M${x} ${y-13}v14l10 6" stroke="#2456c5" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+const art = {
+  inputPage: paper(74,21,64,90)+`<path d="M60 40V25h15m65 0h16v15M60 93v15h15m65 0h16V93" stroke="#2456c5" stroke-width="4" fill="none"/><path d="M55 64h108" stroke="#2456c5" stroke-width="2"/><rect x="168" y="48" width="10" height="62" rx="3" fill="#e5a85f" transform="rotate(25 168 48)"/>`,
+  historyPage: `<path d="M39 110V48a6 6 0 0 1 6-6h34l12 12h67v56z" fill="#a9c0e8"/>`+paper(64,22)+paper(87,31)+clock(159,86),
+  listrikPage: `<rect x="55" y="25" width="81" height="90" rx="12" fill="#dbe6f7" stroke="#9bb5df" stroke-width="2"/><rect x="66" y="37" width="59" height="26" rx="4" fill="white"/><path d="M75 47h8m5 0h8m5 0h8" stroke="#2456c5" stroke-width="3"/><path d="m106 69-22 25h15l-6 16 25-27h-16z" fill="#2456c5"/>`+paper(152,46,43,62),
+  umumPage: paper(49,27,59,84)+`<rect x="123" y="39" width="63" height="76" rx="7" fill="#2456c5"/><rect x="132" y="49" width="45" height="15" rx="3" fill="#dce8fb"/><path d="M135 77h7m10 0h7m10 0h2m-36 13h7m10 0h7m10 0h2m-36 13h7m10 0h19" stroke="white" stroke-width="4" stroke-linecap="round"/>`,
+  taxBankPage: paper(52,26,76,87)+`<circle cx="158" cy="61" r="27" fill="#eaf1fc" stroke="#2456c5" stroke-width="4"/><path d="m177 82 21 23" stroke="#2456c5" stroke-width="9" stroke-linecap="round"/>`+check(158,61),
+  taxReceiptEntryPage: paper(42,29)+`<path d="M113 56h43m-10-10 11 10-11 10" stroke="#2456c5" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M127 83h70v33h-70z" fill="#c6d6ef"/><path d="m127 83 35 22 35-22" stroke="#2456c5" stroke-width="2" fill="none"/>`+check(184,39),
+  taxMasterLinksPage: `<rect x="36" y="29" width="67" height="76" rx="5" fill="white" stroke="#9bb5df" stroke-width="2"/><path d="M36 48h67M58 48v57M80 48v57M36 67h67M36 86h67" stroke="#bed0ec" stroke-width="2"/><path d="m122 67 15-15a15 15 0 0 1 21 21l-12 12m-15-6-12 12a15 15 0 0 1-21-21l12-12m8 19 19-19" fill="none" stroke="#2456c5" stroke-width="7" stroke-linecap="round"/><rect x="165" y="33" width="31" height="28" rx="5" fill="#dbe6f7"/>`,
+  taxAccountsPage: `<rect x="37" y="40" width="77" height="61" rx="7" fill="#dbe6f7"/><circle cx="64" cy="59" r="10" fill="#7a9dd7"/><path d="M48 87a16 16 0 0 1 32 0" fill="#7a9dd7"/><rect x="110" y="25" width="81" height="78" rx="7" fill="white" stroke="#9bb5df" stroke-width="2"/><circle cx="137" cy="48" r="11" fill="#2456c5"/><path d="M119 81a18 18 0 0 1 36 0" fill="#2456c5"/><path d="M165 45h14m-14 12h14m-14 12h9" stroke="#bed0ec" stroke-width="3"/>`,
+  tokoAccountPage: `<path d="m119 20 40 15v30c0 27-40 49-40 49S79 92 79 65V35z" fill="#dbe6f7" stroke="#9bb5df" stroke-width="2"/><rect x="104" y="59" width="32" height="28" rx="5" fill="#2456c5"/><path d="M110 59V49a10 10 0 0 1 20 0v10" stroke="#2456c5" stroke-width="4" fill="none"/><circle cx="120" cy="72" r="3" fill="white"/>`,
+  tokoDashboardPage: `<path d="M53 52h129v62H53z" fill="white" stroke="#9bb5df" stroke-width="2"/><path d="m47 52 13-28h115l13 28z" fill="#b6cbeb"/><path d="M69 24v28m25-28v28m25-28v28m25-28v28m25-28v28" stroke="#2456c5" stroke-width="13"/><rect x="67" y="68" width="43" height="27" rx="2" fill="#e3ebf8"/><path d="M132 114V70h31v44" fill="#d1dff3" stroke="#9bb5df" stroke-width="2"/>`,
+  tokoUploadPage: `<rect x="71" y="13" width="68" height="110" rx="11" fill="#2456c5"/><rect x="78" y="23" width="54" height="84" rx="4" fill="#eef3fc"/><circle cx="105" cy="115" r="3" fill="#bed0ec"/>`+paper(88,38,34,52)+`<path d="M153 58h39v30h-39z" fill="#c6d6ef"/><circle cx="172" cy="73" r="9" fill="white" stroke="#2456c5" stroke-width="3"/><path d="M161 58v-6h14v6" stroke="#9bb5df" stroke-width="4"/>`,
+  tokoHistoryPage: `<rect x="47" y="33" width="87" height="79" rx="6" fill="white" stroke="#9bb5df" stroke-width="2"/><path d="M47 53h87M65 25v15m49-15v15" stroke="#2456c5" stroke-width="4" stroke-linecap="round"/><path d="M64 68h10m12 0h10m12 0h10M64 85h10m12 0h10m12 0h10" stroke="#bed0ec" stroke-width="5"/>`+clock(164,83)
+};
+for (const [name, content] of Object.entries(art)) {
+  fs.writeFileSync(path.join(dir,name+'.svg'), `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 140"><ellipse cx="121" cy="119" rx="89" ry="5" fill="#edf1f7"/>${content}</svg>`);
+}
+console.log('Created',Object.keys(art).length,'menu illustrations.');

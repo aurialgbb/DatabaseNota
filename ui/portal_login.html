@@ -1,0 +1,158 @@
+<div id="portalSessionSplash" class="portal-session-splash portal-session-active" role="status" aria-live="polite">
+  <div class="portal-session-ambient" aria-hidden="true"><span></span><span></span><span></span></div>
+  <div class="portal-session-splash-card">
+    <div class="portal-session-brand"><span class="portal-session-brand-mark portal-brand-mark portal-brand-mark-splash"><span class="portal-brand-image" aria-hidden="true"></span><i class="bi bi-receipt-cutoff portal-brand-fallback" aria-hidden="true"></i></span><span>DATABASE NOTA</span><b>GBB</b></div>
+    <div class="portal-session-visual" aria-hidden="true">
+      <span class="portal-session-orbit"><i></i><i></i><i></i></span>
+      <span class="portal-session-receipt"><i></i><i></i><i></i><i></i><em></em></span>
+      <span class="portal-session-scan"></span>
+      <span class="portal-session-ready"><i class="bi bi-check-lg"></i></span>
+    </div>
+    <div class="portal-session-copy"><strong>Memeriksa sesi aman…</strong><small>Membuka workspace Anda</small></div>
+    <div class="portal-session-progress" aria-hidden="true"><span></span></div>
+    <div class="portal-session-secure"><i class="bi bi-shield-check"></i><span>Koneksi terenkripsi</span><i class="portal-session-live"></i></div>
+  </div>
+</div>
+
+<script>
+(function installPortalStartupWatchdog() {
+  window.PORTAL_BUILD_ID = window.PORTAL_BUILD_ID || 'unknown-build';
+  window.__portalEarlyErrors = [];
+  function startupDiagnostic(event) {
+    var filename = event && event.filename ? String(event.filename) : '';
+    var source = filename ? filename.split('/').pop() : 'inline-script';
+    return {
+      message: String(event && event.message || 'Kesalahan JavaScript tidak diketahui.'),
+      filename: filename,
+      source: source,
+      line: Number(event && event.lineno || 0),
+      column: Number(event && event.colno || 0),
+      stack: event && event.error && event.error.stack ? String(event.error.stack) : '',
+      buildId: window.PORTAL_BUILD_ID,
+      state: String(window.PORTAL_INIT_STATE || 'html-loading'),
+      timestamp: new Date().toISOString()
+    };
+  }
+  function diagnosticLabel(diagnostic) {
+    if (/cdn\.jsdelivr\.net|code\.jquery\.com|fonts\.googleapis\.com|fonts\.gstatic\.com/i.test(diagnostic.filename)) {
+      return 'Dependency eksternal gagal dimuat';
+    }
+    if (window.PORTAL_SCRIPT_LOADED) return 'Komponen aplikasi gagal dijalankan';
+    return 'Komponen halaman gagal dijalankan';
+  }
+  window.addEventListener('error', function(event) {
+    if (!event || !event.message || window.PORTAL_ACTIVE || window.PORTAL_INIT_FINISHED) return;
+    var diagnostic = startupDiagnostic(event);
+    window.__portalEarlyErrors.push(diagnostic);
+    window.__portalLastStartupError = diagnostic;
+    var splash = document.getElementById('portalSessionSplash');
+    var gate = document.getElementById('portalGate');
+    var warning = document.getElementById('portalSetupWarning');
+    if (splash) splash.classList.add('portal-hidden');
+    if (gate) gate.classList.remove('portal-hidden');
+    if (warning) {
+      var location = diagnostic.source + ':' + diagnostic.line + ':' + diagnostic.column;
+      warning.textContent = diagnosticLabel(diagnostic) + ': ' + diagnostic.message + ' (' + location + ').';
+      warning.classList.remove('portal-hidden');
+    }
+  });
+  window.__portalStartupWatchdog = window.setTimeout(function() {
+    if (window.PORTAL_ACTIVE || window.PORTAL_INIT_FINISHED) return;
+
+    var splash = document.getElementById('portalSessionSplash');
+    var gate = document.getElementById('portalGate');
+    var warning = document.getElementById('portalSetupWarning');
+
+    if (splash) {
+      splash.classList.remove('portal-session-active');
+      splash.classList.add('portal-session-leaving', 'portal-hidden');
+    }
+    if (gate) gate.classList.remove('portal-hidden');
+    if (warning) {
+      warning.textContent = window.PORTAL_INIT_STARTED
+        ? 'Koneksi startup terlalu lama. Form login dibuka agar Anda dapat mencoba kembali.'
+        : (window.PORTAL_SCRIPT_LOADED
+          ? 'Halaman terlalu lama disiapkan. Silakan muat ulang halaman.'
+          : 'Script aplikasi belum berhasil dimuat. Silakan muat ulang halaman.');
+      warning.classList.remove('portal-hidden');
+    }
+  }, 20000);
+})();
+</script>
+
+<div id="portalGate" class="portal-gate portal-hidden">
+  <div class="portal-login-frame">
+    <section class="portal-login-visual" aria-hidden="true">
+      <div class="portal-visual-copy">
+        <div class="portal-visual-kicker">Catatan dari setiap cabang</div>
+        <h2>Dari lembar nota,<br>ke catatan bersama.</h2>
+        <p>Kumpulkan bukti, periksa rincian, dan catat pengeluaran cabang.</p>
+      </div>
+      <img class="nota-login-art" src="/brand/login-illustration.webp" alt="" width="1122" height="1402" fetchpriority="high">
+    </section>
+
+    <section class="portal-login-panel">
+      <div class="portal-login-brand">
+        <div class="portal-brand-mark portal-brand-mark-login"><span class="portal-brand-image" aria-hidden="true"></span><i class="bi bi-receipt-cutoff portal-brand-fallback" aria-hidden="true"></i></div>
+        <div><strong>Database Nota</strong><span>GBB Operations</span></div>
+      </div>
+
+      <div class="portal-login-content">
+        <div class="portal-login-heading">
+          <span class="portal-login-eyebrow">Selamat datang kembali</span>
+          <h1 class="portal-title">Masuk ke workspace</h1>
+          <p class="portal-subtitle" id="portalLoginSubtitle">Gunakan akun yang telah diberikan untuk melanjutkan.</p>
+        </div>
+        <div id="portalSetupWarning" class="portal-alert portal-alert-warning portal-hidden"></div>
+
+        <form id="portalLoginForm">
+          <div id="portalLoginError" class="portal-login-error portal-hidden" role="alert" aria-live="assertive"><i class="bi bi-exclamation-circle-fill"></i><span></span></div>
+          <div class="portal-field">
+            <label class="portal-label" for="portalUsername">Username</label>
+            <div class="portal-input-wrap">
+              <i class="bi bi-person"></i>
+              <input class="portal-input" id="portalUsername" autocomplete="username" required placeholder="Masukkan username">
+            </div>
+          </div>
+          <div class="portal-field">
+            <div class="portal-label-row">
+              <label class="portal-label" for="portalPassword">Password</label>
+            </div>
+            <div class="portal-input-wrap">
+              <i class="bi bi-lock"></i>
+              <input class="portal-input" id="portalPassword" type="password" autocomplete="current-password" required placeholder="Masukkan password">
+              <button id="portalPasswordToggle" class="portal-password-toggle" type="button" aria-label="Tampilkan password"><i class="bi bi-eye"></i></button>
+            </div>
+          </div>
+          <button class="portal-btn portal-btn-primary portal-btn-block portal-login-submit" id="portalLoginButton" type="submit">
+            <span>Masuk ke Workspace</span><i class="bi bi-arrow-right"></i>
+          </button>
+        </form>
+
+        <form id="portalBootstrapForm" class="portal-hidden">
+          <div id="portalBootstrapNotice" class="portal-alert portal-alert-warning">Belum ada akun administrator. Buat satu akun pertama untuk menyiapkan environment pengembangan.</div>
+          <div class="portal-field">
+            <label class="portal-label" for="portalBootstrapName">Nama Admin</label>
+            <input class="portal-input" id="portalBootstrapName" required value="Administrator">
+          </div>
+          <div class="portal-field">
+            <label class="portal-label" for="portalBootstrapUsername">Username</label>
+            <input class="portal-input" id="portalBootstrapUsername" required placeholder="admin01">
+          </div>
+          <div class="portal-field">
+            <label class="portal-label" for="portalBootstrapPassword">Password Awal</label>
+            <input class="portal-input" id="portalBootstrapPassword" type="password" required minlength="6" placeholder="Min. 6: Aa, angka & simbol" title="Minimal 6 karakter dengan huruf besar, huruf kecil, angka, dan simbol khusus">
+          </div>
+          <div class="portal-field">
+            <label class="portal-label" for="portalBootstrapSecret">Secret Setup</label>
+            <input class="portal-input" id="portalBootstrapSecret" type="password" required minlength="24" autocomplete="off" placeholder="Secret setup dari administrator">
+          </div>
+          <button class="portal-btn portal-btn-dark portal-btn-block portal-login-submit" id="portalBootstrapButton" type="submit">Buat Admin Pertama <i class="bi bi-arrow-right"></i></button>
+          <div id="portalBootstrapStatus" class="portal-dev-bypass-status" aria-live="polite"></div>
+        </form>
+      </div>
+
+      <div class="portal-login-footer"><span>Database Nota GBB</span></div>
+    </section>
+  </div>
+</div>

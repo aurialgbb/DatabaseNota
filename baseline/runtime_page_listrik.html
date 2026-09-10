@@ -1,0 +1,112 @@
+    <div id="listrikPage" class="page-section hidden max-w-[1400px] mx-auto pb-20">
+      <div id="listrikPageHeader" class="mb-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+        <div>
+          <h1 class="text-[32px] font-black tracking-tight mb-2 text-brand-black">Nota Listrik</h1>
+          <p class="text-brand-muted font-bold text-[14px] flex items-center gap-2">
+             Kontrol tagihan listrik semua cabang.
+          </p>
+        </div>
+        
+        <div class="flex flex-col sm:flex-row gap-4 items-center">
+            <button data-portal-refresh data-gbb-handler-h27="" class="flex items-center gap-2 text-brand-coral hover:text-brand-light font-bold text-[13px] bg-brand-paper border border-brand-stone hover:border-brand-light px-5 py-2.5 rounded-xl transition-all shadow-sm">
+               <i class="bi bi-arrow-clockwise text-base"></i> Refresh Data
+            </button>
+            <!-- Tab Toggle -->
+            <div class="relative flex p-1 bg-[#F2F2F5] rounded-xl w-fit border border-[#EAEBFA]">
+              <div id="listrikSlideBg" class="absolute inset-y-1 left-1 bg-white rounded-lg shadow-sm transition-all duration-300 ease-out z-0" style="width: calc(50% - 4px); transform: translateX(0);"></div>
+              <button id="btnTabDetail" data-gbb-handler-h28="" class="relative z-10 px-5 py-2 font-bold w-40 text-center text-brand-coral transition-colors rounded-lg focus:outline-none">Detail Transaksi</button>
+              <button id="btnTabKontrol" data-gbb-handler-h29="" class="relative z-10 px-5 py-2 font-bold text-brand-muted hover:text-brand-black w-40 text-center transition-colors rounded-lg focus:outline-none">Kontrol Transaksi</button>
+             </div>
+        </div>
+      </div>
+      <!-- Tab: Detail Transaksi -->
+      <div id="tabListrikDetail" class="animate-[fadeIn_0.4s_ease-out]">
+        <div class="flex flex-col lg:flex-row justify-between mb-6 gap-4">
+          <div class="legacy-filter-surface flex-1 flex bg-white border border-brand-stone rounded-xl shadow-sm p-1 items-center max-w-xl">
+            <div class="legacy-filter-search flex-[6] relative flex items-center px-4 border-r border-brand-stone">
+              <i class="bi bi-search text-brand-muted mr-3"></i>
+              <input type="text" id="listrikSearchBar" class="w-full bg-transparent border-none py-2 font-bold text-brand-black outline-none" placeholder="Cari Toko/CV...">
+            </div>
+            <div id="listrikDateFilterWrapper" class="flex-[4] relative flex items-center justify-between px-4 cursor-pointer hover:bg-brand-paper rounded-r-lg h-full min-h-[40px] transition-colors" data-gbb-handler-h30="">
+              <div class="flex items-center gap-2 text-brand-black font-bold text-[10px] uppercase tracking-widest"><span id="listrikStartDisplay">START</span><i class="bi bi-arrow-right text-brand-muted"></i><span id="listrikEndDisplay">TO</span></div>
+              <i class="bi bi-calendar-range calendar-icon text-brand-muted ml-2"></i>
+              <i class="bi bi-x-circle-fill clear-date-btn" data-gbb-handler-h31=""></i>
+              <input type="text" id="listrikDateRangeFilter" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
+            </div>
+          </div>
+          <button data-gbb-handler-h32="" class="bg-brand-black text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 hover:bg-[#2A2A3D] shadow-md hover:-translate-y-1 transition-all text-xs uppercase tracking-widest whitespace-nowrap"><i class="bi bi-plus-lg text-base"></i> Tambah Transaksi</button>
+        </div>
+
+        <div class="bg-white rounded-[2rem] shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-brand-stone overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse min-w-[900px]">
+              <thead id="listrikTableHead" class="bg-brand-paper border-b border-brand-stone text-brand-muted text-[10px] font-black uppercase tracking-widest select-none">
+                <tr>
+                   <th class="p-5 pl-8 cursor-pointer sortable" data-gbb-handler-h33="">Tanggal <i class="bi bi-arrow-down-up ml-1 opacity-50"></i></th>
+                   <th class="p-5 cursor-pointer sortable" data-gbb-handler-h34="">Cabang / Toko <i class="bi bi-arrow-down-up ml-1 opacity-50"></i></th>
+                   <th class="p-5">CV</th>
+                   <th class="p-5 text-right cursor-pointer sortable" data-gbb-handler-h35="">Nominal Tagihan <i class="bi bi-arrow-down-up ml-1 opacity-50"></i></th>
+                   <th class="p-5 text-center">Foto</th>
+                   <th class="p-5 text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody id="listrikTableBody" class="divide-y divide-brand-stone/50 text-[11px]"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="legacy-table-footer mt-6 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <span class="text-[11px] font-bold text-brand-muted uppercase tracking-widest whitespace-nowrap">Baris per halaman</span>
+            <div class="legacy-limit-control" id="listrikLimitDropdownWrapper">
+              <button type="button" id="listrikLimitBtn" class="legacy-limit-trigger" data-expense-limit-toggle="listrik" data-value="50" aria-haspopup="listbox" aria-controls="listrikLimitMenu" aria-expanded="false">
+                <span id="listrikLimitLabel">50 baris</span><i class="bi bi-chevron-down" aria-hidden="true"></i>
+              </button>
+              <div id="listrikLimitMenu" class="legacy-limit-menu hidden" role="listbox" aria-label="Jumlah baris per halaman">
+                <button type="button" class="legacy-limit-option limit-opt-listrik" data-expense-limit-value="10" role="option"><span>10 baris</span></button>
+                <button type="button" class="legacy-limit-option limit-opt-listrik" data-expense-limit-value="25" role="option"><span>25 baris</span></button>
+                <button type="button" class="legacy-limit-option limit-opt-listrik active-limit" data-expense-limit-value="50" role="option"><span>50 baris</span><i class="bi bi-check2" aria-hidden="true"></i></button>
+                <button type="button" class="legacy-limit-option limit-opt-listrik" data-expense-limit-value="100" role="option"><span>100 baris</span></button>
+              </div>
+            </div>
+          </div>
+          <!-- Info total & pagination -->
+          <div class="flex items-center gap-3">
+            <span id="listrikRowInfo" class="text-[11px] font-bold text-brand-muted"></span>
+            <div id="listrikPaginationControls" class="flex items-center gap-1.5"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Kontrol Transaksi -->
+      <div id="tabListrikKontrol" class="hidden animate-[fadeIn_0.4s_ease-out]">
+        <div class="bg-white rounded-[2rem] shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-brand-stone overflow-hidden p-8 lg:p-10">
+           <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
+              <h3 class="text-lg font-black text-brand-black tracking-tight">Matriks Pembayaran Listrik</h3>
+              
+              <div class="legacy-limit-control legacy-year-control w-full sm:w-40">
+                 <input type="hidden" id="listrikYearFilter" value="2026">
+                 <button type="button" id="yearDropdownBtn" class="legacy-limit-trigger legacy-year-trigger" aria-haspopup="listbox" aria-controls="yearDropdownList" aria-expanded="false">
+                    <span id="selectedYearDisplay">2026</span>
+                    <i class="bi bi-chevron-down" aria-hidden="true"></i>
+                 </button>
+                 <div id="yearDropdownList" class="legacy-limit-menu legacy-year-menu hidden" role="listbox" aria-label="Pilih tahun kontrol transaksi">
+                 </div>
+              </div>
+           </div>
+           
+           <div class="overflow-x-auto rounded-xl border border-brand-stone">
+              <table class="w-full text-center border-collapse min-w-[1000px]">
+                <thead class="bg-brand-paper border-b border-brand-stone text-brand-muted text-[10px] font-black uppercase tracking-widest">
+                  <tr id="kontrolTableHeader">
+                    <th class="p-4 border-r border-brand-stone text-left pl-6 w-[200px] sticky left-0 bg-brand-paper z-10 shadow-[2px_0_5px_rgba(0,0,0,0.05)]">Nama Toko</th>
+                  </tr>
+                </thead>
+                <tbody id="kontrolTableBody" class="divide-y divide-brand-stone/50 bg-white"></tbody>
+              </table>
+           </div>
+        </div>
+      </div>
+    </div>
+
+<!-- JavaScript page_listrik.html dimuat melalui runtime_loader -->
