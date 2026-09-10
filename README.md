@@ -48,3 +48,11 @@ Deployment produksi menunggu RPC lengkap, pengujian mobile, kesetaraan OCR, inte
 ## Kriteria penerimaan
 
 Semua 74 aksi dipetakan dan diuji dengan hasil yang setara. Prompt/model OCR serta alokasi diskon/pembagian tetap dibandingkan dengan baseline. Ukuran layar 360, 390, 430, 768 piksel, keyboard, kamera, background/resume, dan perpindahan akun diperiksa. Pengujian 50 pengguna dilakukan setelah layanan tersedia; target kecepatan belum merupakan hasil pengukuran.
+
+## Setup database bersama
+
+Jalankan npm run db:setup dari folder aplikasi setelah DATABASE_ADMIN_URL menunjuk endpoint yang dapat dihubungi. Command ini membuat schema nota_app, menerapkan migrasi, membuat role nota_app_runtime tanpa hak DDL/admin, dan menyimpan DATABASE_URL lokal dengan password acak. Nilai rahasia tidak dicetak. DATABASE_SSL=true dipertahankan; endpoint yang menolak TLS menghentikan proses sebelum autentikasi.
+
+Setup menolak mengambil alih role atau schema yang tidak dikenali dan membatalkan perubahan bila hak PUBLIC memungkinkan runtime mengakses aplikasi lain. Ia tidak mencabut izin global milik aplikasi lain. Bila proses terputus setelah perubahan database, berkas pemulihan lokal local-data/provisioned.env harus diperiksa sebelum mencoba ulang; skrip menolak menimpanya.
+
+Pemeriksaan endpoint lokal pada 11 September 2026: server menolak TLS. Schema dan role cloud belum dibuat. CRON_SECRET sudah dibuat lokal. Tes provisioning lokal lulus; hasil ini bukan verifikasi layanan cloud.

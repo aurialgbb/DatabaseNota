@@ -16,7 +16,8 @@
     "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/*.test.ts",
     "db:migrate": "tsx scripts/migrate.ts",
-    "db:seed": "tsx scripts/seed.ts"
+    "db:seed": "tsx scripts/seed.ts",
+    "db:setup": "node scripts/provision-database.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.0.0",
