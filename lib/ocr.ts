@@ -7,23 +7,23 @@ import { portalNormalizeOcrReceipts_ } from '../generated/receipt-domain.mjs';
 
 export async function runOcr(job:any) {
  const db=database();
- const photo=(await db.query("SELECT * FROM photos WHERE id=$1 AND state='READY'",[job.payload.photoId])).rows[0];
+ const photo=(await db.query("SELECT * FROM nota_app.photos WHERE id=$1 AND state='READY'",[job.payload.photoId])).rows[0];
  invariant(photo,'PHOTO_NOT_READY','Foto belum siap.');
  invariant(job.uid===photo.owner_uid,'FORBIDDEN','Foto bukan milik pengirim.',403);
  const object=await storage().send(new GetObjectCommand({Bucket:process.env.R2_BUCKET,Key:photo.object_key}));
  const base64=Buffer.from(await object.Body!.transformToByteArray()).toString('base64');
  invariant(process.env.GEMINI_API_KEY,'OCR_NOT_CONFIGURED','OCR belum dikonfigurasi.',503);
- const categories=(await db.query('SELECT name FROM categories ORDER BY position,name')).rows.map((r:any)=>r.name);
+ const categories=(await db.query('SELECT name FROM nota_app.categories ORDER BY position,name')).rows.map((r:any)=>r.name);
  const isLegacy=job.kind==='LEGACY_OCR';
  const prompt=isLegacy?legacyPrompt():storePrompt(categories);
  let lastError:unknown;
  for(let attempt=1;attempt<=(isLegacy?3:2);attempt++){
   const model=isLegacy?legacyModel:attempt===2?fallback:primary;
   const step='gemini-'+attempt;
-  const previous=(await db.query('SELECT * FROM job_steps WHERE job_id=$1 AND step_key=$2',[job.id,step])).rows[0];
+  const previous=(await db.query('SELECT * FROM nota_app.job_steps WHERE job_id=$1 AND step_key=$2',[job.id,step])).rows[0];
   if(previous?.status==='SUCCEEDED')return previous.result;
   if(previous?.status==='RUNNING')throw new AppError('OCR_OUTCOME_UNKNOWN','Respons OCR sebelumnya belum dapat dipastikan.',409);
-  await db.query("INSERT INTO job_steps(job_id,step_key,status,attempts) VALUES($1,$2,'RUNNING',1) ON CONFLICT(job_id,step_key) DO UPDATE SET status='RUNNING',attempts=job_steps.attempts+1,updated_at=now()",[job.id,step]);
+  await db.query("INSERT INTO nota_app.job_steps(job_id,step_key,status,attempts) VALUES($1,$2,'RUNNING',1) ON CONFLICT(job_id,step_key) DO UPDATE SET status='RUNNING',attempts=job_steps.attempts+1,updated_at=now()",[job.id,step]);
   try{
    const response=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent',{
     method:'POST',headers:{'content-type':'application/json','x-goog-api-key':process.env.GEMINI_API_KEY!},
@@ -37,11 +37,11 @@ export async function runOcr(job:any) {
    try{parsed=JSON.parse(output.replace(/```json/gi,'').replace(/```/g,'').trim());}catch{throw new AppError('RETRYABLE_OUTPUT','Hasil OCR belum dapat dibaca.',502);}
    invariant(isLegacy?parsed&&Array.isArray(parsed.items):parsed&&Array.isArray(parsed.receipts),'RETRYABLE_OUTPUT','Format hasil OCR tidak sesuai.',502);
    const result=isLegacy?[{success:true,data:parsed}]:{success:true,photoId:photo.id,receipts:portalNormalizeOcrReceipts_(parsed.receipts,photo.id),warnings:parsed.warnings||[],modelUsed:model,attemptCount:attempt};
-   await db.query("UPDATE job_steps SET status='SUCCEEDED',result=$3,updated_at=now() WHERE job_id=$1 AND step_key=$2",[job.id,step,JSON.stringify(result)]);
+   await db.query("UPDATE nota_app.job_steps SET status='SUCCEEDED',result=$3,updated_at=now() WHERE job_id=$1 AND step_key=$2",[job.id,step,JSON.stringify(result)]);
    return result;
   }catch(error){
    lastError=error;
-   await db.query("UPDATE job_steps SET status='FAILED',updated_at=now() WHERE job_id=$1 AND step_key=$2",[job.id,step]);
+   await db.query("UPDATE nota_app.job_steps SET status='FAILED',updated_at=now() WHERE job_id=$1 AND step_key=$2",[job.id,step]);
    const retryable=error instanceof AppError&&error.code.startsWith('RETRYABLE')||error instanceof Error&&/timeout|timed out/i.test(error.message);
    if(!retryable)throw error;
    if(attempt<(isLegacy?3:2))await new Promise(resolve=>setTimeout(resolve,2000));

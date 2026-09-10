@@ -20,12 +20,12 @@ export async function prepareUpload(user: User, payload: any) {
   const client = storage();
   const uploadUrl = await getSignedUrl(client,new PutObjectCommand({ Bucket:process.env.R2_BUCKET, Key:key, ContentType:payload.mimeType }),{ expiresIn:300 });
   const thumbnailUploadUrl = await getSignedUrl(client,new PutObjectCommand({ Bucket:process.env.R2_BUCKET, Key:thumb, ContentType:'image/jpeg' }),{ expiresIn:300 });
-  await database().query("INSERT INTO photos(id,owner_uid,branch_id,object_key,thumbnail_key,mime_type,byte_size,state,upload_group) VALUES($1,$2,$3,$4,$5,$6,$7,'PENDING',$8)", [id,user.uid,branchId || null,key,thumb,payload.mimeType,bytes,payload.uploadId || null]);
+  await database().query("INSERT INTO nota_app.photos(id,owner_uid,branch_id,object_key,thumbnail_key,mime_type,byte_size,state,upload_group) VALUES($1,$2,$3,$4,$5,$6,$7,'PENDING',$8)", [id,user.uid,branchId || null,key,thumb,payload.mimeType,bytes,payload.uploadId || null]);
   return { photoId:id, uploadUrl, thumbnailUploadUrl, expiresIn:300 };
 }
 export async function ownedPhoto(user: User,id: string) {
   invariant(/^[0-9a-f-]{36}$/i.test(id),'INVALID_PHOTO','Foto tidak valid.');
-  const row = (await database().query('SELECT * FROM photos WHERE id=$1',[id])).rows[0];
+  const row = (await database().query('SELECT * FROM nota_app.photos WHERE id=$1',[id])).rows[0];
   invariant(row && row.state !== 'DELETED', 'NOT_FOUND','Foto tidak ditemukan.',404);
   requireBranch(user,row.branch_id || '');
   if (user.role === 'TOKO') invariant(row.owner_uid === user.uid || row.state === 'READY','FORBIDDEN','Foto tidak dapat diakses.',403);
@@ -43,7 +43,7 @@ export async function completeUpload(user: User,id: string) {
     row.mime_type === 'image/png' ? prefix.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])) :
     prefix.toString('ascii',0,4) === 'RIFF' && prefix.toString('ascii',8,12) === 'WEBP';
   invariant(valid,'INVALID_MEDIA','Isi berkas bukan gambar yang didukung.');
-  await database().query("UPDATE photos SET state='READY' WHERE id=$1 AND state='PENDING'",[id]);
+  await database().query("UPDATE nota_app.photos SET state='READY' WHERE id=$1 AND state='PENDING'",[id]);
   return { success:true,photoId:id };
 }
 export async function photoUrl(user: User,id: string,thumbnail=false) {

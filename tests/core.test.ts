@@ -25,14 +25,15 @@ test('Alokasi diskon menjaga total dan menolak diskon berlebih',()=>{
 test('Migrasi PostgreSQL, idempotensi, outbox, dan isolasi pekerjaan',async()=>{
  const pg=new PGlite();
  try {
+  await pg.exec("CREATE TABLE public.jobs (marker text); INSERT INTO public.jobs VALUES ('other app'); CREATE SCHEMA other_app; CREATE TABLE other_app.transactions (marker text); INSERT INTO other_app.transactions VALUES ('keep');");
   for(const file of (await readdir(new URL('../migrations/',import.meta.url))).filter(f=>f.endsWith('.sql')).sort()) await pg.exec(await readFile(new URL('../migrations/'+file,import.meta.url),'utf8'));
-  await pg.exec("INSERT INTO branches(id,name) VALUES('b1','Satu'),('b2','Dua'); INSERT INTO profiles(uid,username,auth_email,display_name,role,branch_id) VALUES('u1','toko','test@example.invalid','Toko','TOKO','b1');");
+  await pg.exec("INSERT INTO nota_app.branches(id,name) VALUES('b1','Satu'),('b2','Dua'); INSERT INTO nota_app.profiles(uid,username,auth_email,display_name,role,branch_id) VALUES('u1','toko','test@example.invalid','Toko','TOKO','b1');");
   const db=pg as unknown as Database;
   await pg.exec('BEGIN');
   const first=await createJob(db,user,'STORE_OCR',{photoId:'p1'},'same');
   const second=await createJob(db,user,'STORE_OCR',{photoId:'p1'},'same');
   assert.equal(first.id,second.id);
-  assert.equal((await pg.query('SELECT * FROM outbox')).rows.length,1);
+  assert.equal((await pg.query('SELECT * FROM nota_app.outbox')).rows.length,1);
   await assert.rejects(()=>createJob(db,user,'STORE_OCR',{photoId:'p2'},'same'),/isi berbeda/);
   await assert.rejects(()=>authorizedJob(db,{...user,uid:'other'},first.id),/diakses/);
   let calls=0;
@@ -43,6 +44,10 @@ test('Migrasi PostgreSQL, idempotensi, outbox, dan isolasi pekerjaan',async()=>{
   await pg.exec('BEGIN');
   await createJob(db,user,'STORE_OCR',{},'rollback');
   await pg.exec('ROLLBACK');
-  assert.equal((await pg.query('SELECT * FROM jobs')).rows.length,1);
+  assert.equal((await pg.query('SELECT * FROM nota_app.jobs')).rows.length,1);
+  assert.deepEqual((await pg.query('SELECT * FROM public.jobs')).rows,[{marker:'other app'}]);
+  assert.deepEqual((await pg.query('SELECT * FROM other_app.transactions')).rows,[{marker:'keep'}]);
+  assert.equal((await pg.query("SELECT table_name FROM information_schema.tables WHERE table_schema='public'")).rows.length,1);
+  assert.equal((await pg.query("SELECT table_name FROM information_schema.tables WHERE table_schema='nota_app'")).rows.length,22);
  } finally { await pg.close(); }
 });

@@ -39,7 +39,11 @@ npm run dev
 
 Tes database lokal tidak membutuhkan PostgreSQL Sumopod. Login dan penyimpanan foto sungguhan membutuhkan konfigurasi layanan.
 
-Migrasi database dijalankan terpisah dari build: npm run db:migrate. Jangan menjalankannya pada database lama. Deployment produksi menunggu RPC lengkap, pengujian mobile, kesetaraan OCR, integrasi Sheets/R2, pengujian beban, serta verifikasi backup dan pemulihan.
+Migrasi database dijalankan terpisah dari build: npm run db:migrate. Database boleh dipakai bersama aplikasi lain: seluruh tabel, indeks dan ledger migrasi aplikasi ini berada pada schema `nota_app`. Query menggunakan nama schema secara eksplisit, termasuk saat memakai transaction pooler. Migrasi tidak memindahkan tabel lama atau mengubah schema `public` maupun schema aplikasi lain. Seluruh migrasi dalam satu transaksi dengan transaction advisory lock.
+
+Isi `DATABASE_ADMIN_URL` di `.env.local` untuk migrasi (utamakan direct/session connection), dan `DATABASE_URL` untuk runtime. Command migrasi membaca `.env.local` otomatis. Kredensial migrasi membutuhkan izin membuat schema; akun runtime terpisah sebaiknya hanya diberi USAGE pada `nota_app`, SELECT/INSERT/UPDATE/DELETE pada tabelnya, serta USAGE/SELECT pada sequence-nya. Schema memisahkan nama tabel, tetapi hak akses tetap ditentukan oleh user database. Pembuatan role dan pemberian izin harus menyesuaikan akun Sumopod yang tersedia; belum diterapkan pada cloud.
+
+Deployment produksi menunggu RPC lengkap, pengujian mobile, kesetaraan OCR, integrasi Sheets/R2, pengujian beban, serta verifikasi backup dan pemulihan.
 
 ## Kriteria penerimaan
 
