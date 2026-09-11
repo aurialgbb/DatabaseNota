@@ -1,6 +1,6 @@
 # Status setup VPS Database Nota
 
-Diverifikasi 11 September 2026. Ini status infrastruktur database, bukan pernyataan bahwa seluruh aplikasi siap production.
+Diverifikasi 11 September 2026. Webapp dan database sudah berjalan di VPS. Ini belum merupakan pernyataan bahwa seluruh fitur aplikasi siap production.
 
 ## Konfigurasi
 
@@ -12,7 +12,7 @@ Diverifikasi 11 September 2026. Ini status infrastruktur database, bukan pernyat
 - TLS wajib untuk TCP database dan pooler. CA privat dipercaya secara eksplisit; tidak memakai rejectUnauthorized=false.
 - Sertifikat localhost diperbarui harian jika sisa masa berlaku kurang dari 30 hari. CA privat berlaku 10 tahun, sertifikat server 90 hari.
 - SSH key untuk akun ubuntu; password SSH dan login root ditolak. Password OS awal tidak diganti.
-- UFW hanya membuka TCP 22 untuk SSH.
+- UFW membuka TCP 22, 80, dan 443. Port aplikasi 3000, PostgreSQL 5432, dan pooler 6432 hanya mendengarkan localhost.
 - Zona waktu server Asia/Jakarta; database UTC. Pembaruan keamanan otomatis aktif, reboot otomatis dinonaktifkan.
 - Server telah direstart setelah upgrade OS; SSH, PostgreSQL, pooler, dan timer berhasil kembali aktif.
 - Aplikasi lokal berhasil terkoneksi setelah reboot; sertifikat yang tidak dipercaya ditolak.
@@ -59,7 +59,7 @@ Backup offsite R2 sudah diaktifkan dengan persetujuan eksplisit pengguna pada 11
 
 ## Batas saat ini
 
-- Webapp belum dideploy; belum ada domain dan HTTPS web publik.
+- Webapp sudah dideploy dengan HTTPS pada IP publik. Login awal belum tersedia; GEMINI_API_KEY belum diisi, admin belum dibuat, dan integrasi Google Sheets belum lengkap.
 - Penyelesaian backend/auth/OCR/Google Sheets serta pengujian semua peran masih diperlukan.
 - Tidak ada failover/HA; aplikasi dan database satu VPS berbagi titik kegagalan.
 - Pemeriksaan kesehatan lokal tidak mengirim notifikasi ke manusia; tujuan notifikasi belum ditetapkan.
@@ -74,3 +74,32 @@ File `nota-dispatch.py`, `.service`, dan `.timer` menyiapkan penjadwal systemd s
 Endpoint dispatch masih menggunakan Workflow SDK yang ada pada proyek. Untuk deployment seluruh aplikasi di VPS, runtime workflow dan worker harus disiapkan serta diuji sesuai mode self-hosted sebelum memproses nota sungguhan. Menghapus cron Vercel tidak menyelesaikan pekerjaan tersebut.
 
 Database VPS tetap hanya localhost; deployment Vercel tidak bisa memakai DATABASE_URL lokal/tunnel dari laptop. Untuk production Vercel diperlukan endpoint TLS yang dapat dijangkau dari Vercel. Alternatifnya deploy aplikasi dan worker di VPS, sesuai rancangan koneksi internal saat ini.
+
+## Deployment webapp pada VPS
+
+Alamat aplikasi: https://43.173.14.17/ . Preview tampilan: https://43.173.14.17/workspace-preview.html . Preview tidak membuktikan bahwa seluruh tindakan backend telah tersedia.
+
+- Node.js 24.21.0 dan Next.js dibangun di Linux dari commit aplikasi `427055a`. Release pertama: `/srv/nota/releases/release-20260911022257374`, dengan symlink aktif `/srv/nota/current`.
+- Proses build memakai akun `nota-build`; proses aplikasi memakai akun `nota-web`, terpisah dari administrator. Kode release dimiliki root. Hanya direktori `/var/lib/nota-web` yang dapat ditulis layanan aplikasi.
+- `nota-web.service` otomatis berjalan saat boot dan restart jika proses gagal. Nginx menerima HTTPS dan meneruskan ke localhost:3000.
+- Environment production berada pada `/etc/nota/web.env`, mode 0600 root. Systemd memuatnya sebelum menjalankan aplikasi sebagai nota-web. Tidak ada kredensial migrasi atau private SSH key di environment aplikasi.
+- Database aplikasi melalui PgBouncer localhost:6432 dengan verifikasi CA. Parameter startup `statement_timeout` diabaikan pooler; batas query 15 detik tetap ditetapkan pada role database.
+- URL internal workflow dan dispatch ditolak oleh Nginx dari internet. Penjadwal dispatch belum diaktifkan karena runtime workflow production belum disiapkan. Mode workflow lokal yang tersimpan sekarang bukan jaminan ketahanan pekerjaan production.
+- Sertifikat IP publik Let's Encrypt `nota-ip` menggunakan profil shortlived, sekitar 160 jam. Certbot 5.8 memeriksa pembaruan dua kali sehari melalui `nota-web-cert-renew.timer`; sesudah renewal Nginx direload. Domain sendiri belum diperlukan untuk akses HTTPS ini. Dukungan login OAuth pada alamat IP tetap perlu ditinjau terpisah saat auth diselesaikan.
+- Health check turut memeriksa layanan web, koneksi database melalui API aplikasi, dan sisa masa berlaku sertifikat publik minimal 24 jam. Hasil masih hanya tercatat di journal.
+
+`install-web-runtime.sh` adalah bootstrap awal dan mengganti konfigurasi Nginx dengan halaman sementara. Jangan jalankan ulang untuk update aplikasi rutin.
+
+Untuk update berikutnya: arsipkan commit Git yang sudah diverifikasi tanpa file rahasia, transfer melalui SSH dengan host key terpin, periksa SHA-256, lalu ekstrak ke direktori release baru. Jalankan `npm ci` dan `npm run build` sebagai nota-build menggunakan Node dari `/opt/nodejs/current`. Setelah build berhasil, jadikan kode milik root, pindahkan cache Next ke `/var/lib/nota-web/cache/<release>`, alihkan symlink current, dan restart nota-web. Periksa HTTPS serta `databaseReady` pada `/api/setup`. Jika gagal, kembalikan symlink ke release sebelumnya dan restart. Perubahan schema memerlukan rencana kompatibilitas/rollback tersendiri. Push Git belum otomatis melakukan deployment VPS.
+
+Pemeriksaan operator:
+
+```sh
+sudo systemctl status nota-web nginx nota-web-cert-renew.timer
+sudo journalctl -u nota-web --no-pager -n 50
+sudo /usr/local/sbin/nota-health
+sudo /opt/nota-certbot/bin/certbot renew --cert-name nota-ip --dry-run --run-deploy-hooks --deploy-hook '/usr/sbin/nginx -t && /usr/bin/systemctl reload nginx' --no-random-sleep-on-renew
+```
+
+Build Linux berhasil. Uji publik memeriksa halaman utama dan preview (200), sesi tanpa login (401), endpoint internal dan file environment (404), redirect HTTP ke HTTPS (308), dan koneksi database aplikasi (true). Halaman login juga diperiksa di browser publik; tombol login masih nonaktif karena kesiapan aplikasi belum lengkap.
+Uji simulasi renewal sertifikat publik beserta deploy hook Nginx berhasil pada 11 September 2026. Health check web, database, dan backup offsite juga lulus sesudah restart aplikasi.

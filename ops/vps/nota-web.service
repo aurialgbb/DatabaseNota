@@ -1,0 +1,27 @@
+[Unit]
+Description=Database Nota Next.js application
+After=network-online.target postgresql.service pgbouncer.service
+Wants=network-online.target
+[Service]
+Type=simple
+User=nota-web
+Group=nota-web
+WorkingDirectory=/srv/nota/current
+EnvironmentFile=/etc/nota/web.env
+ExecStart=/opt/nodejs/current/bin/node node_modules/next/dist/bin/next start --hostname 127.0.0.1 --port 3000
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+KillSignal=SIGTERM
+SuccessExitStatus=143
+UMask=0027
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=strict
+ReadWritePaths=/var/lib/nota-web
+MemoryHigh=2G
+MemoryMax=2500M
+TasksMax=256
+[Install]
+WantedBy=multi-user.target

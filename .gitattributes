@@ -6,3 +6,4 @@ ops/vps/*.sh text eol=lf
 ops/vps/*.py text eol=lf
 ops/vps/*.service text eol=lf
 ops/vps/*.timer text eol=lf
+ops/vps/*.conf text eol=lf

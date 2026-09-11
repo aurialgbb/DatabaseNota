@@ -14,6 +14,7 @@ logfile = /var/log/postgresql/pgbouncer.log
 auth_type = scram-sha-256
 auth_file = /etc/pgbouncer/userlist.txt
 pool_mode = transaction
+ignore_startup_parameters = extra_float_digits,statement_timeout
 max_client_conn = 80
 default_pool_size = 5
 reserve_pool_size = 1

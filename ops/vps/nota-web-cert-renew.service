@@ -1,0 +1,8 @@
+[Unit]
+Description=Renew public IP HTTPS certificate
+After=network-online.target nginx.service
+Wants=network-online.target
+[Service]
+Type=oneshot
+ExecStart=/opt/nota-certbot/bin/certbot renew --quiet --cert-name nota-ip --deploy-hook "/usr/sbin/nginx -t && /usr/bin/systemctl reload nginx"
+TimeoutStartSec=10min
