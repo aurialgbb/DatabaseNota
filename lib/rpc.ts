@@ -1,3 +1,4 @@
+import {branchTemplate} from './import-template';
 import {syncAction,syncActions,startSync} from './sync-actions';
 import {accountTemplate} from './account-template';
 import {bulkBranches} from './bulk-branches';
@@ -41,6 +42,7 @@ export async function rpc(user:User,body:any,request:Request) {
  if(['PREVIEW_BULK_MANAGE_BRANCHES','BULK_MANAGE_BRANCHES'].includes(action))return bulkBranches(user,action,payload,request.headers.get('idempotency-key')||'');
  if(syncActions.includes(action))return syncAction(user,action,payload,request.headers.get('idempotency-key')||'');
  if(approvalActions.includes(action))return approvalAction(user,action,payload,request.headers.get('idempotency-key')||'');
+ if(action==='GET_BRANCH_TEMPLATE')return branchTemplate(user);
  if(action==='GET_ACCOUNT_TEMPLATE')return accountTemplate(user);
  if(accountActions.includes(action))return accountAction(user,action,payload);
  if(['CLAIM_RECEIPT_REVIEW','RELEASE_RECEIPT_REVIEW','RESTORE_DISCARDED_RECEIPT'].includes(action))return reviewAction(user,action,payload,request.headers.get('idempotency-key')||'');

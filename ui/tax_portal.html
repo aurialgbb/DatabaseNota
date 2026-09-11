@@ -1,0 +1,192 @@
+<section id="taxBankPage" class="page-section portal-page portal-hidden">
+  <div class="portal-page-head">
+    <div><h1>Review Nota</h1><p>Periksa foto dan data, koreksi jika perlu, lalu putuskan.</p></div>
+  </div>
+  <div class="portal-filter-bar">
+    <label class="portal-filter-field"><span>Cabang</span><select id="taxBankBranch" class="portal-select"><option value="">Semua Cabang</option></select></label>
+    <label class="portal-filter-field"><span>Status</span><select id="taxBankStatus" class="portal-select">
+      <option value="PENDING">Pending Review</option><option value="APPROVED">Disetujui</option><option value="NEEDS_CORRECTION">Perlu Diperbaiki</option><option value="REJECTED">Tidak Digunakan</option><option value="ALL">Semua Status</option>
+    </select></label>
+    <label class="portal-filter-field"><span>Tanggal mulai</span><input id="taxBankDateFrom" class="portal-input portal-date-input" type="text" readonly data-portal-date placeholder="Pilih tanggal" aria-label="Tanggal mulai"></label>
+    <label class="portal-filter-field"><span>Tanggal akhir</span><input id="taxBankDateTo" class="portal-input portal-date-input" type="text" readonly data-portal-date placeholder="Pilih tanggal" aria-label="Tanggal akhir"></label>
+    <button id="taxBankReload" data-portal-refresh class="portal-btn portal-btn-dark portal-btn-icon" type="button" title="Muat data" aria-label="Muat data"><i class="bi bi-arrow-repeat"></i></button>
+  </div>
+  <div id="taxApprovalJobs" class="portal-approval-jobs portal-hidden" aria-live="polite"></div>
+  <div id="taxGlobalDecisionBar" class="portal-bank-submit-bar portal-hidden" aria-live="polite">
+    <div><span>Keputusan belum dikirim</span><strong id="taxDecisionCount">0 nota ditandai</strong></div>
+    <button id="taxSubmitDecisions" class="portal-btn portal-btn-dark" type="button"><i class="bi bi-send-check"></i> Kirim 0 Keputusan</button>
+  </div>
+  <div id="taxBankEmptyState" class="portal-bank-empty portal-hidden"><i class="bi bi-inbox"></i><strong>Tidak ada nota pada filter ini</strong><span>Ubah filter atau pilih rentang tanggal lain, lalu muat kembali.</span></div>
+  <div class="portal-bank-master-detail">
+  <section id="taxQueuePanel" class="portal-card portal-bank-queue-panel" aria-label="Antrean review">
+      <div class="portal-bank-section-head">
+        <div><span>Antrean review</span><strong id="taxQueuePageSummary">Memuat nota...</strong></div>
+        <div class="portal-bank-head-actions">
+          <span id="taxQueueDecisionSummary" class="portal-badge portal-badge-pending">0 ditandai</span>
+          <button id="taxBatchModeToggle" class="portal-icon-button" type="button" aria-pressed="false" title="Pilih beberapa nota" aria-label="Aktifkan mode pilih beberapa"><i class="bi bi-check2-square"></i></button>
+        </div>
+      </div>
+      <label class="portal-bank-search"><span class="sr-only">Cari pada hasil ini</span><i class="bi bi-search"></i><input id="taxQueueSearch" type="search" autocomplete="off" placeholder="Cari nomor, cabang, atau supplier" aria-label="Cari nomor nota, cabang, atau supplier pada hasil ini"><button id="taxQueueSearchClear" type="button" aria-label="Bersihkan pencarian"><i class="bi bi-x-circle-fill"></i></button></label>
+      <div id="taxBulkToolbar" class="portal-bulk-toolbar portal-hidden">
+        <strong id="taxBulkSelectedCount">0 nota dipilih</strong>
+        <span>Pilihan hanya berlaku pada halaman ini.</span>
+        <button id="taxBulkApprove" class="portal-btn portal-btn-soft" type="button"><i class="bi bi-check2-all"></i> Setujui</button>
+        <button id="taxBulkReject" class="portal-btn portal-btn-soft portal-bulk-reject" type="button"><i class="bi bi-arrow-counterclockwise"></i> Perbaiki</button>
+        <button id="taxBulkDiscard" class="portal-btn portal-btn-soft portal-bulk-discard" type="button"><i class="bi bi-archive"></i> Tidak Digunakan</button>
+        <button id="taxBulkClear" class="portal-btn portal-btn-soft" type="button">Bersihkan</button>
+      </div>
+      <div id="taxQueueList" class="portal-queue-list"><div class="portal-empty">Memuat antrean...</div></div>
+      <div id="taxBankPagination" class="portal-pagination portal-bank-pagination"></div>
+  </section>
+
+  <div id="taxReviewEmpty" class="portal-bank-review-empty" aria-live="polite">
+    <span><i class="bi bi-receipt-cutoff"></i></span>
+    <strong>Pilih nota untuk direview</strong>
+    <small>Klik nota di antrean kiri. Foto dan data akan tampil di area ini.</small>
+  </div>
+
+  <section id="taxReviewWorkspace" class="portal-review-workspace portal-hidden" role="region" aria-labelledby="taxReviewTitle" aria-hidden="true">
+    <div class="portal-review-shell">
+      <header class="portal-review-header">
+        <div class="portal-review-heading"><div class="portal-review-kicker"><span id="taxReviewEyebrow">REVIEW NOTA</span><span id="taxReviewPosition">Belum ada nota dipilih</span></div><h2 id="taxReviewTitle">Pilih nota untuk direview</h2></div>
+        <div class="portal-review-navigation">
+          <button id="taxReviewPrevious" class="portal-icon-button" type="button" title="Nota sebelumnya" aria-label="Buka nota sebelumnya"><i class="bi bi-chevron-left"></i></button>
+          <button id="taxReviewNext" class="portal-icon-button" type="button" title="Nota berikutnya" aria-label="Buka nota berikutnya"><i class="bi bi-chevron-right"></i></button>
+          <button id="taxReviewClose" class="portal-btn portal-btn-soft portal-review-close" type="button" title="Kembali ke daftar" aria-label="Kembali ke daftar nota"><i class="bi bi-x-lg"></i><span>Kembali ke daftar</span></button>
+        </div>
+      </header>
+      <div class="portal-bank-mobile-tools">
+        <div class="portal-bank-view-tabs" role="tablist" aria-label="Tampilan review nota">
+          <button id="taxPhotoToggle" type="button" role="tab" aria-selected="false" aria-controls="taxPhotoPanel"><i class="bi bi-image"></i> Foto</button>
+          <button id="taxDataTab" class="active" type="button" role="tab" aria-selected="true" aria-controls="taxEditorPanel"><i class="bi bi-pencil-square"></i> Data</button>
+        </div>
+      </div>
+      <div id="taxBankLayout" class="portal-bank-layout">
+        <section id="taxPhotoPanel" class="portal-bank-panel portal-bank-photo-panel" role="tabpanel" aria-labelledby="taxPhotoToggle">
+          <div class="portal-bank-section-head">
+            <div><span>Preview nota</span><strong id="taxPhotoCaption">Pilih nota untuk melihat foto</strong></div>
+            <button id="taxPhotoPanelClose" class="portal-icon-button portal-bank-photo-close" type="button" aria-label="Tutup preview foto"><i class="bi bi-x-lg"></i></button>
+          </div>
+          <div id="taxPhotoToolbar" class="portal-photo-toolbar" role="toolbar" aria-label="Kontrol tampilan foto">
+            <button id="taxPhotoZoomOut" type="button" title="Perkecil (-)" aria-label="Perkecil foto"><i class="bi bi-dash-lg"></i></button>
+            <output id="taxPhotoZoomLabel" aria-live="polite">100%</output>
+            <button id="taxPhotoZoomIn" type="button" title="Perbesar (+)" aria-label="Perbesar foto"><i class="bi bi-plus-lg"></i></button>
+            <button id="taxPhotoFitPage" type="button" title="Pas ke halaman" aria-label="Pas ke halaman"><i class="bi bi-arrows-angle-contract"></i><span>Halaman</span></button>
+            <button id="taxPhotoFitWidth" type="button" title="Pas ke lebar" aria-label="Pas ke lebar"><i class="bi bi-arrows-expand-vertical"></i><span>Lebar</span></button>
+            <button id="taxPhotoRotate" type="button" title="Putar 90 derajat" aria-label="Putar foto 90 derajat"><i class="bi bi-arrow-clockwise"></i></button>
+            <button id="taxPhotoReset" type="button" title="Reset tampilan (0)" aria-label="Reset tampilan"><i class="bi bi-arrow-repeat"></i></button>
+            <button id="taxPhotoFullscreen" type="button" title="Layar penuh" aria-label="Buka preview layar penuh" aria-pressed="false"><i class="bi bi-arrows-fullscreen"></i></button>
+          </div>
+          <div id="taxPhotoStage" class="portal-photo-stage"><div class="portal-photo-empty">Pilih nota untuk melihat foto.</div></div>
+          <div class="portal-photo-pan-hint"><i class="bi bi-hand-index-thumb"></i> Geser gambar saat diperbesar</div>
+        </section>
+        <section id="taxEditorPanel" class="portal-bank-panel portal-bank-editor-card" role="tabpanel" aria-labelledby="taxDataTab">
+          <div class="portal-bank-section-head portal-bank-editor-head">
+            <div><span>Detail &amp; koreksi</span><strong>Periksa hasil pembacaan nota</strong></div>
+            <div id="taxOcrSummary" class="portal-ocr-summary" aria-live="polite"></div>
+          </div>
+          <div class="portal-bank-editor-scroll"><div id="taxReceiptEditor"><div class="portal-empty">Pilih nota dari antrean.</div></div></div>
+          <div id="taxDecisionBar" class="portal-decision-bar portal-hidden">
+            <div id="taxCurrentDecision" class="portal-decision-progress" aria-live="polite">Pilih keputusan untuk nota ini.</div>
+            <button id="taxRejectButton" class="portal-btn portal-review-reject" type="button" title="Tandai perlu perbaikan (R)"><i class="bi bi-arrow-counterclockwise"></i> Tandai Perlu Perbaikan</button>
+            <button id="taxSaveEditButton" class="portal-btn portal-review-save" type="button" title="Simpan koreksi (S)" disabled><i class="bi bi-floppy"></i> Simpan Koreksi</button>
+            <button id="taxDiscardButton" class="portal-btn portal-review-discard" type="button" title="Tandai tidak digunakan (D)"><i class="bi bi-archive"></i> Tandai Tidak Digunakan</button>
+            <button id="taxApproveButton" class="portal-btn portal-review-approve" type="button" title="Tandai disetujui (A)"><i class="bi bi-check-lg"></i> Tandai Disetujui</button>
+            <button id="taxRestoreDiscardedButton" class="portal-btn portal-review-restore portal-hidden" type="button" data-portal-role="ADMIN"><i class="bi bi-arrow-up-circle"></i> Kembalikan ke Review</button>
+          </div>
+        </section>
+      </div>
+    </div>
+  </section>
+  </div>
+</section>
+
+<section id="taxMasterLinksPage" class="page-section portal-page portal-hidden">
+  <div class="portal-master-hero">
+    <div class="portal-master-hero-copy">
+      <span class="portal-eyebrow"><i class="bi bi-diagram-3-fill"></i> Pusat koneksi cabang</span>
+      <h1>Master Link Spreadsheet</h1>
+      <p>Hubungkan setiap cabang ke spreadsheet tujuan dan pantau koneksinya dalam satu workspace.</p>
+      <div class="portal-master-hero-actions">
+        <button id="taxAddMasterBranch" class="portal-btn portal-btn-primary"><i class="bi bi-plus-lg"></i> Tambah Cabang</button>
+        <div class="portal-action-menu portal-action-menu-left" id="taxBranchBulkMenu">
+          <button id="taxBranchBulkMenuButton" class="portal-btn portal-btn-soft" type="button" aria-haspopup="menu" aria-controls="taxBranchBulkMenuList" aria-expanded="false"><i class="bi bi-list-check"></i> Kelola Massal <i class="bi bi-chevron-down"></i></button>
+          <div id="taxBranchBulkMenuList" class="portal-action-menu-list" role="menu">
+            <button id="taxDownloadBranchTemplate"><i class="bi bi-download"></i> Download template Excel</button>
+            <button id="taxUploadBranchBulk"><i class="bi bi-file-earmark-arrow-up"></i> Upload Excel / CSV cabang</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="portal-master-hero-visual portal-workspace-art" aria-hidden="true"></div>
+  </div>
+  <input id="taxBranchBulkFile" type="file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" class="portal-hidden">
+
+  <div class="portal-master-overview" aria-label="Ringkasan Master Link">
+    <div><span><i class="bi bi-buildings"></i> Total cabang</span><strong id="taxLinkStatTotal">0</strong></div>
+    <div><span><i class="bi bi-link-45deg"></i> Terhubung</span><strong id="taxLinkStatConnected">0</strong></div>
+    <div><span><i class="bi bi-exclamation-circle"></i> Perlu link</span><strong id="taxLinkStatPending">0</strong></div>
+    <div><span><i class="bi bi-cup-hot"></i> Central Kitchen</span><strong id="taxLinkStatCentral">0</strong></div>
+  </div>
+
+  <div class="portal-card portal-master-workspace">
+    <div class="portal-master-toolbar">
+      <div>
+        <span class="portal-toolbar-label">Cari cabang</span>
+        <select id="taxLinkBranchFilter" class="portal-select" data-portal-combo><option value="">Semua cabang</option></select>
+      </div>
+      <div class="portal-master-toolbar-meta">
+        <span><i class="bi bi-info-circle"></i> URL tersimpan otomatis saat kolom selesai diedit.</span>
+      </div>
+      <div class="portal-actions">
+        <span class="portal-toolbar-label">Periode data</span>
+      <input id="taxLinkPeriod" type="hidden" data-portal-month>
+      <button id="taxLoadLinks" data-portal-refresh class="portal-btn portal-btn-soft portal-btn-icon" type="button" title="Muat data" aria-label="Muat data"><i class="bi bi-arrow-repeat"></i></button>
+      </div>
+    </div>
+    <div id="taxLinksBody" class="portal-master-grid" aria-live="polite"></div>
+    <div id="taxLinksPagination" class="portal-pagination"></div>
+  </div>
+</section>
+
+<section id="taxReceiptEntryPage" class="page-section portal-page portal-hidden">
+  <div class="portal-page-head">
+    <div><h1>Kontrol Data Terkirim</h1><p>Nota yang sudah disetujui dan dikirim ke spreadsheet dapat ditinjau, dipindahkan tanggalnya, atau dieliminasi per kelompok.</p></div>
+    <div class="portal-actions">
+      <select id="taxEntryBranch" class="portal-select" style="width:auto;min-width:190px"><option value="">Semua Cabang</option></select>
+      <button id="taxEntryReload" data-portal-refresh class="portal-btn portal-btn-soft portal-btn-icon" type="button" title="Muat data" aria-label="Muat data"><i class="bi bi-arrow-repeat"></i></button>
+    </div>
+  </div>
+  <div class="portal-card">
+    <div id="taxEntryReceiptList" class="portal-empty">Memuat Entry Data...</div>
+  </div>
+</section>
+
+<section id="taxAccountsPage" class="page-section portal-page portal-hidden">
+  <div class="portal-page-head"><div><h1>Kelola Akun</h1><p>Kelola akses cabang, Tax, serta kredensial akun dengan aman.</p></div></div>
+  <div id="taxProvisionCard" class="portal-card portal-accounts-card">
+    <div class="portal-accounts-head">
+      <div><h2>Daftar Akun</h2><p>Akun nonaktif tetap menyimpan cabang, histori, dan nota yang pernah dikirim.</p></div>
+      <div class="portal-actions portal-accounts-head-actions">
+        <button id="taxAddAccountManual" data-portal-role="ADMIN" class="portal-btn portal-btn-primary" type="button"><i class="bi bi-person-plus"></i> Tambah akun</button>
+        <div class="portal-action-menu" id="taxAccountImportMenu">
+          <button id="taxAccountImportMenuButton" class="portal-btn portal-btn-soft" type="button" aria-haspopup="menu" aria-controls="taxAccountImportMenuList" aria-expanded="false"><i class="bi bi-upload"></i> Import akun <i class="bi bi-chevron-down"></i></button>
+          <div id="taxAccountImportMenuList" class="portal-action-menu-list" role="menu">
+            <button id="taxDownloadAccountTemplate" type="button"><i class="bi bi-download"></i> Download template Excel</button>
+            <button id="taxUploadAccountsButton" type="button"><i class="bi bi-file-earmark-arrow-up"></i> Upload Excel atau CSV</button>
+          </div>
+        </div>
+        <button id="taxReloadAccounts" data-portal-refresh class="portal-btn portal-btn-soft portal-btn-icon" type="button" title="Muat ulang akun" aria-label="Muat ulang akun"><i class="bi bi-arrow-repeat"></i></button>
+      </div>
+    </div>
+    <input id="taxAccountsFile" type="file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" class="portal-hidden">
+    <div class="portal-toolbar portal-accounts-toolbar">
+      <select id="taxAccountsRoleFilter" class="portal-select" data-portal-combo><option value="">Semua role</option><option value="TOKO">Toko</option><option value="TAX">Tax</option><option value="ADMIN">Admin</option></select>
+      <select id="taxAccountsStatusFilter" class="portal-select" data-portal-combo><option value="">Semua status</option><option value="active">Aktif</option><option value="inactive">Nonaktif</option></select>
+      <input id="taxAccountsQuery" class="portal-input" autocomplete="off" placeholder="Ketik nama atau username…">
+    </div>
+    <div id="taxAccountsImportHint" class="portal-row-muted portal-import-hint portal-accounts-import-hint">Import menerima Excel/CSV. File selalu diperiksa dan dikonfirmasi sebelum akun dibuat. Password kosong akan dibuat otomatis dan hanya ditampilkan sekali.</div>
+    <div class="portal-table-wrap portal-accounts-table-wrap"><table class="portal-table portal-accounts-table"><thead><tr><th>No.</th><th>Username</th><th>Nama</th><th>Role</th><th>Cabang</th><th>Status</th><th>Password</th><th>Aksi</th></tr></thead><tbody id="taxAccountsBody"></tbody></table></div>
+    <div id="taxAccountsPagination" class="portal-pagination"></div>
+  </div>
+</section>
