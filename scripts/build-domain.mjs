@@ -23,7 +23,12 @@ function initializer(text,fnName,varName){
  throw new Error('Prompt tidak ditemukan: '+fnName);
 }
 fs.writeFileSync(path.join(out,'prompts.mjs'),
- 'export function storePrompt(categories) { return '+initializer(source,'portalGeminiReceiptOcr_','prompt')+'; }\n'+
+ 'export function storePrompt(categories) { const base='+initializer(source,'portalGeminiReceiptOcr_','prompt')+'; return base+"\\n"+[\n'+
+ "  'Gunakan batas fisik kertas, header supplier, nomor transaksi, subtotal, dan grand total sebagai separator antar-nota. Jangan gabungkan item dari nota yang berbeda.',\n"+
+ "  'Baca separator angka sesuai konteks nota Indonesia: titik biasanya pemisah ribuan dan koma biasanya desimal. Cocokkan dengan qty, harga satuan, subtotal, dan grand total sebelum menentukan nilai.',\n"+
+ "  'Semua quantity, amount, receiptTotal, dan adjustment.amount wajib berupa angka JSON tanpa Rp, spasi, titik ribuan, atau koma desimal. Gunakan titik hanya sebagai desimal JSON bila memang ada pecahan.',\n"+
+ "  'Tanggal keluaran tetap YYYY-MM-DD. Jangan menukar posisi hari dan bulan; jika tanggal tidak terbaca pasti, kosongkan dan tambahkan warning.'\n"+
+ " ].join('\\n'); }\n"+
  'export function legacyPrompt() { return '+initializer(legacy,'processOCRWithGemini_','promptText')+'; }\n'+
  "export const primary='gemini-3.5-flash-lite', fallback='gemini-3.7-flash', legacyModel='gemini-3.5-flash';\n");
 const auth=read('portal_auth.gs');

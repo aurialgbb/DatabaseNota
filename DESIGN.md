@@ -12,6 +12,8 @@ Import preview: the dialog puts the pending decision first. Real counts summariz
 
 Master Link controls: the URL field uses one border and moves its focus state to the complete control so it reads as one input. URL editing stays available without entering branch-edit mode; the pencil action is reserved for branch name and type. Branch search is a plain live filter because users already know the name or ID they need and do not benefit from opening a long dropdown.
 
+Mobile transaction readability: visible dates use the Indonesian `11 Sep 2026` form while ISO dates remain internal values for storage and APIs. Rupiah values use a space after the currency label, period grouping, and tabular numerals. Form controls become 16 px on mobile to prevent browser zoom; receipt labels and totals keep a 12–14 px readable hierarchy.
+
 - Forest green and sage come from the supplied illustration reference; they connect the mark and paperwork illustrations.
 - Receipt silhouette plus N gives the logo a product-specific meaning and stays readable at small sizes. SVG keeps it crisp without a raster payload.
 - Login illustration depicts receipt checking, the actual work of this application. The character is an illustration, not a staff portrait.

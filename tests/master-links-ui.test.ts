@@ -21,4 +21,5 @@ test('Master Link memakai pencarian langsung dan URL dapat diedit tanpa mode edi
   assert.match(styles, /\.portal-link-cell \.portal-inline-input:focus-visible \{ border:0 !important; outline:0 !important;/);
   assert.match(styles, /@media \(max-width:480px\)[\s\S]+\.portal-master-search-field \{ min-height:44px; \}/);
   assert.match(styles, /\.portal-master-card \.portal-icon-button \{ width:40px; height:40px; \}/);
+  assert.match(styles, /max-width:760px[\s\S]+\.portal-input,.portal-select,.portal-inline-input\) \{ font-size:16px; \}/);
 });

@@ -37,6 +37,20 @@ body.portal-ui-v3 .portal-master-card .portal-link-cell .portal-inline-input:foc
 body.portal-ui-v3 .portal-master-card .portal-link-cell .portal-inline-input:focus-visible { border:0 !important; outline:0 !important; background:transparent !important; box-shadow:none !important; }
 body.portal-ui-v3 .portal-master-card .portal-link-cell .portal-inline-input { cursor:text; }
 body.portal-ui-v3 .portal-master-url-dirty .portal-master-card-foot > span { color:var(--ui-primary-strong); }
+body.portal-ui-v3 .portal-money-input,
+body.portal-ui-v3 [data-summary-total],
+body.portal-ui-v3 .portal-entry-receipt-total { font-variant-numeric:tabular-nums; }
+body.portal-ui-v3 .portal-entry-receipt-total { margin-top:4px; color:var(--ui-muted); font-size:12px; font-weight:750; }
+@media (max-width:760px) {
+  body.portal-ui-v3 :is(.portal-input,.portal-select,.portal-inline-input) { font-size:16px; }
+  body.portal-ui-v3 .portal-receipt-summary strong,
+  body.portal-ui-v3 .portal-mobile-item-copy strong { font-size:14px; line-height:1.35; }
+  body.portal-ui-v3 .portal-receipt-summary small,
+  body.portal-ui-v3 .portal-mobile-item-copy :is(span,small),
+  body.portal-ui-v3 .portal-entry-receipt-total { font-size:12px; line-height:1.4; }
+  body.portal-ui-v3 .portal-receipt-total strong,
+  body.portal-ui-v3 .portal-mobile-item-side > strong { font-size:14px; }
+}
 @media (max-width:480px) {
   body.portal-ui-v3 .portal-master-search-field { min-height:44px; }
   body.portal-ui-v3 .portal-master-card .portal-link-cell { min-height:44px; }

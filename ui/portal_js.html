@@ -608,11 +608,11 @@
   }
 
   function money(value) {
-    return new Intl.NumberFormat('id-ID', { maximumFractionDigits:2 }).format(parseIdNumber(value));
+    return new Intl.NumberFormat('id-ID', { maximumFractionDigits:0 }).format(Math.round(parseIdNumber(value)));
   }
 
   function rupiah(value) {
-    return 'Rp' + money(value);
+    return 'Rp ' + money(value);
   }
 
   function formatMoneyInput(input, preserveCaret) {
@@ -1071,15 +1071,18 @@
     });
   }
 
-  function formatQueueDate(dateStr) {
+  function formatDisplayDate(dateStr) {
     if (!dateStr || dateStr === '-') return '-';
     const parts = String(dateStr).split('-');
     if (parts.length !== 3) return dateStr;
     const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-    const d = parts[2];
+    const d = String(Number(parts[2]));
     const m = months[parseInt(parts[1], 10) - 1];
-    const y = parts[0].substring(2);
-    return `${d} ${m} ${y}`;
+    return m && /^\d{4}$/.test(parts[0]) ? `${d} ${m} ${parts[0]}` : dateStr;
+  }
+
+  function formatQueueDate(dateStr) {
+    return formatDisplayDate(dateStr);
   }
 
   function setupPortalControls(root) {
@@ -2688,7 +2691,7 @@
     root.querySelectorAll('[data-receipt-index]').forEach((card, receiptIndex) => {
       const receipt = receipts[receiptIndex] || blankReceipt();
       const supplier = receipt.supplier || 'Supplier belum terbaca';
-      const date = receipt.date || 'Tanggal belum dipilih';
+      const date = receipt.date ? formatDisplayDate(receipt.date) : 'Tanggal belum dipilih';
       const supplierTarget = card.querySelector('[data-summary-supplier]');
       const dateTarget = card.querySelector('[data-summary-date]');
       const totalTarget = card.querySelector('[data-summary-total]');
@@ -2917,7 +2920,7 @@
     const storeHead = `<div class="portal-receipt-head">
       <button class="portal-receipt-toggle" data-toggle-receipt="${ri}" type="button" aria-expanded="${isOpen ? 'true' : 'false'}" aria-controls="portalReceiptBody${ri}">
         <span class="portal-receipt-number">${String(ri + 1).padStart(2, '0')}</span>
-        <span class="portal-receipt-summary"><strong data-summary-supplier>${escapeHtml(receipt.supplier || 'Supplier belum terbaca')}</strong><small><span data-summary-date>${escapeHtml(receipt.date || 'Tanggal belum dipilih')}</span> · ${(receipt.items || []).length} item${warningCount ? ` · <b>${warningCount} peringatan</b>` : ''}</small></span>
+        <span class="portal-receipt-summary"><strong data-summary-supplier>${escapeHtml(receipt.supplier || 'Supplier belum terbaca')}</strong><small><span data-summary-date>${escapeHtml(receipt.date ? formatDisplayDate(receipt.date) : 'Tanggal belum dipilih')}</span> · ${(receipt.items || []).length} item${warningCount ? ` · <b>${warningCount} peringatan</b>` : ''}</small></span>
         <span class="portal-receipt-total"><strong data-summary-total>${escapeHtml(rupiah(receipt.receiptTotal || 0))}</strong><i class="bi bi-chevron-down"></i></span>
       </button>
       <button class="portal-receipt-delete" data-remove-receipt="${ri}" type="button" aria-label="Hapus nota ${ri + 1}" title="Hapus nota"><i class="bi bi-trash3"></i></button>
@@ -4501,7 +4504,7 @@
       <div class="portal-receipt-head"><strong>NOTA #${escapeHtml(receipt.displayNumber)} · ${Number(receipt.itemCount || 0)} ITEM · ${escapeHtml(receipt.branchName)}</strong><span class="portal-badge ${receipt.eliminated?'portal-badge-correction':'portal-badge-approved'}">${receipt.eliminated?'Dieliminasi':'Aktif'}</span></div>
       <div class="portal-receipt-body">
         <div style="display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:12px">
-          <div><strong>${escapeHtml(receipt.date)} · ${escapeHtml(receipt.supplier)}</strong><div style="font-size:11px;color:var(--portal-muted);font-weight:700">Total Rp${money(receipt.receiptTotal)}</div></div>
+          <div><strong>${escapeHtml(formatDisplayDate(receipt.date))} · ${escapeHtml(receipt.supplier)}</strong><div class="portal-entry-receipt-total">Total ${escapeHtml(rupiah(receipt.receiptTotal))}</div></div>
           <div class="portal-actions">
             <button class="portal-btn portal-btn-soft" data-entry-move="${escapeHtml(receipt.id)}" data-version="${Number(receipt.version)}" data-current-date="${escapeHtml(receipt.date)}"><i class="bi bi-calendar-event"></i> Ubah Tanggal</button>
             ${receipt.photoId?`<button class="portal-btn portal-btn-soft" data-entry-photo="${escapeHtml(receipt.photoId)}"><i class="bi bi-image"></i> Lihat Foto</button>`:''}
