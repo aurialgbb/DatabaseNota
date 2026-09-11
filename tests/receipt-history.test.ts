@@ -1,4 +1,5 @@
 import test from 'node:test';
+import vm from 'node:vm';
 import assert from 'node:assert/strict';
 import {readFile,readdir} from 'node:fs/promises';
 import {PGlite} from '@electric-sql/pglite';
@@ -31,8 +32,28 @@ test('Riwayat pengajuan merangkum status dan matriks memakai tanggal transaksi',
   assert.equal(history.summary.APPROVED,1);
   assert.equal(history.summary.NEEDS_CORRECTION,1);
   assert.equal(history.rows.some(row=>row.id==='r-draft'),false);
+  await pg.exec("UPDATE nota_app.branches SET data='{\"cv\":\"CV Satu\"}' WHERE id='b1'");
+  const grouped=await submissionHistory(db,tax,{month:'2026-09',view:'branches',search:'CV Satu'});
+  assert.equal(grouped.total,1);
+  assert.deepEqual(grouped.branchSummary?.[0],{branchId:'b1',branchName:'Cabang Satu',cv:'CV Satu',total:2,approved:1,rejected:0,returned:1});
+  const empty=await submissionHistory(db,tax,{month:'2026-08',view:'branches'});
+  assert.equal(empty.total,0);
   const electricity:any=await legacyRead(db,tax,'getExpenseDailyMatrix',[{month:'2026-09',type:'listrik',page:1,limit:25}]);
   assert.equal(electricity.cells.b1[3].count,1);
   assert.equal(electricity.cells.b1[3].total,125000);
  }finally{await pg.close();}
+});
+
+test('Matriks dapat dipanggil melalui modul fitur portal',async()=>{
+ const source=await readFile(new URL('../ui/portal_js.html',import.meta.url),'utf8');
+ const start=source.lastIndexOf('(function(Core)');
+ assert.ok(start>=0);
+ const code=source.slice(start,source.lastIndexOf('</script>'));
+ const context={window:{PortalCore:{},PortalFeatures:{} as Record<string,any>},document:{getElementById:()=>null}};
+ vm.runInNewContext(code,context);
+ assert.equal(typeof context.window.PortalFeatures.ensureExpenseMatrixUi,'function');
+ context.window.PortalFeatures.ensureExpenseMatrixUi('listrik');
+ context.window.PortalFeatures.ensureExpenseMatrixUi('umum');
+ assert.ok(source.includes("runPortalFeature('ensureExpenseMatrixUi', 'listrik')"));
+ assert.ok(source.includes("runPortalFeature('ensureExpenseMatrixUi', 'umum')"));
 });

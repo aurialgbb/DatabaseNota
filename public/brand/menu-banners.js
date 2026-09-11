@@ -6,7 +6,7 @@
     listrikPage: ['Nota Listrik', 'Lihat nota listrik yang tercatat untuk setiap cabang dan periode.', 'records'],
     umumPage: ['Nota Umum', 'Telusuri bank nota umum dalam tampilan daftar atau matriks harian.', 'records'],
     taxBankPage: ['Bank Nota', 'Bandingkan foto dengan rincian nota sebelum memberi keputusan.', 'review'],
-    taxReceiptEntryPage: ['Riwayat Pengajuan', 'Lihat nota yang diajukan pada bulan terpilih dan status pemeriksaan terakhirnya.', 'review'],
+    taxReceiptEntryPage: ['Riwayat Pengajuan', 'Ringkasan pengajuan per cabang pada bulan terpilih. Total termasuk nota yang menunggu pemeriksaan.', 'review'],
     taxMasterLinksPage: ['Master Link', 'Atur tujuan spreadsheet sesuai cabang dan periode pencatatan.', 'admin'],
     taxAccountsPage: ['Kelola Akun', 'Atur akun, peran, dan akses cabang untuk pengguna aplikasi.', 'admin'],
     tokoAccountPage: ['Akun', 'Periksa profil dan kelola password akun yang sedang digunakan.', 'admin'],

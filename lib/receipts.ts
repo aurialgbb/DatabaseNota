@@ -44,8 +44,19 @@ export async function submissionHistory(db:Database,user:User,payload:any) {
  const values:any[]=[month+'-01'];
  const clauses=["r.status<>'DRAFT'","r.created_at >= $1::date","r.created_at < ($1::date + interval '1 month')"];
  if(branchId){values.push(branchId);clauses.push('r.branch_id=$'+values.length);}
- if(search){values.push(search);clauses.push("strpos(lower(concat_ws(' ',b.name,b.id,r.supplier,coalesce(r.data->>'displayNumber',''),r.id)),lower($"+values.length+'))>0');}
+ if(search){
+  values.push(search);
+  const fields=payload.view==='branches'?"b.name,b.id,b.data->>'cv'":"b.name,b.id,r.supplier,coalesce(r.data->>'displayNumber',''),r.id";
+  clauses.push("strpos(lower(concat_ws(' ',"+fields+")),lower($"+values.length+'))>0');
+ }
  const base=clauses.join(' AND ');
+ if(payload.view==='branches'){
+  const total=Number((await db.query('SELECT count(DISTINCT r.branch_id)::int AS count FROM nota_app.receipts r JOIN nota_app.branches b ON b.id=r.branch_id WHERE '+base,values)).rows[0].count);
+  const groupedValues=[...values,limit,(page-1)*limit];
+  const branchSummary=(await db.query(`SELECT b.id AS "branchId",b.name AS "branchName",coalesce(b.data->>'cv','') AS cv,count(*)::int AS total,count(*) FILTER (WHERE r.status='APPROVED')::int AS approved,count(*) FILTER (WHERE r.status='REJECTED')::int AS rejected,count(*) FILTER (WHERE r.status='NEEDS_CORRECTION')::int AS returned FROM nota_app.receipts r JOIN nota_app.branches b ON b.id=r.branch_id WHERE `+base+` GROUP BY b.id,b.name,b.data->>'cv' ORDER BY b.name,b.id LIMIT $`+(groupedValues.length-1)+' OFFSET $'+groupedValues.length,groupedValues)).rows;
+  const branches=(await db.query('SELECT id,name,type FROM nota_app.branches WHERE active=true ORDER BY name')).rows;
+  return {month,page,limit,total,branches,branchSummary,summary:{} as Record<string,number>,rows:[]};
+ }
  const counts=(await db.query("SELECT r.status,count(*)::int AS count FROM nota_app.receipts r JOIN nota_app.branches b ON b.id=r.branch_id WHERE "+base+' GROUP BY r.status',values)).rows;
  const summary={ALL:0,PENDING:0,APPROVED:0,REJECTED:0,NEEDS_CORRECTION:0} as Record<string,number>;
  for(const row of counts){summary[row.status]=Number(row.count);summary.ALL+=Number(row.count);}

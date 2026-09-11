@@ -1358,12 +1358,12 @@
       },
       listrikPage: async options => {
         await ensureLegacyRuntime(pageId);
-        ensureExpenseMatrixUi('listrik');
+        runPortalFeature('ensureExpenseMatrixUi', 'listrik');
         return typeof window.fetchExpensePage === 'function' ? window.fetchExpensePage('listrik', 1, false, options) : undefined;
       },
       umumPage: async options => {
         await ensureLegacyRuntime(pageId);
-        ensureExpenseMatrixUi('umum');
+        runPortalFeature('ensureExpenseMatrixUi', 'umum');
         return typeof window.fetchExpensePage === 'function' ? window.fetchExpensePage('umum', 1, false, options) : undefined;
       }
     };
@@ -2098,7 +2098,7 @@
 
   window.PortalCore = {
     Portal, api, swrApi, cachedLegacyCall, clearPortalActionCache, clearPortalDataCache, escapeHtml, formatDisplayDate, formatMoneyInput, isoToday, money, monthNow, parseIdNumber,
-    refreshPortalCombo, renderPagination, renderCursorPagination, rupiah, setBusy, setIconBusy, setupPortalControls,
+    refreshPortalCombo, renderPagination, renderCursorPagination, rupiah, setBusy, setIconBusy, schedulePortalInputWork, setupPortalControls,
     showPage, showTaxBankSkeleton, tableSkeleton, withTimeout, enhancePortalCalendarHeader,
     ensureXlsxRuntime, setPageRefreshing
   };
@@ -3118,7 +3118,7 @@
     Portal, api, swrApi, clearPortalActionCache, clearPortalDataCache, collectReceiptEditors, enhancePortalCalendarHeader, escapeHtml, isoToday, money, monthNow,
     receiptEditorHtml, statusLabel,
     refreshPortalCombo, renderPagination, renderCursorPagination, rupiah, setBusy, setIconBusy,
-    setupPortalControls, showPage, showTaxBankSkeleton, tableSkeleton, ensureXlsxRuntime
+    schedulePortalInputWork, setupPortalControls, showPage, showTaxBankSkeleton, tableSkeleton, ensureXlsxRuntime
   } = Core;
 
   const TAX_WORKSPACE_PREF_KEY = 'gbb_bank_workspace_columns_v1';
@@ -4468,6 +4468,7 @@
     const monthInput = document.getElementById('taxEntryMonth');
     const searchInput = document.getElementById('taxEntrySearch');
     const data = await api('GET_SUBMISSION_HISTORY', {
+      view:'branches',
       month:(monthInput && monthInput.value) || monthNow(),
       status:Portal.taxEntryStatus,
       branchId:branchSelect.value,
@@ -4481,68 +4482,11 @@
     branchSelect.innerHTML = '<option value="">Semua Cabang</option>' + Portal.taxBranches.map(b=>`<option value="${escapeHtml(b.id)}">${escapeHtml(b.name)}</option>`).join('');
     branchSelect.value = selected;
     refreshPortalCombo(branchSelect);
-    const summary = data.summary || {};
-    const counts = { taxEntryCountAll:'ALL', taxEntryCountPending:'PENDING', taxEntryCountApproved:'APPROVED', taxEntryCountRejected:'REJECTED', taxEntryCountReturned:'NEEDS_CORRECTION' };
-    Object.entries(counts).forEach(([id,key]) => { const node=document.getElementById(id); if(node) node.textContent=String(Number(summary[key]||0)); });
-    document.querySelectorAll('[data-entry-status]').forEach(button => {
-      const active = button.dataset.entryStatus === Portal.taxEntryStatus;
-      button.classList.toggle('is-active', active);
-      button.setAttribute('aria-pressed', String(active));
-    });
     const root = document.getElementById('taxEntryReceiptList');
-    const rows = data.rows || [];
-    if (!rows.length) {
-      root.className = 'portal-empty';
-      root.innerHTML = '<i class="bi bi-inbox"></i><strong>Tidak ada pengajuan pada filter ini</strong><span>Ubah bulan, status, cabang, atau kata pencarian.</span>';
-      renderPagination(document.getElementById('taxEntryPagination'), 1, 0, 25, () => {});
-      Portal.pageLoadedAt.taxReceiptEntryPage = Date.now();
-      Portal.pageRendered.taxReceiptEntryPage = true;
-      return;
-    }
-    root.className = 'portal-history-list';
-    const historyStatus = value => ({PENDING:['Menunggu','portal-badge-pending'],APPROVED:['Disetujui','portal-badge-approved'],REJECTED:['Ditolak','portal-badge-discarded'],NEEDS_CORRECTION:['Dikembalikan','portal-badge-correction']}[value] || [statusLabel(value),'portal-badge-pending']);
-    root.innerHTML = rows.map(receipt=>{const mapped=historyStatus(receipt.status);const reason=receipt.review&&receipt.review.reason?String(receipt.review.reason):'';return `<article class="portal-receipt-editor portal-history-row">
-      <div class="portal-receipt-head"><strong>NOTA #${escapeHtml(receipt.displayNumber)} · ${Number(receipt.itemCount || 0)} ITEM · ${escapeHtml(receipt.branchName)}</strong><span class="portal-badge ${mapped[1]}">${escapeHtml(mapped[0])}</span></div>
-      <div class="portal-receipt-body">
-        <div style="display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:12px">
-          <div><strong>Transaksi ${escapeHtml(formatDisplayDate(receipt.date))} · ${escapeHtml(receipt.supplier || 'Tanpa supplier')}</strong><div class="portal-entry-receipt-total">Diajukan ${escapeHtml(new Date(receipt.submittedAt).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}))} · Total ${escapeHtml(rupiah(receipt.receiptTotal))}</div>${reason?`<p class="portal-history-reason">${escapeHtml(reason)}</p>`:''}</div>
-          <div class="portal-actions">
-            <button class="portal-btn portal-btn-soft" data-entry-detail="${escapeHtml(receipt.id)}"><i class="bi bi-eye"></i> Lihat Detail</button>
-            ${receipt.status==='APPROVED'?`<button class="portal-btn portal-btn-soft" data-entry-move="${escapeHtml(receipt.id)}" data-version="${Number(receipt.version)}" data-current-date="${escapeHtml(receipt.date)}"><i class="bi bi-calendar-event"></i> Ubah Tanggal</button>`:''}
-            ${receipt.status==='APPROVED'&&!receipt.eliminated?`<button class="portal-btn portal-btn-danger" data-entry-eliminate="${escapeHtml(receipt.id)}"><i class="bi bi-slash-circle"></i> Eliminasi Nota</button>`:''}
-            ${receipt.photoId?`<button class="portal-btn portal-btn-soft" data-entry-photo="${escapeHtml(receipt.photoId)}"><i class="bi bi-image"></i> Lihat Foto</button>`:''}
-          </div>
-        </div>
-      </div>
-    </article>`}).join('');
-
-    renderPagination(document.getElementById('taxEntryPagination'), Number(data.page)||1, Number(data.total)||0, Number(data.limit)||25, page => { Portal.taxEntryPage=page; loadTaxEntryReceipts(); });
-
-    root.querySelectorAll('[data-entry-detail]').forEach(btn=>btn.addEventListener('click',async()=>{
-      try {
-        const detail=await api('GET_RECEIPT_DETAIL',{receiptId:btn.dataset.entryDetail});
-        const events=[...(detail.reviewHistory||[]),detail.review].filter(Boolean).map(item=>`<li><strong>${escapeHtml(({APPROVE:'Disetujui',DISCARD:'Ditolak',REQUEST_CORRECTION:'Dikembalikan'}[item.decision]||item.decision||'Diperbarui'))}</strong>${item.reason?`<span>${escapeHtml(item.reason)}</span>`:''}</li>`).join('');
-        const items=(detail.items||[]).map(item=>`<tr><td>${escapeHtml(item.description)}</td><td>${escapeHtml(item.category)}</td><td>${escapeHtml(rupiah(item.amount))}</td></tr>`).join('');
-        Swal.fire({title:`Nota #${escapeHtml(detail.displayNumber)}`,width:760,html:`<div class="portal-history-detail"><p>${escapeHtml(detail.branchName)} · ${escapeHtml(formatDisplayDate(detail.date))}</p><table><thead><tr><th>Item</th><th>Kategori</th><th>Nominal</th></tr></thead><tbody>${items}</tbody></table>${events?`<h3>Riwayat status</h3><ol>${events}</ol>`:''}</div>`,confirmButtonText:'Tutup'});
-      } catch(error) { Swal.fire('Detail gagal dimuat',error.message,'error'); }
-    }));
-
-    root.querySelectorAll('[data-entry-move]').forEach(btn=>btn.addEventListener('click',async()=>{
-      const result=await Swal.fire({title:'Ubah tanggal seluruh nota',input:'text',inputValue:btn.dataset.currentDate,inputAttributes:{readonly:'readonly',class:'portal-input portal-date-input'},showCancelButton:true,confirmButtonText:'Pindahkan',didOpen:()=>{const input=Swal.getInput();if(!input||!window.flatpickr)return;flatpickr(input,{dateFormat:'Y-m-d',defaultDate:btn.dataset.currentDate,altInput:true,altFormat:'j M Y',disableMobile:true,onReady:(_,__,instance)=>{instance.altInput.className='portal-input portal-date-input';enhancePortalCalendarHeader(_,__,instance);}});}});
-      if(!result.isConfirmed)return;
-      try{await api('MOVE_RECEIPT_DATE',{receiptId:btn.dataset.entryMove,newDate:result.value,expectedVersion:Number(btn.dataset.version)});await clearPortalDataCache();Swal.fire('Berhasil','Seluruh item nota sudah dipindahkan.','success');await loadTaxEntryReceipts();}catch(error){Swal.fire('Gagal memindahkan',error.message,'error');}
-    }));
-    root.querySelectorAll('[data-entry-eliminate]').forEach(btn=>btn.addEventListener('click',async()=>{
-      let detail;
-      try{detail=await api('GET_RECEIPT_DETAIL',{receiptId:btn.dataset.entryEliminate});}catch(error){Swal.fire('Detail belum dapat dimuat',error.message,'error');return;}
-      const scopeHtml='<p>Seluruh item berikut tetap tersimpan dengan tanda eliminasi:</p><ul>'+detail.items.map(item=>`<li>${escapeHtml(item.description)} · ${escapeHtml(rupiah(item.amount))}</li>`).join('')+'</ul>';
-      const result=await Swal.fire({title:'Eliminasi seluruh nota?',html:scopeHtml,input:'text',inputPlaceholder:'Alasan eliminasi',showCancelButton:true,confirmButtonText:'Eliminasi',confirmButtonColor:'#b42318'});
-      if(!result.isConfirmed)return;
-      try{await api('ELIMINATE_RECEIPT',{receiptId:btn.dataset.entryEliminate,reason:result.value||'',expectedVersion:Number(detail.version)});await clearPortalDataCache();Swal.fire('Berhasil','Seluruh item dalam nota sudah dieliminasi.','success');await loadTaxEntryReceipts();}catch(error){Swal.fire('Gagal',error.message,'error');}
-    }));
-    root.querySelectorAll('[data-entry-photo]').forEach(btn=>btn.addEventListener('click',async()=>{
-      try{const photo=await api('GET_PHOTO',{photoId:btn.dataset.entryPhoto});Swal.fire({title:photo.fileName,imageUrl:photo.dataUrl,imageAlt:photo.fileName,width:900});}catch(error){Swal.fire('Foto gagal dimuat',error.message,'error');}
-    }));
+    const rows = data.branchSummary || [];
+    root.className = 'portal-history-table-wrap';
+    root.innerHTML = '<table class="portal-history-table"><thead><tr><th scope="col">No.</th><th scope="col">Nama cabang</th><th scope="col">CV</th><th scope="col">Total nota</th><th scope="col">Disetujui</th><th scope="col">Ditolak</th><th scope="col">Dikembalikan</th></tr></thead><tbody>' + rows.map((row,index)=>'<tr><td>'+((data.page-1)*data.limit+index+1)+'</td><th scope="row">'+escapeHtml(row.branchName)+'</th><td>'+escapeHtml(row.cv||'—')+'</td><td>'+Number(row.total)+'</td><td>'+Number(row.approved)+'</td><td>'+Number(row.rejected)+'</td><td>'+Number(row.returned)+'</td></tr>').join('') + (!rows.length?'<tr><td colspan="7" class="portal-history-table-empty">Tidak ada pengajuan pada bulan atau pencarian ini.</td></tr>':'') + '</tbody></table>';
+    renderPagination(document.getElementById('taxEntryPagination'), data.page, data.total, data.limit, page => { Portal.taxEntryPage=page; loadTaxEntryReceipts(); });
     Portal.pageLoadedAt.taxReceiptEntryPage = Date.now();
     Portal.pageRendered.taxReceiptEntryPage = true;
   }
@@ -5236,7 +5180,7 @@
     applyTaxFilterChange, changeTaxPhotoZoom, closeTaxPhotoPanel, confirmLeaveTaxEdit, downloadAccountTemplate, downloadBranchTemplate,
     fitTaxPhoto,
     importAccountsFile, importBranchBulkFile, loadAccounts, loadMasterLinks, loadTaxBank,
-    loadTaxEntryReceipts, openManualAccountDialog, openMasterBranchDialog, openTaxPhotoPanel, closeTaxReviewWorkspace,
+    ensureExpenseMatrixUi, loadTaxEntryReceipts, openManualAccountDialog, openMasterBranchDialog, openTaxPhotoPanel, closeTaxReviewWorkspace,
     clearTaxBulkSelection, reloadTaxBankWithGuard, renderAccounts, renderMasterLinks, requestTaxReceiptSelection, resetTaxPhotoViewer, rotateTaxPhoto, saveTaxEdit,
     restoreDiscardedReceipt, selectTaxReceipt, setTaxQueueDrawer, setTaxQueueQuery, setTaxReviewTab, stageTaxBulkDecision, stageTaxDecision,
     submitTaxDecisions, toggleTaxBatchMode, toggleTaxPhotoFullscreen

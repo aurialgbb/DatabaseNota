@@ -26,7 +26,7 @@
           <button id="taxBatchModeToggle" class="portal-icon-button" type="button" aria-pressed="false" title="Pilih beberapa nota" aria-label="Aktifkan mode pilih beberapa"><i class="bi bi-check2-square"></i></button>
         </div>
       </div>
-      <label class="portal-bank-search"><span class="sr-only">Cari pada hasil ini</span><i class="bi bi-search"></i><input id="taxQueueSearch" type="search" autocomplete="off" placeholder="Cari nomor, cabang, atau supplier" aria-label="Cari nomor nota, cabang, atau supplier pada hasil ini"><button id="taxQueueSearchClear" type="button" aria-label="Bersihkan pencarian"><i class="bi bi-x-circle-fill"></i></button></label>
+      <label class="portal-bank-search"><span class="sr-only">Cari pada hasil ini</span><i class="bi bi-search"></i><input id="taxQueueSearch" type="search" autocomplete="off" placeholder="Cari nomor, cabang, atau supplier" aria-label="Cari nama cabang atau CV pada hasil ini"><button id="taxQueueSearchClear" type="button" aria-label="Bersihkan pencarian"><i class="bi bi-x-circle-fill"></i></button></label>
       <div id="taxBulkToolbar" class="portal-bulk-toolbar portal-hidden">
         <strong id="taxBulkSelectedCount">0 nota dipilih</strong>
         <span>Pilihan hanya berlaku pada halaman ini.</span>
@@ -154,18 +154,11 @@
 
 <section id="taxReceiptEntryPage" class="page-section portal-page portal-hidden">
   <div class="portal-page-head">
-    <div><h1>Riwayat Pengajuan</h1><p>Lihat nota yang diajukan pada bulan terpilih dan status pemeriksaan terakhirnya.</p></div>
+    <div><h1>Riwayat Pengajuan</h1><p>Ringkasan pengajuan per cabang pada bulan terpilih. Total termasuk nota yang menunggu pemeriksaan.</p></div>
     <div class="portal-actions">
       <input id="taxEntryMonth" type="hidden" data-portal-month>
       <button id="taxEntryReload" data-portal-refresh class="portal-btn portal-btn-soft portal-btn-icon" type="button" title="Muat data" aria-label="Muat data"><i class="bi bi-arrow-repeat"></i></button>
     </div>
-  </div>
-  <div class="portal-history-summary" role="group" aria-label="Filter status pengajuan">
-    <button type="button" class="portal-history-stat is-active" data-entry-status="ALL" aria-pressed="true"><span>Semua</span><strong id="taxEntryCountAll">0</strong></button>
-    <button type="button" class="portal-history-stat" data-entry-status="PENDING" aria-pressed="false"><span>Menunggu</span><strong id="taxEntryCountPending">0</strong></button>
-    <button type="button" class="portal-history-stat" data-entry-status="APPROVED" aria-pressed="false"><span>Disetujui</span><strong id="taxEntryCountApproved">0</strong></button>
-    <button type="button" class="portal-history-stat" data-entry-status="REJECTED" aria-pressed="false"><span>Ditolak</span><strong id="taxEntryCountRejected">0</strong></button>
-    <button type="button" class="portal-history-stat" data-entry-status="NEEDS_CORRECTION" aria-pressed="false"><span>Dikembalikan</span><strong id="taxEntryCountReturned">0</strong></button>
   </div>
   <div class="portal-card portal-history-card">
     <div class="portal-history-toolbar">
