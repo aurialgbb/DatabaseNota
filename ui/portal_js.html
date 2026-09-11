@@ -4570,21 +4570,11 @@
   }
 
   function bulkBranchPreviewHtml(preview) {
-    const summary = preview.summary || {};
-    const parts = [
-      summary.add ? `${summary.add} tambah` : '', summary.update ? `${summary.update} ubah` : '',
-      summary.remove ? `${summary.remove} hapus` : '', summary.unchanged ? `${summary.unchanged} tanpa perubahan` : ''
-    ].filter(Boolean);
-    const rows = (preview.changes || []).slice(0, 8).map(change => {
-      const details = change.action === 'DELETE' ? 'Akan dihapus' : (change.changedFields || []).length ? `Ubah: ${change.changedFields.join(', ')}` : 'Tidak ada perubahan';
-      const cvLabel = change.after ? ' | CV: ' + (change.after.type === 'Central Kitchen' ? 'Tidak berlaku (CK)' : change.after.data?.cv || 'Belum diisi') : '';
-      return `<li><strong>Baris ${change.row}</strong> · ${escapeHtml(change.id)} <span class="portal-muted">| ${escapeHtml(details + cvLabel)}</span></li>`;
-    }).join('');
-    return `<div style="text-align:left"><p><strong>${escapeHtml(parts.join(' · ') || 'Tidak ada perubahan')}</strong></p><p style="font-size:12px;color:var(--portal-muted)">Kolom yang dikosongkan pada UPDATE/UPSERT tidak akan menimpa data lama. CK tidak memakai CV. Penghapusan hanya melalui action DELETE.</p><ul style="margin:0;padding-left:20px;max-height:190px;overflow:auto">${rows || '<li>Tidak ada perubahan data.</li>'}</ul>${(preview.changes || []).length > 8 ? `<p style="font-size:12px;color:var(--portal-muted)">+ ${(preview.changes || []).length - 8} baris lainnya</p>` : ''}</div>`;
+    return NotaImport.branchPreviewHtml(preview);
   }
 
   function bulkBranchErrorsHtml(errors) {
-    return `<div style="text-align:left"><p>Seluruh upload dibatalkan. Perbaiki baris berikut lalu unggah kembali:</p><ul style="margin:0;padding-left:20px;max-height:260px;overflow:auto">${errors.map(item => `<li><strong>Baris ${item.row}</strong>: ${escapeHtml(item.error)}</li>`).join('')}</ul></div>`;
+    return NotaImport.importErrorsHtml(errors, 'perubahan cabang');
   }
 
   async function importBranchBulkFile(event) {
@@ -4600,9 +4590,10 @@
         const period = document.getElementById('taxLinkPeriod').value.replace('-', '') || monthNow().replace('-', '');
         Swal.fire({ title:'Memvalidasi file...', text:'Belum ada data yang diubah.', allowOutsideClick:false, didOpen:()=>Swal.showLoading() });
         const preview = await api('PREVIEW_BULK_MANAGE_BRANCHES', { period, rows });
-        if ((preview.errors || []).length) { Swal.fire({ title:'Upload dibatalkan', html:bulkBranchErrorsHtml(preview.errors), icon:'error', width:680 }); return; }
+        if ((preview.errors || []).length) { Swal.fire({ title:'Upload dibatalkan', html:bulkBranchErrorsHtml(preview.errors), icon:'error', customClass:{popup:'portal-import-dialog'}, width:760 }); return; }
         const deleting = (preview.summary || {}).remove || 0;
-        const confirm = await Swal.fire({ title:'Konfirmasi perubahan cabang', html:bulkBranchPreviewHtml(preview), icon:deleting ? 'warning' : 'question', showCancelButton:true, confirmButtonText:'Terapkan semua perubahan', confirmButtonColor:deleting ? '#ef5d67' : undefined, cancelButtonText:'Batal', width:680 });
+        const total=(preview.summary?.add||0)+(preview.summary?.update||0)+(preview.summary?.remove||0);
+        const confirm = await Swal.fire({ title:`Periksa ${total} perubahan cabang`, html:bulkBranchPreviewHtml(preview), icon:deleting ? 'warning' : 'question', customClass:{popup:'portal-import-dialog'}, showCancelButton:true, confirmButtonText:'Terapkan perubahan', confirmButtonColor:deleting ? '#c2414b' : undefined, cancelButtonText:'Batal', width:760 });
         if (!confirm.isConfirmed) return;
         Swal.fire({ title:'Menerapkan perubahan...', text:'Menyimpan seluruh baris secara atomik.', allowOutsideClick:false, didOpen:()=>Swal.showLoading() });
         const result = await api('BULK_MANAGE_BRANCHES', { period, rows });
@@ -4704,10 +4695,7 @@
   }
 
   function accountImportPreviewHtml(analysis, fileName) {
-    const counts = ['TOKO','TAX','ADMIN'].filter(role => analysis.roleCounts[role]).map(role => `<span class="portal-badge portal-badge-approved">${role} ${analysis.roleCounts[role]}</span>`).join(' ');
-    const sample = analysis.filledRows.slice(0, 8).map((row, index) => `<li><strong>${escapeHtml(String(row.username || '').trim())}</strong> · ${escapeHtml(String(row.role || '').trim().toUpperCase())}${String(row.role || '').trim().toUpperCase() === 'TOKO' ? ` · ${escapeHtml(String(row.branchName || row.namaCabang || row.branchId || '').trim())}` : ''}</li>`).join('');
-    const warnings = analysis.branchWarnings.length ? `<div class="portal-alert portal-alert-warning" style="margin-top:14px;text-align:left"><strong>Periksa kemungkinan akun cabang ganda:</strong><ul style="margin:8px 0 0;padding-left:18px">${analysis.branchWarnings.slice(0, 8).map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul></div>` : '';
-    return `<div style="text-align:left"><p style="margin-top:0">File <strong>${escapeHtml(fileName || 'akun')}</strong> berisi <strong>${analysis.filledRows.length} akun</strong>.</p><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">${counts}</div><ul style="max-height:190px;overflow:auto;margin:0;padding-left:20px">${sample}${analysis.filledRows.length > 8 ? `<li>+ ${analysis.filledRows.length - 8} akun lainnya</li>` : ''}</ul>${warnings}<p class="portal-row-muted" style="margin:14px 0 0">Belum ada akun yang dibuat. Import tidak dapat diulang otomatis setelah dikonfirmasi.</p></div>`;
+    return NotaImport.accountPreviewHtml(analysis, fileName);
   }
 
   function updateAccountImportProgress(done, total, batchNumber, batchTotal) {
@@ -4738,13 +4726,14 @@
       const filledRows = analysis.filledRows;
       if (!filledRows.length) throw new Error('Isi minimal satu username pada template sebelum diimport.');
       if (analysis.errors.length) {
-        await Swal.fire({ title:'Import dibatalkan', icon:'error', width:680, html:`<div style="text-align:left"><p>Tidak ada akun yang dibuat. Perbaiki data berikut:</p><ul style="max-height:260px;overflow:auto;padding-left:20px">${analysis.errors.slice(0, 20).map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul></div>` });
+        await Swal.fire({ title:'Import dibatalkan', icon:'error', width:760, customClass:{popup:'portal-import-dialog'}, html:NotaImport.importErrorsHtml(analysis.errors, 'akun') });
         return;
       }
       const confirmation = await Swal.fire({
         title:`Konfirmasi import ${filledRows.length} akun`,
         icon:analysis.branchWarnings.length ? 'warning' : 'question',
-        width:680,
+        width:760,
+        customClass:{popup:'portal-import-dialog'},
         html:accountImportPreviewHtml(analysis, options && options.fileName),
         showCancelButton:true,
         confirmButtonText:analysis.branchWarnings.length ? 'Tetap import akun tambahan' : 'Mulai import',

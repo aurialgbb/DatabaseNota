@@ -27,6 +27,44 @@ body.portal-ui-v3 .portal-account-avatar { background:#2456c5; box-shadow:none; 
 body.portal-ui-v3 .portal-master-hero { background:#f0f4fc; border-color:#e2e6ed; border-radius:12px; }
 body.portal-ui-v3 .swal2-icon { box-shadow:none !important; }
 body.portal-ui-v3 .swal2-icon.swal2-question { background:#2456c5 !important; }
+body.portal-ui-v3 .portal-import-dialog { width:min(760px,calc(100vw - 28px)) !important; padding:24px; }
+body.portal-ui-v3 .portal-import-preview { text-align:left; color:var(--ui-ink); }
+body.portal-ui-v3 .portal-import-summary { display:grid; grid-template-columns:repeat(auto-fit,minmax(104px,1fr)); gap:8px; margin-bottom:14px; }
+body.portal-ui-v3 .portal-import-metric { min-width:0; padding:10px 12px; border:1px solid var(--ui-border); border-radius:8px; background:var(--ui-surface-subtle); }
+body.portal-ui-v3 .portal-import-metric strong { display:block; font-size:20px; line-height:1.15; color:var(--ui-ink); font-variant-numeric:tabular-nums; }
+body.portal-ui-v3 .portal-import-metric span { display:block; margin-top:3px; color:var(--ui-muted); font-size:12px; font-weight:600; }
+body.portal-ui-v3 .portal-import-metric.is-primary { background:var(--ui-primary-soft); border-color:#cad8f5; }
+body.portal-ui-v3 .portal-import-metric.is-primary strong { color:var(--ui-primary-strong); }
+body.portal-ui-v3 .portal-import-file { margin:0 0 10px; overflow-wrap:anywhere; color:var(--ui-muted); font-size:12px; }
+body.portal-ui-v3 .portal-import-guidance { margin:0 0 12px; color:var(--ui-muted); font-size:13px; line-height:1.5; }
+body.portal-ui-v3 .portal-import-guidance.is-error { padding:10px 12px; border-radius:8px; background:#fff4f4; color:#8f2630; }
+body.portal-ui-v3 .portal-import-list { max-height:min(360px,42vh); overflow-y:auto; overscroll-behavior:contain; border:1px solid var(--ui-border); border-radius:10px; background:var(--ui-surface); scrollbar-gutter:stable; }
+body.portal-ui-v3 .portal-import-row { padding:12px 14px; border-bottom:1px solid var(--ui-border); }
+body.portal-ui-v3 .portal-import-row:last-child { border-bottom:0; }
+body.portal-ui-v3 .portal-import-row-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+body.portal-ui-v3 .portal-import-row-head > div { min-width:0; }
+body.portal-ui-v3 .portal-import-row-head strong { display:block; overflow-wrap:anywhere; color:var(--ui-ink); font-size:14px; }
+body.portal-ui-v3 .portal-import-row-head span { display:block; margin-top:3px; overflow-wrap:anywhere; color:var(--ui-muted); font-size:11px; }
+body.portal-ui-v3 .portal-import-status { flex:0 0 auto; padding:4px 7px; border-radius:6px; font-size:11px; font-weight:700; }
+body.portal-ui-v3 .portal-import-status.is-add { background:#eaf0fc; color:#1c4299; }
+body.portal-ui-v3 .portal-import-status.is-update { background:#fff6df; color:#7a4b00; }
+body.portal-ui-v3 .portal-import-status.is-delete { background:#fff0f1; color:#a52b37; }
+body.portal-ui-v3 .portal-import-status.is-same { background:#eef1f4; color:#596579; }
+body.portal-ui-v3 .portal-import-facts { display:flex; flex-wrap:wrap; gap:6px 18px; margin-top:9px; color:var(--ui-muted); font-size:12px; }
+body.portal-ui-v3 .portal-import-facts strong { color:var(--ui-ink-soft); }
+body.portal-ui-v3 .portal-import-diff { display:grid; grid-template-columns:72px minmax(0,1fr) auto minmax(0,1fr); align-items:center; gap:7px; margin-top:8px; font-size:12px; }
+body.portal-ui-v3 .portal-import-diff > span { color:var(--ui-muted); font-weight:700; }
+body.portal-ui-v3 .portal-import-diff del,body.portal-ui-v3 .portal-import-diff ins { min-width:0; overflow-wrap:anywhere; padding:4px 6px; border-radius:5px; text-decoration:none; }
+body.portal-ui-v3 .portal-import-diff del { background:#f1f3f6; color:#596579; }
+body.portal-ui-v3 .portal-import-diff ins { background:#eaf0fc; color:#1c4299; font-weight:700; }
+body.portal-ui-v3 .portal-import-diff small { color:var(--ui-muted); }
+body.portal-ui-v3 .portal-import-row-note { margin:8px 0 0; color:var(--ui-muted); font-size:12px; }
+body.portal-ui-v3 .portal-import-warning { margin-top:12px; padding:11px 13px; border:1px solid #ead8a9; border-radius:8px; background:#fffaf0; color:#6c4a08; font-size:12px; }
+body.portal-ui-v3 .portal-import-warning p { margin:6px 0 0; }
+body.portal-ui-v3 .portal-import-error { display:grid; grid-template-columns:82px minmax(0,1fr); gap:10px; padding:11px 13px; border-bottom:1px solid #f0dadd; color:#8f2630; font-size:12px; }
+body.portal-ui-v3 .portal-import-error:last-child { border-bottom:0; }
+body.portal-ui-v3 .portal-import-error span { overflow-wrap:anywhere; color:var(--ui-ink-soft); }
+body.portal-ui-v3 .portal-import-empty { padding:24px 16px; text-align:center; color:var(--ui-muted); font-size:13px; }
 body.portal-ui-v3 #sidebar .nav-item { border-radius:8px !important; font-weight:600 !important; }
 body.portal-ui-v3 #sidebar .nav-item > i { color:#66758c; }
 body.portal-ui-v3 #sidebar .nav-item:hover { background:#f0f4fc !important; border-color:#e2e6ed; transform:none; }
@@ -80,6 +118,13 @@ body.portal-ui-v3 .portal-store-camera-orb { background:#2456c5 !important; box-
   body.portal-ui-v3 #inputPage .legacy-input-v3-analyze { flex-wrap:wrap; }
   body.portal-ui-v3 #inputPage .legacy-input-v3-tabs { width:100%; }
   body.portal-ui-v3 #inputPage .legacy-input-v3-tabs button { flex:1; width:auto; }
+  body.portal-ui-v3 .portal-import-dialog { padding:18px 14px; }
+  body.portal-ui-v3 .portal-import-summary { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  body.portal-ui-v3 .portal-import-list { max-height:40vh; }
+  body.portal-ui-v3 .portal-import-diff { grid-template-columns:58px minmax(0,1fr); }
+  body.portal-ui-v3 .portal-import-diff small { grid-column:2; }
+  body.portal-ui-v3 .portal-import-diff ins { grid-column:2; }
+  body.portal-ui-v3 .portal-import-error { grid-template-columns:1fr; gap:3px; }
 }
 @media(prefers-reduced-motion:reduce) {
   body.portal-ui-v3 *,body.portal-ui-v3 *::before,body.portal-ui-v3 *::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; scroll-behavior:auto !important; }

@@ -17,3 +17,14 @@ test('Branch CSV requires the current CV column and retains quoted commas',()=>{
 test('Workbook parser chooses import sheet even when guide is first',()=>{
  const workbook={SheetNames:['Panduan','Import Cabang'],Sheets:{Panduan:{tag:'guide'},'Import Cabang':{tag:'input'}}};const rows=parser.workbookRows(workbook,'branch',{utils:{sheet_to_json:(sheet:any)=>{assert.equal(sheet.tag,'input');return [['action','id','name','cv','type'],['ADD','','TEST','CV Test','Mandiri']];}}});assert.equal(rows.length,1);
 });
+test('Import previews explain actions, field changes, warnings and errors',()=>{
+ const branch=parser.branchPreviewHtml({summary:{add:1,update:1,remove:0,unchanged:0},changes:[
+  {row:8,id:'CABANG_A',action:'ADD',after:{name:'Cabang A',type:'Mandiri',data:{cv:'CV A'}}},
+  {row:9,id:'CABANG_B',action:'UPDATE',changedFields:['cv'],before:{name:'Cabang B',type:'Mandiri',data:{cv:'CV Lama'}},after:{name:'Cabang B',type:'Mandiri',data:{cv:'CV Baru'}}}
+ ]});
+ assert.match(branch,/Ditambahkan/);assert.match(branch,/Diperbarui/);assert.match(branch,/CV Lama/);assert.match(branch,/CV Baru/);assert.doesNotMatch(branch,/Ubah: name/);
+ const many=parser.branchPreviewHtml({summary:{add:84},changes:Array.from({length:84},(_,i)=>({row:i+8,id:'CABANG_'+(i+1),action:'ADD',after:{name:'Cabang '+(i+1),type:'Mandiri',data:{cv:'CV A'}}}))});assert.match(many,/Cabang 84/);assert.doesNotMatch(many,/baris lainnya/);
+ const account=parser.accountPreviewHtml({filledRows:[{_sourceRow:8,username:'toko-a',role:'TOKO',branchName:'Cabang A',password:'rahasia'}],roleCounts:{TOKO:1,TAX:0,ADMIN:0},branchWarnings:['Cabang A sudah memiliki akun.']},'<file>.xlsx');
+ assert.match(account,/&lt;file&gt;\.xlsx/);assert.match(account,/Perlu diperiksa/);assert.doesNotMatch(account,/rahasia/);
+ const errors=parser.importErrorsHtml([{row:8,error:'Nama CV wajib.'}],'perubahan cabang');assert.match(errors,/Baris 8/);assert.match(errors,/Nama CV wajib/);
+});

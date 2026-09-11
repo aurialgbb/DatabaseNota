@@ -8,6 +8,8 @@ Scope: new native application logo, hijab login illustration, compact menu banne
 
 Design read: branch receipt administration for store and tax staff, using the user's saas-flat-2d reference. ENERGY 2 / RHYTHM 2 / MOTION 1. Anti-slop applied during implementation, as requested.
 
+Import preview: the dialog puts the pending decision first. Real counts summarize the scope, a scrollable list preserves every row, and status color distinguishes add, update, delete, and unchanged records. Updates show old and new values so users can review the actual effect before confirming. Account previews hide passwords and expose duplicate-branch warnings. The compact two-column mobile reflow prevents horizontal overflow without reducing text size.
+
 - Forest green and sage come from the supplied illustration reference; they connect the mark and paperwork illustrations.
 - Receipt silhouette plus N gives the logo a product-specific meaning and stays readable at small sizes. SVG keeps it crisp without a raster payload.
 - Login illustration depicts receipt checking, the actual work of this application. The character is an illustration, not a staff portrait.
