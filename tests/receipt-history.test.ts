@@ -41,6 +41,15 @@ test('Riwayat pengajuan merangkum status dan matriks memakai tanggal transaksi',
   const electricity:any=await legacyRead(db,tax,'getExpenseDailyMatrix',[{month:'2026-09',type:'listrik',page:1,limit:25}]);
   assert.equal(electricity.cells.b1[3].count,1);
   assert.equal(electricity.cells.b1[3].total,125000);
+  await pg.exec("INSERT INTO nota_app.branches(id,name,type) SELECT 'v'||i,'Virtual '||lpad(i::text,3,'0'),'Mandiri' FROM generate_series(1,80) i");
+  const virtual:any=await legacyRead(db,tax,'getExpenseDailyMatrix',[{month:'2026-09',type:'listrik',view:'virtual',page:2,limit:25}]);
+  assert.equal(virtual.branchIndex.length,81);
+  assert.equal(virtual.branches.length,25);
+  assert.equal(Object.keys(virtual.cells).length,25);
+  assert.equal(virtual.branches[0].id,virtual.branchIndex[25].id);
+  const filtered:any=await legacyRead(db,tax,'getExpenseDailyMatrix',[{month:'2026-09',type:'listrik',view:'virtual',search:'Virtual 080'}]);
+  assert.equal(filtered.branchIndex.length,1);
+  assert.equal(filtered.branches[0].id,'v80');
  }finally{await pg.close();}
 });
 

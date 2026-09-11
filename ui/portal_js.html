@@ -832,10 +832,10 @@
     const rect = state.anchor.getBoundingClientRect();
     const margin = 12;
     const width = state.kind === 'month'
-      ? Math.min(230, viewportWidth - margin * 2)
+      ? Math.min(320, viewportWidth - margin * 2)
       : Math.min(Math.max(rect.width, 220), viewportWidth - margin * 2);
     state.menu.style.width = `${Math.round(width)}px`;
-    state.menu.style.maxHeight = `${Math.max(132, Math.min(300, viewportHeight - margin * 2))}px`;
+    state.menu.style.maxHeight = `${Math.max(132, Math.min(state.kind === 'month' ? 420 : 300, viewportHeight - margin * 2))}px`;
     state.menu.style.visibility = 'hidden';
     state.menu.style.display = 'block';
     const menuHeight = state.menu.getBoundingClientRect().height;
@@ -1119,14 +1119,21 @@
     picker.label.textContent = portalMonthLabel(value);
     const selectedYear = value ? Number(value.slice(0, 4)) : new Date().getFullYear();
     if (!picker.year) picker.year = selectedYear;
-    picker.yearLabel.textContent = picker.year;
+    picker.yearLabel.textContent = picker.yearView ? 'Pilih tahun' : picker.year;
     const selectedMonth = value && Number(value.slice(0, 4)) === picker.year ? Number(value.slice(5, 7)) : 0;
     const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+    if (picker.yearView) {
+      const start=Math.floor(picker.year/12)*12;
+      picker.grid.innerHTML=Array.from({length:12},(_,i)=>start+i).map(year=>`<button type="button" class="portal-month-option ${year===selectedYear?'active':''}" data-year="${year}">${year}</button>`).join('');
+      picker.grid.querySelectorAll('[data-year]').forEach(button=>button.addEventListener('click',()=>{picker.year=Number(button.dataset.year);picker.yearView=false;refreshPortalMonth(source);picker.grid.querySelector('button').focus();}));
+      return;
+    }
     picker.grid.innerHTML = months.map((month, index) => `<button type="button" class="portal-month-option ${selectedMonth === index + 1 ? 'active' : ''}" data-month="${index + 1}">${month}</button>`).join('');
     picker.grid.querySelectorAll('[data-month]').forEach(button => button.addEventListener('click', () => {
       source.value = `${picker.year}-${String(button.dataset.month).padStart(2, '0')}`;
       source.dispatchEvent(new Event('change', { bubbles:true }));
       closePortalMonth(picker.root);
+      picker.trigger.focus();
     }));
   }
 
@@ -1145,12 +1152,22 @@
     const icon = document.createElement('i'); icon.className = 'bi bi-calendar3'; trigger.append(label, icon);
     const menu = document.createElement('div'); menu.className = 'portal-month-menu';
     const head = document.createElement('div'); head.className = 'portal-month-head';
-    const previous = document.createElement('button'); previous.type = 'button'; previous.className = 'portal-month-nav'; previous.innerHTML = '<i class="bi bi-chevron-left"></i>'; previous.setAttribute('aria-label','Tahun sebelumnya');
-    const yearLabel = document.createElement('strong');
-    const next = document.createElement('button'); next.type = 'button'; next.className = 'portal-month-nav'; next.innerHTML = '<i class="bi bi-chevron-right"></i>'; next.setAttribute('aria-label','Tahun berikutnya');
+    const previous = document.createElement('button'); previous.type = 'button'; previous.className = 'portal-month-nav'; previous.textContent = '‹'; previous.setAttribute('aria-label','Tahun sebelumnya');
+    const yearLabel = document.createElement('button'); yearLabel.type='button'; yearLabel.className='portal-month-year'; yearLabel.setAttribute('aria-label','Pilih tahun');
+    const next = document.createElement('button'); next.type = 'button'; next.className = 'portal-month-nav'; next.textContent = '›'; next.setAttribute('aria-label','Tahun berikutnya');
     const grid = document.createElement('div'); grid.className = 'portal-month-grid'; head.append(previous, yearLabel, next); menu.append(head, grid);
+    menu.setAttribute('role','dialog'); menu.setAttribute('aria-label','Pilih bulan dan tahun');
+    const today=document.createElement('button');today.type='button';today.className='portal-month-today';today.textContent='Bulan ini';menu.append(today);
     source.parentNode.insertBefore(root, source); root.append(source, trigger, menu);
     const picker = { root, label, menu, trigger, yearLabel, grid, year:0 }; source.__portalMonth = picker; root.__portalMonthRoot = picker;
+    yearLabel.addEventListener('click',()=>{picker.yearView=!picker.yearView;refreshPortalMonth(source);});
+    today.addEventListener('click',()=>{source.value=monthNow();picker.year=new Date().getFullYear();picker.yearView=false;source.dispatchEvent(new Event('change',{bubbles:true}));closePortalMonth(root);trigger.focus();});
+    menu.addEventListener('keydown',event=>{
+      if(event.key==='Escape'){event.preventDefault();closePortalMonth(root);trigger.focus();}
+      const buttons=Array.from(grid.querySelectorAll('button')),index=buttons.indexOf(document.activeElement);
+      const offset={ArrowLeft:-1,ArrowRight:1,ArrowUp:-3,ArrowDown:3}[event.key];
+      if(index>=0&&offset){event.preventDefault();buttons[Math.max(0,Math.min(buttons.length-1,index+offset))].focus();}
+    });
     trigger.setAttribute('aria-haspopup', 'dialog');
     trigger.setAttribute('aria-expanded', 'false');
     const open = event => {
@@ -1159,11 +1176,13 @@
       if (root.classList.contains('open')) return closePortalMonth(root);
       root.classList.add('open');
       trigger.setAttribute('aria-expanded', 'true');
+      picker.yearView=false;picker.year=Number((source.value||monthNow()).slice(0,4));refreshPortalMonth(source);
       openPortalFloatingPopover(picker, trigger, menu, 'month');
+      grid.querySelector('.active,button')?.focus();
     };
     trigger.addEventListener('click', open);
-    previous.addEventListener('click', event => { event.stopPropagation(); picker.year -= 1; refreshPortalMonth(source); });
-    next.addEventListener('click', event => { event.stopPropagation(); picker.year += 1; refreshPortalMonth(source); });
+    previous.addEventListener('click', event => { event.stopPropagation(); picker.year -= picker.yearView?12:1; refreshPortalMonth(source); });
+    next.addEventListener('click', event => { event.stopPropagation(); picker.year += picker.yearView?12:1; refreshPortalMonth(source); });
     source.addEventListener('change', () => refreshPortalMonth(source));
     trigger.addEventListener('keydown', event => {
       if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); closePortalMonth(root); return; }
@@ -5112,7 +5131,7 @@
       const title=document.querySelector('#tabListrikKontrol h3');if(title)title.textContent='Matriks Nota Listrik';
       const header=title&&title.parentElement;
       const search=document.createElement('label');search.className='portal-expense-matrix-search';search.innerHTML='<span class="sr-only">Cari cabang pada matriks listrik</span><i class="bi bi-search"></i><input id="listrikMatrixSearch" type="search" autocomplete="off" placeholder="Cari cabang">';
-      if(header)header.insertBefore(search,header.lastElementChild);
+      if(header){header.classList.add('portal-electricity-matrix-heading');header.insertAdjacentElement('afterend',search);}
       const wrap=body.closest('.overflow-x-auto');if(wrap)wrap.classList.add('portal-expense-matrix-box');
       lockApprovedBankActions('listrikTableBody');
       const apply=()=>{const query=String(search.querySelector('input').value||'').trim().toLocaleLowerCase('id-ID');let shown=0;body.querySelectorAll('tr').forEach(row=>{const match=!query||String(row.querySelector('td')?.textContent||'').toLocaleLowerCase('id-ID').includes(query);const visible=match&&shown<50;row.hidden=!visible;if(visible)shown++;});body.querySelectorAll('[data-listrik-action="kontrol"]').forEach(button=>{button.title=String(button.title||'').replace(/^Lunas:/,'Nota tercatat:');});};
@@ -5127,7 +5146,7 @@
     detail.id='tabUmumDetail';
     const toggle=document.createElement('div');toggle.className='portal-expense-view-toggle';toggle.setAttribute('role','tablist');toggle.setAttribute('aria-label','Tampilan Nota Umum');toggle.innerHTML='<button type="button" class="is-active" data-umum-view="list" role="tab" aria-selected="true">Daftar</button><button type="button" data-umum-view="matrix" role="tab" aria-selected="false">Matriks</button>';
     header.appendChild(toggle);
-    const matrix=document.createElement('section');matrix.id='tabUmumMatrix';matrix.className='portal-expense-matrix-panel portal-hidden';matrix.innerHTML='<div class="portal-expense-matrix-toolbar"><div><h2>Matriks Nota Umum</h2><p>Nota yang sudah disetujui berdasarkan tanggal transaksi.</p></div><div class="portal-expense-matrix-controls"><label class="portal-expense-matrix-search"><span class="sr-only">Cari cabang</span><i class="bi bi-search"></i><input id="umumMatrixSearch" type="search" autocomplete="off" placeholder="Cari cabang"></label><input id="umumMatrixMonth" type="hidden" data-portal-month></div></div><div id="umumMatrixBox" class="portal-expense-matrix-box" aria-live="polite"></div><div id="umumMatrixPagination" class="portal-pagination"></div>';
+    const matrix=document.createElement('section');matrix.id='tabUmumMatrix';matrix.className='portal-expense-matrix-panel portal-hidden';matrix.innerHTML='<div class="portal-expense-matrix-toolbar"><div><h2>Matriks Nota Umum</h2><p>Nota yang sudah disetujui berdasarkan tanggal transaksi.</p></div><div class="portal-expense-matrix-controls"><label class="portal-expense-matrix-search"><span class="sr-only">Cari cabang</span><i class="bi bi-search"></i><input id="umumMatrixSearch" type="search" autocomplete="off" placeholder="Cari cabang"></label><input id="umumMatrixMonth" type="hidden" data-portal-month></div></div><div id="umumMatrixBox" class="portal-expense-matrix-box" aria-live="polite"></div>';
     detail.insertAdjacentElement('afterend',matrix);
     const month=matrix.querySelector('#umumMatrixMonth');month.value=monthNow();setupPortalControls(matrix);
     toggle.querySelectorAll('[data-umum-view]').forEach(button=>button.addEventListener('click',()=>{
@@ -5140,24 +5159,58 @@
   }
 
   async function loadExpenseMatrix(type) {
-    const root=document.getElementById(type==='umum'?'umumMatrixBox':'listrikMatrixBox');if(!root)return;
-    const month=document.getElementById(type==='umum'?'umumMatrixMonth':'listrikMatrixMonth');
-    const search=document.getElementById(type==='umum'?'umumMatrixSearch':'listrikMatrixSearch');
-    const pageKey=type==='umum'?'umumMatrixPage':'listrikMatrixPage';Portal[pageKey]=Number(Portal[pageKey]||1);
-    root.setAttribute('aria-busy','true');root.innerHTML='<div class="portal-expense-matrix-state"><i class="bi bi-arrow-repeat"></i><span>Memuat matriks nota...</span></div>';
+    const root=document.getElementById('umumMatrixBox');if(!root)return;
+    root._matrixCleanup?.();
+    const sequence=(root._matrixSequence||0)+1;root._matrixSequence=sequence;
+    const month=document.getElementById('umumMatrixMonth').value||monthNow();
+    const search=document.getElementById('umumMatrixSearch').value;
+    const current=()=>root._matrixSequence===sequence;
+    const request=page=>api('GET_EXPENSE_MATRIX',{type,month,search,view:'virtual',page,limit:25});
+    root.scrollTop=0;root.setAttribute('aria-busy','true');
+    root.innerHTML='<div class="portal-expense-matrix-state">Memuat matriks nota...</div>';
     try {
-      const data=await api('GET_EXPENSE_MATRIX',{type,month:(month&&month.value)||monthNow(),search:search?search.value:'',page:Portal[pageKey],limit:25});
-      if(!data.branches.length){root.innerHTML='<div class="portal-expense-matrix-state"><i class="bi bi-inbox"></i><strong>Cabang tidak ditemukan</strong><span>Ubah pencarian atau bulan yang dipilih.</span></div>';renderPagination(document.getElementById(type==='umum'?'umumMatrixPagination':'listrikMatrixPagination'),1,0,25,()=>{});return;}
-      const days=Array.from({length:Number(data.days)},(_,index)=>index+1);
-      root.innerHTML=`<table class="portal-expense-matrix-table"><thead><tr><th>Cabang</th>${days.map(day=>`<th>${day}</th>`).join('')}</tr></thead><tbody>${data.branches.map(branch=>`<tr><th scope="row"><strong>${escapeHtml(branch.name)}</strong><span>${escapeHtml(branch.id)}</span></th>${days.map(day=>{const cell=data.cells[branch.id]&&data.cells[branch.id][day];return cell?`<td><button type="button" data-matrix-branch="${escapeHtml(branch.id)}" data-matrix-day="${day}" aria-label="${cell.count} nota ${branch.name} tanggal ${day}, total ${rupiah(cell.total)}"><strong>${cell.count}</strong><span>${escapeHtml(compactRupiah(cell.total))}</span></button></td>`:'<td><span class="portal-matrix-empty" aria-label="Tidak ada nota">·</span></td>'}).join('')}</tr>`).join('')}</tbody></table>`;
-      root.querySelectorAll('[data-matrix-branch]').forEach(button=>button.addEventListener('click',()=>{
-        const cell=data.cells[button.dataset.matrixBranch][Number(button.dataset.matrixDay)],branch=data.branches.find(item=>item.id===button.dataset.matrixBranch);
-        const rows=cell.records.map(record=>`<tr><td>${escapeHtml(record[8]||record[10]||'-')}</td><td>${escapeHtml(record[10]||record[7]||'-')}</td><td>${escapeHtml(rupiah(record[5]))}</td></tr>`).join('');
-        Swal.fire({title:`${escapeHtml(branch.name)} · ${button.dataset.matrixDay} ${new Date(data.month+'-01T00:00:00').toLocaleDateString('id-ID',{month:'long',year:'numeric'})}`,width:720,html:`<div class="portal-history-detail"><table><thead><tr><th>Keterangan</th><th>Jenis</th><th>Nominal</th></tr></thead><tbody>${rows}</tbody></table><p><strong>Total ${escapeHtml(rupiah(cell.total))}</strong></p></div>`,confirmButtonText:'Tutup'});
-      }));
-      renderPagination(document.getElementById(type==='umum'?'umumMatrixPagination':'listrikMatrixPagination'),data.page,data.totalBranches,data.limit,next=>{Portal[pageKey]=next;loadExpenseMatrix(type);});
-    } catch(error) {root.innerHTML=`<div class="portal-expense-matrix-state is-error"><i class="bi bi-exclamation-triangle"></i><strong>Matriks gagal dimuat</strong><span>${escapeHtml(error.message)}</span></div>`;}
-    finally {root.removeAttribute('aria-busy');}
+      const data=await request(1);if(!current())return;
+      const branches=data.branchIndex||[],cells={...data.cells},loaded=new Set([1]),pending=new Set(),failed=new Set();
+      if(!branches.length){root.innerHTML='<div class="portal-expense-matrix-state"><strong>Cabang tidak ditemukan</strong><span>Ubah pencarian cabang.</span></div>';return;}
+      const days=Array.from({length:Number(data.days)},(_,i)=>i+1),rowHeight=64,overscan=4;
+      root.innerHTML=`<table class="portal-expense-matrix-table portal-virtual-matrix" aria-rowcount="${branches.length+1}"><thead><tr><th scope="col">Cabang</th>${days.map(day=>`<th scope="col">${day}</th>`).join('')}</tr></thead><tbody></tbody></table>`;
+      root.tabIndex=0;root.setAttribute('aria-label','Matriks nota, gulir untuk melihat semua cabang');
+      const tbody=root.querySelector('tbody');let previousRange='',frame=0;
+      const spacer=height=>height?`<tr aria-hidden="true" class="portal-matrix-spacer"><td colspan="${days.length+1}" style="height:${height}px"></td></tr>`:'';
+      const render=(force=false)=>{
+        if(!current())return;
+        const start=Math.max(0,Math.floor(Math.max(0,root.scrollTop-42)/rowHeight)-overscan);
+        const end=Math.min(branches.length,start+Math.ceil((root.clientHeight||500)/rowHeight)+overscan*2);
+        const key=start+':'+end;if(key===previousRange&&!force)return;previousRange=key;
+        const active=document.activeElement,focusBranch=active?.dataset?.matrixBranch,focusDay=active?.dataset?.matrixDay;
+        tbody.innerHTML=spacer(start*rowHeight)+branches.slice(start,end).map((branch,i)=>{
+          const page=Math.floor((start+i)/25)+1,ready=loaded.has(page);
+          return `<tr class="portal-matrix-data-row" aria-rowindex="${start+i+2}"><th scope="row"><strong title="${escapeHtml(branch.name)}">${escapeHtml(branch.name)}</strong><span>${escapeHtml(branch.id)}</span></th>${!ready?`<td colspan="${days.length}">${failed.has(page)?`<button type="button" data-matrix-retry="${page}">Muat ulang data cabang</button>`:'Memuat data cabang...'}</td>`:days.map(day=>{const cell=cells[branch.id]?.[day];return cell?`<td><button type="button" data-matrix-branch="${escapeHtml(branch.id)}" data-matrix-day="${day}" aria-label="${escapeHtml(branch.name)}, tanggal ${day}, ${cell.count} nota"><strong>${cell.count}</strong><span>${escapeHtml(compactRupiah(cell.total))}</span></button></td>`:'<td><span aria-label="Tidak ada nota">·</span></td>';}).join('')}</tr>`;
+        }).join('')+spacer((branches.length-end)*rowHeight);
+        if(focusBranch){const replacement=Array.from(tbody.querySelectorAll('[data-matrix-branch]')).find(button=>button.dataset.matrixBranch===focusBranch&&button.dataset.matrixDay===focusDay);(replacement||root).focus({preventScroll:true});}
+        for(let page=Math.floor(start/25)+1;page<=Math.ceil(end/25);page++)if(!loaded.has(page)&&!pending.has(page)&&!failed.has(page))fetchPage(page);
+      };
+      const fetchPage=async page=>{
+        pending.add(page);
+        try{const next=await request(page);if(!current())return;Object.assign(cells,next.cells);loaded.add(page);failed.delete(page);}
+        catch{if(current())failed.add(page);}
+        finally{pending.delete(page);if(current())render(true);}
+      };
+      const scroll=()=>{if(!frame)frame=requestAnimationFrame(()=>{frame=0;render();});};
+      const click=event=>{
+        const retry=event.target.closest('[data-matrix-retry]');if(retry){const page=Number(retry.dataset.matrixRetry);failed.delete(page);fetchPage(page);return;}
+        const button=event.target.closest('[data-matrix-branch]');if(!button)return;
+        const branch=branches.find(item=>item.id===button.dataset.matrixBranch),cell=cells[branch.id][Number(button.dataset.matrixDay)];
+        const rows=cell.records.map(record=>`<tr><td>${escapeHtml(record[8]||record[10]||'-')}</td><td>${escapeHtml(rupiah(record[5]))}</td></tr>`).join('');
+        Swal.fire({title:`${escapeHtml(branch.name)} · ${button.dataset.matrixDay} ${new Date(month+'-01T00:00:00').toLocaleDateString('id-ID',{month:'long',year:'numeric'})}`,width:720,html:`<div class="portal-history-detail"><table><thead><tr><th>Keterangan</th><th>Nominal</th></tr></thead><tbody>${rows}</tbody></table><p><strong>Total ${escapeHtml(rupiah(cell.total))}</strong></p></div>`,confirmButtonText:'Tutup'});
+      };
+      root.addEventListener('scroll',scroll,{passive:true});root.addEventListener('click',click);
+      const observer=new ResizeObserver(()=>render(true));observer.observe(root);
+      root._matrixCleanup=()=>{root.removeEventListener('scroll',scroll);root.removeEventListener('click',click);observer.disconnect();cancelAnimationFrame(frame);};
+      render();
+    } catch(error) {
+      if(current()){root.innerHTML=`<div class="portal-expense-matrix-state is-error"><strong>Matriks gagal dimuat</strong><span>${escapeHtml(error.message)}</span><button type="button" class="portal-btn portal-btn-soft">Coba lagi</button></div>`;root.querySelector('button').onclick=()=>loadExpenseMatrix(type);}
+    } finally {if(current())root.removeAttribute('aria-busy');}
   }
 
   function lockApprovedBankActions(tableBodyId) {

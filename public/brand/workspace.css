@@ -289,3 +289,38 @@ body.portal-ui-v3 .portal-master-card .portal-master-field :is(input,select) { f
 .portal-history-table tbody th { font-weight:600; }
 .portal-history-table tr > :nth-child(n+4) { text-align:right; font-variant-numeric:tabular-nums; }
 .portal-history-table .portal-history-table-empty { padding:32px 16px; text-align:center; color:var(--ui-muted,#64748b); }
+/* Search controls share one border; the accessible label stays out of the visual layout. */
+body.portal-ui-v3 .sr-only { position:absolute !important; width:1px !important; height:1px !important; padding:0 !important; margin:-1px !important; overflow:hidden !important; clip:rect(0,0,0,0) !important; white-space:nowrap !important; border:0 !important; }
+body.portal-ui-v3 :is(.portal-history-search,.portal-expense-matrix-search) { box-sizing:border-box; height:44px; min-height:44px; min-width:0; flex-shrink:0; }
+body.portal-ui-v3 :is(.portal-history-search,.portal-expense-matrix-search) > input { height:100% !important; min-height:0 !important; padding:0 !important; margin:0 !important; border:0 !important; border-radius:0 !important; box-shadow:none !important; outline:none !important; font-size:.875rem; font-weight:400; line-height:1.4; }
+body.portal-ui-v3 .portal-history-toolbar { align-items:end; }
+body.portal-ui-v3 .portal-expense-matrix-toolbar { display:grid; grid-template-columns:minmax(0,1fr); gap:16px; }
+body.portal-ui-v3 .portal-expense-matrix-controls { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:12px; }
+body.portal-ui-v3 .portal-expense-matrix-search { width:min(360px,100%); }
+body.portal-ui-v3 .portal-electricity-matrix-heading { margin-bottom:12px; }
+body.portal-ui-v3 .portal-electricity-matrix-heading + .portal-expense-matrix-search { margin:0 0 16px; }
+body.portal-ui-v3 .portal-virtual-matrix { table-layout:fixed; }
+body.portal-ui-v3 .portal-virtual-matrix .portal-matrix-data-row { height:64px; }
+body.portal-ui-v3 .portal-virtual-matrix .portal-matrix-data-row > th { width:190px; max-width:190px; }
+body.portal-ui-v3 .portal-virtual-matrix .portal-matrix-data-row > th strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+body.portal-ui-v3 .portal-virtual-matrix .portal-matrix-spacer > td { padding:0; border:0; }
+body.portal-ui-v3 .portal-month-menu.portal-floating-popover { width:320px; padding:16px; border-radius:12px; max-height:calc(100dvh - 24px); }
+body.portal-ui-v3 .portal-month-menu .portal-month-head { margin-bottom:14px; gap:10px; }
+body.portal-ui-v3 .portal-month-menu .portal-month-nav { width:44px; height:44px; flex-shrink:0; }
+body.portal-ui-v3 .portal-month-year { min-height:44px; padding:8px 14px; border:0; border-radius:8px; background:#f3f5f8; color:#202b3d; font-size:1rem; font-weight:600; cursor:pointer; }
+body.portal-ui-v3 .portal-month-menu .portal-month-grid { gap:8px; }
+body.portal-ui-v3 .portal-month-menu .portal-month-option { min-height:44px; border-radius:8px; font-size:.875rem; font-weight:500; }
+body.portal-ui-v3 .portal-month-menu .portal-month-option.active { color:#fff; background:#2456c5; border-color:#2456c5; }
+body.portal-ui-v3 .portal-month-today { width:100%; min-height:44px; margin-top:12px; border:0; border-top:1px solid #e2e6ed; background:#fff; color:#1c4299; font-size:.875rem; font-weight:600; cursor:pointer; }
+body.portal-ui-v3 #yearDropdownBtn { min-width:132px; min-height:44px; padding:10px 14px; font-size:.875rem !important; }
+body.portal-ui-v3 #yearDropdownBtn *,body.portal-ui-v3 #yearDropdownList button { font-size:.875rem !important; }
+body.portal-ui-v3 #yearDropdownList { width:200px !important; min-width:180px !important; padding:8px; max-height:320px; }
+body.portal-ui-v3 #yearDropdownList button { min-height:44px; padding:10px 14px !important; }
+@media (max-width:640px) {
+  body.portal-ui-v3 .portal-expense-matrix-controls { flex-direction:column; align-items:stretch; }
+  body.portal-ui-v3 .portal-expense-matrix-search { width:100%; }
+  body.portal-ui-v3 .portal-month-trigger { min-height:44px; }
+  body.portal-ui-v3 .portal-month-picker { width:100%; }
+}
+body.portal-ui-v3 .portal-month-menu .portal-month-nav { font-size:24px; color:#39485e; }
+body.portal-ui-v3 :is(.portal-history-search,.portal-expense-matrix-search) > input { font-size:.875rem !important; font-weight:400 !important; }

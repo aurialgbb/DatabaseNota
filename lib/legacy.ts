@@ -47,13 +47,15 @@ export async function legacyRead(db:Database,user:User,action:string,args:any[])
   const branchValues:any[]=[];let branchWhere='active=true';
   if(search){branchValues.push(search);branchWhere+=" AND strpos(lower(concat_ws(' ',name,id)),lower($1))>0";}
   const totalBranches=Number((await db.query('SELECT count(*)::int AS count FROM nota_app.branches WHERE '+branchWhere,branchValues)).rows[0].count);
-  const branches=(await db.query('SELECT id,name,type FROM nota_app.branches WHERE '+branchWhere+' ORDER BY name LIMIT $'+(branchValues.length+1)+' OFFSET $'+(branchValues.length+2),[...branchValues,limit,(page-1)*limit])).rows;
+  const virtual=input.view==='virtual';
+  const branchIndex=virtual?(await db.query('SELECT id,name,type FROM nota_app.branches WHERE '+branchWhere+' ORDER BY name,id',branchValues)).rows:[];
+  const branches=virtual?branchIndex.slice((page-1)*limit,page*limit):(await db.query('SELECT id,name,type FROM nota_app.branches WHERE '+branchWhere+' ORDER BY name,id LIMIT $'+(branchValues.length+1)+' OFFSET $'+(branchValues.length+2),[...branchValues,limit,(page-1)*limit])).rows;
   const cells:Record<string,any>={};for(const branch of branches)cells[branch.id]={};
   if(branches.length){
    const rows=(await db.query("SELECT t.*,extract(day FROM t.business_date)::int AS day FROM nota_app.transactions t WHERE t.kind=$1 AND t.business_date >= $2::date AND t.business_date < ($2::date + interval '1 month') AND t.branch_id=ANY($3::text[]) ORDER BY t.business_date,t.id",[type,month+'-01',branches.map(b=>b.id)])).rows;
    for(const row of rows){const day=Number(row.day),cell=cells[row.branch_id][day]||(cells[row.branch_id][day]={count:0,total:0,records:[]});cell.count++;cell.total+=Number(row.amount);cell.records.push(legacyRow(row));}
   }
-  return {month,type:type.toLowerCase(),page,limit,totalBranches,days:new Date(Number(month.slice(0,4)),Number(month.slice(5,7)),0).getDate(),branches,cells};
+  return {month,type:type.toLowerCase(),page,limit,totalBranches,days:new Date(Number(month.slice(0,4)),Number(month.slice(5,7)),0).getDate(),branches,cells,...(virtual?{branchIndex}:{})};
  }
  if(action==='getExpenseSummaryByBranchMonth'){
   const year=Number(args[0])||new Date().getFullYear();invariant(Number.isInteger(year)&&year>=2000&&year<=2200,'INVALID_YEAR','Tahun tidak valid.');
