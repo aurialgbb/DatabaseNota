@@ -1,3 +1,7 @@
+import {accountTemplate} from './account-template';
+import {bulkBranches} from './bulk-branches';
+import {approvalAction,approvalActions} from './approval';
+import {fetchSheet} from './sync-model';
 import {reviewAction} from './review';
 import {masterAction,masterActions} from './master';
 import {storeAction} from './store-actions';
@@ -16,6 +20,7 @@ export async function rpc(user:User,body:any,request:Request) {
  const action=String(body.action||''),payload=body.payload||{},db=database();
  if(body.operation==='LEGACY_API'){
   invariant(Array.isArray(payload),'INVALID_PAYLOAD','Parameter menu tidak valid.');
+  if(action==='fetchExternalData'){requireRole(user,['ADMIN','TAX']);return fetchSheet(payload[0]||{});}
   const read=await legacyRead(db,user,action,payload);if(read!==undefined)return read;
   if(action==='getLegacyPhoto'){
    const value=String(payload[0]||'');const local=value.startsWith((process.env.APP_ORIGIN||'')+'/api/photos/')?value.slice((process.env.APP_ORIGIN||'').length):value;const match=local.match(/^\/api\/photos\/([0-9a-f-]{36})$/i);invariant(match,'INVALID_PHOTO','Foto tidak berasal dari aplikasi ini.');
@@ -31,6 +36,9 @@ export async function rpc(user:User,body:any,request:Request) {
   if(['saveTransactions','updateTransaction','deleteTransaction','duplicateToKategori','saveListrikTransaction','updateListrikTransaction','deleteListrikTransaction','bulkDeleteListrikTransaction'].includes(action))return transaction(tx=>legacyMutate(tx,user,action,payload,request.headers.get('idempotency-key')||''));
  }
  invariant(body.operation==='PORTAL_API','FEATURE_PENDING','Menu ini belum tersambung ke backend baru.',501);
+ if(['PREVIEW_BULK_MANAGE_BRANCHES','BULK_MANAGE_BRANCHES'].includes(action))return bulkBranches(user,action,payload,request.headers.get('idempotency-key')||'');
+ if(approvalActions.includes(action))return approvalAction(user,action,payload,request.headers.get('idempotency-key')||'');
+ if(action==='GET_ACCOUNT_TEMPLATE')return accountTemplate(user);
  if(accountActions.includes(action))return accountAction(user,action,payload);
  if(['CLAIM_RECEIPT_REVIEW','RELEASE_RECEIPT_REVIEW','RESTORE_DISCARDED_RECEIPT'].includes(action))return reviewAction(user,action,payload,request.headers.get('idempotency-key')||'');
  if(['START_STORE_OCR','PROCESS_STORE_OCR_PHOTO','GET_STORE_OCR_STATUS','FINALIZE_STORE_OCR','SUBMIT_STORE_DRAFT','RESUBMIT_RECEIPT'].includes(action))return storeAction(user,action,payload,request.headers.get('idempotency-key')||'');
@@ -59,11 +67,13 @@ export async function rpc(user:User,body:any,request:Request) {
   for(const r of (await db.query('SELECT status,count(*)::int AS count FROM nota_app.receipts WHERE branch_id=$1 GROUP BY status',[user.branchId])).rows)counts[r.status]=r.count;
   return {branchName:user.branchName,counts,recent:(await listReceipts(db,user,{limit:5})).rows};
  }
- if(action==='LIST_ACTIVE_APPROVAL_JOBS'){requireRole(user,['ADMIN','TAX']);return (await db.query("SELECT id,status,progress FROM nota_app.jobs WHERE kind='APPROVAL' AND status IN ('QUEUED','RUNNING')")).rows;}
  if(masterActions.includes(action))return masterAction(user,action,payload,request.headers.get('idempotency-key')||'');
  if(/OCR/.test(action))throw new AppError('OCR_NOT_CONFIGURED','OCR belum diaktifkan. Login dan pengaturan akun tetap dapat digunakan.',503);
  throw new AppError('FEATURE_PENDING','Fitur ini masih dalam proses penyambungan ke backend baru. Data belum diubah.',501);
 }
+
+
+
 
 
 

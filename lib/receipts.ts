@@ -44,6 +44,7 @@ export async function writeReceipt(db:Database,user:User,input:any,id:string,sta
  }
  if(existing){
   const previous=(await db.query('SELECT * FROM nota_app.receipts WHERE id=$1 FOR UPDATE',[id])).rows[0];
+  invariant(!(await db.query('SELECT resource FROM nota_app.resource_leases WHERE resource=$1 AND expires_at>now()',['receipt/'+id])).rows.length,'SYNC_BUSY','Nota sedang disinkronkan. Selesaikan pekerjaan tersebut terlebih dahulu.',409);
   invariant(previous,'NOT_FOUND','Nota tidak ditemukan.',404);requireBranch(user,previous.branch_id);
   invariant(previous.version===Number(input.expectedVersion),'VERSION_CONFLICT','Nota berubah. Muat ulang sebelum menyimpan.',409);
   invariant(['PENDING','NEEDS_CORRECTION','DRAFT'].includes(previous.status),'RECEIPT_LOCKED','Nota ini tidak dapat diedit dari formulir ini.',409);
@@ -62,4 +63,5 @@ export async function writeReceipt(db:Database,user:User,input:any,id:string,sta
  await db.query('INSERT INTO nota_app.audit_events(uid,action,entity_id) VALUES($1,$2,$3)',[user.uid,existing?'RECEIPT_UPDATE':'RECEIPT_CREATE',id]);
  return receiptDetail(db,user,id);
 }
+
 

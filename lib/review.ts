@@ -5,6 +5,7 @@ export async function reviewAction(user:User,action:string,p:any,key:string){
   const id=String(p.receiptId||'');
   if(action==='RELEASE_RECEIPT_REVIEW'){await db.query('DELETE FROM nota_app.review_claims WHERE receipt_id=$1 AND uid=$2',[id,user.uid]);return {success:true};}
   const row=(await db.query('SELECT * FROM nota_app.receipts WHERE id=$1 FOR UPDATE',[id])).rows[0];invariant(row,'NOT_FOUND','Nota tidak ditemukan.',404);
+  invariant(!(await db.query('SELECT resource FROM nota_app.resource_leases WHERE resource=$1 AND expires_at>now()',['receipt/'+id])).rows.length,'SYNC_BUSY','Nota sedang disinkronkan. Selesaikan pekerjaan tersebut terlebih dahulu.',409);
   if(action==='CLAIM_RECEIPT_REVIEW'){
    const existing=(await db.query('SELECT c.*,p.display_name FROM nota_app.review_claims c JOIN nota_app.profiles p ON p.uid=c.uid WHERE receipt_id=$1 AND expires_at>now()',[id])).rows[0];
    if(existing&&existing.uid!==user.uid&&p.takeover!==true)return {success:false,occupied:true,message:'Nota sedang direview oleh '+existing.display_name+'.'};
@@ -18,3 +19,4 @@ export async function reviewAction(user:User,action:string,p:any,key:string){
   });
  });
 }
+

@@ -21,3 +21,13 @@ Pekerjaan kode yang belum selesai:
 PostgreSQL, R2, Better Auth, service account Google dan kunci Gemini sudah tersedia. Kekurangan implementasi tersebut tidak boleh disebut kekurangan API key.
 
 Schema tetap `nota_app`; rilis ini tidak mengubah struktur database. Kredensial tidak masuk Git. Layanan `nota-worker.service` membaca environment privat server dan perlu direstart saat rilis diganti.
+
+Pembaruan berikutnya — approval dan pengelolaan:
+- Approval Mandiri: tulis Spreadsheet, verifikasi ulang identitas/baris, status SQL, dan eksekusi ulang tanpa duplikasi lulus pada tab sementara.
+- Approval CK: distribusi ke tab Mandiri sementara dan eksekusi ulang tanpa duplikasi lulus. Semua request tulis pengujian dibatasi ke sheetId tab yang baru dibuat; tab asli tidak ditulis.
+- Keputusan REQUEST_CORRECTION/DISCARD lulus dengan status NEEDS_CORRECTION/REJECTED.
+- Pemulihan menyimpan rencana dan mengunci sumber daya sampai penulisan diverifikasi; konflik tidak ditimpa. Skenario gangguan jaringan lintas-file belum diuji menyeluruh.
+- Cabang massal: preview, tambah/ubah/hapus, idempotensi, dan penolakan batch salah lulus uji SQL.
+- Template akun XLSX: seluruh role, daftar cabang, dan kredensial kosong lulus uji baca kembali Excel.
+- 16 tes otomatis lulus. Tarik Data sudah dapat membaca model spreadsheet; operasi simpan/reset/pindah tanggal/eliminasi dan menu pemeliharaan belum diaktifkan dalam rilis ini.
+- Pengguna mengonfirmasi belum ada proyek Vercel. URL GAS lama tidak dipakai sebagai relay OCR dan tidak diubah.

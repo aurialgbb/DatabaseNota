@@ -2,7 +2,7 @@ import {transaction,type Database} from './db';import {invariant} from './errors
 export const masterActions=['GET_MASTER_LINKS','SAVE_MASTER_LINKS','UPSERT_MASTER_BRANCH','DELETE_MASTER_BRANCH'];
 function period(value:any){const p=String(value||'').replace('-','');invariant(/^\d{4}(0[1-9]|1[0-2])$/.test(p),'INVALID_PERIOD','Periode tidak valid.');return p;}
 function sheet(value:any){const raw=String(value||'').trim(),m=raw.match(/^https?:\/\/docs\.google\.com\/spreadsheets\/d\/([a-zA-Z0-9_-]{20,150})(?:\/|$)/);invariant(!raw||m,'INVALID_SHEET','Gunakan URL Google Spreadsheet.');return m?.[1]||'';}
-async function revision(db:Database,p:string){return Number((await db.query("SELECT coalesce(max(id),0)::text AS revision FROM nota_app.audit_events WHERE action IN ('SAVE_MASTER_LINKS','UPSERT_MASTER_BRANCH','DELETE_MASTER_BRANCH') AND details->>'period'=$1",[p])).rows[0].revision);}
+async function revision(db:Database,p:string){return Number((await db.query("SELECT coalesce(max(id),0)::text AS revision FROM nota_app.audit_events WHERE action IN ('SAVE_MASTER_LINKS','UPSERT_MASTER_BRANCH','DELETE_MASTER_BRANCH','BULK_MANAGE_BRANCHES') AND details->>'period'=$1",[p])).rows[0].revision);}
 export async function masterAction(user:User,action:string,p:any,key:string){
  requireRole(user,['ADMIN','TAX']);const month=period(p.period);
  return transaction(async db=>{
@@ -35,3 +35,4 @@ export async function masterAction(user:User,action:string,p:any,key:string){
  });
  });
 }
+
