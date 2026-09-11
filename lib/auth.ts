@@ -44,6 +44,5 @@ export async function setupStatus() {
   hasAdmin=!!(await database().query("SELECT 1 FROM nota_app.profiles p JOIN nota_app.auth_user u ON u.id=p.uid JOIN nota_app.auth_account a ON a.\"userId\"=u.id WHERE p.role='ADMIN' AND p.active=true AND a.\"providerId\"='credential' LIMIT 1")).rows.length;
   databaseReady=true;
  }catch{}
- return {ready:!missing.length&&hasAdmin&&databaseReady,missingProperties:missing,hasAdmin,adminRecordCount:hasAdmin?1:0,databaseReady,recoveryMode:false,bootstrapSecretConfigured:false,diagnostic:databaseReady?'':'Database login belum siap.',features:{ocr:!!process.env.GEMINI_API_KEY&&process.env.OCR_WORKER_ENABLED==='true',ocrConfigured:!!process.env.GEMINI_API_KEY,sheets:false,sheetsConfigured:!!(process.env.GOOGLE_SERVICE_ACCOUNT_JSON||process.env.GOOGLE_SERVICE_ACCOUNT_FILE)}};
+ return {ready:!missing.length&&hasAdmin&&databaseReady,missingProperties:missing,hasAdmin,adminRecordCount:hasAdmin?1:0,databaseReady,recoveryMode:false,bootstrapSecretConfigured:false,diagnostic:databaseReady?'':'Database login belum siap.',features:{ocr:!!process.env.GEMINI_API_KEY&&process.env.OCR_WORKER_ENABLED==='true'&&process.env.OCR_REGION_BLOCKED!=='true',ocrConfigured:!!process.env.GEMINI_API_KEY,sheets:false,sheetsConfigured:!!(process.env.GOOGLE_SERVICE_ACCOUNT_JSON||process.env.GOOGLE_SERVICE_ACCOUNT_FILE)}};
 }
-

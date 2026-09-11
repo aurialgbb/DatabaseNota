@@ -8,6 +8,9 @@ if [ -f /etc/systemd/system/nota-web.service ]; then
     systemctl is-active --quiet nota-web nginx nota-web-cert-renew.timer
     openssl x509 -checkend 86400 -noout -in /etc/letsencrypt/live/nota-ip/fullchain.pem >/dev/null
     curl --fail --silent --show-error --max-time 15 http://127.0.0.1:3000/api/setup | python3 -c 'import json,sys; data=json.load(sys.stdin); sys.exit(0 if data.get("result",{}).get("databaseReady") is True else "WEB_DATABASE_NOT_READY")'
+    if [ -f /etc/systemd/system/nota-worker.service ]; then
+        systemctl is-active --quiet nota-worker
+    fi
     echo WEB_HEALTH_OK
 fi
 python3 - <<'PY'
