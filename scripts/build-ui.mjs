@@ -17,6 +17,8 @@ const read = name => {
   return bytes.toString('utf8');
 };
 const nativeTransport = source => source
+  .replaceAll('Script Properties belum lengkap: ', 'Konfigurasi login belum lengkap: ')
+  .replaceAll('password.length >= 6', 'password.length >= 12')
   .replaceAll('window.google', 'window.PortalNative')
   .replaceAll('typeof google', 'typeof PortalNative')
   .replaceAll('google.script', 'PortalNative.script')

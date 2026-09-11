@@ -48,6 +48,6 @@ test('Migrasi PostgreSQL, idempotensi, outbox, dan isolasi pekerjaan',async()=>{
   assert.deepEqual((await pg.query('SELECT * FROM public.jobs')).rows,[{marker:'other app'}]);
   assert.deepEqual((await pg.query('SELECT * FROM other_app.transactions')).rows,[{marker:'keep'}]);
   assert.equal((await pg.query("SELECT table_name FROM information_schema.tables WHERE table_schema='public'")).rows.length,1);
-  assert.equal((await pg.query("SELECT table_name FROM information_schema.tables WHERE table_schema='nota_app'")).rows.length,22);
+  assert.equal((await pg.query("SELECT table_name FROM information_schema.tables WHERE table_schema='nota_app'")).rows.length,26);
  } finally { await pg.close(); }
 });

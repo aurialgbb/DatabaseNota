@@ -48,6 +48,11 @@
     if(!legacy&&name!=='portalApi')throw new Error('Tindakan tidak tersedia pada aplikasi baru.');
     const action=args[1], original=legacy?args[2]:args[2]||{};
     let payload=structuredClone(original);
+    if(!legacy && action==='CHANGE_PASSWORD') {
+      const confirm=await Swal.fire({title:'Konfirmasi password saat ini',input:'password',inputAttributes:{autocomplete:'current-password'},showCancelButton:true,confirmButtonText:'Lanjutkan',cancelButtonText:'Batal'});
+      if(!confirm.isConfirmed || !confirm.value)throw new Error('Perubahan password dibatalkan.');
+      payload.currentPassword=confirm.value;
+    }
     const identity=canonical({legacy,action,payload});
     const digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(identity)))).map(v=>v.toString(16).padStart(2,'0')).join('');
     const storageKey='nota-native-pending-'+digest;

@@ -59,7 +59,7 @@ Backup offsite R2 sudah diaktifkan dengan persetujuan eksplisit pengguna pada 11
 
 ## Batas saat ini
 
-- Webapp sudah dideploy dengan HTTPS pada IP publik. Login awal belum tersedia; GEMINI_API_KEY belum diisi, admin belum dibuat, dan integrasi Google Sheets belum lengkap.
+- Webapp dideploy dengan HTTPS; admin awal dan Better Auth sudah disiapkan. OCR dan integrasi Google Sheets belum lengkap.
 - Penyelesaian backend/auth/OCR/Google Sheets serta pengujian semua peran masih diperlukan.
 - Tidak ada failover/HA; aplikasi dan database satu VPS berbagi titik kegagalan.
 - Pemeriksaan kesehatan lokal tidak mengirim notifikasi ke manusia; tujuan notifikasi belum ditetapkan.
@@ -101,5 +101,21 @@ sudo /usr/local/sbin/nota-health
 sudo /opt/nota-certbot/bin/certbot renew --cert-name nota-ip --dry-run --run-deploy-hooks --deploy-hook '/usr/sbin/nginx -t && /usr/bin/systemctl reload nginx' --no-random-sleep-on-renew
 ```
 
-Build Linux berhasil. Uji publik memeriksa halaman utama dan preview (200), sesi tanpa login (401), endpoint internal dan file environment (404), redirect HTTP ke HTTPS (308), dan koneksi database aplikasi (true). Halaman login juga diperiksa di browser publik; tombol login masih nonaktif karena kesiapan aplikasi belum lengkap.
+Build Linux berhasil. Uji publik memeriksa halaman utama dan preview (200), sesi tanpa login (401), endpoint internal dan file environment (404), redirect HTTP ke HTTPS (308), dan koneksi database aplikasi (true). Halaman login juga diperiksa di browser publik; versi awal memiliki login terkunci; pembaruan Better Auth memisahkan login dari kesiapan OCR.
 Uji simulasi renewal sertifikat publik beserta deploy hook Nginx berhasil pada 11 September 2026. Health check web, database, dan backup offsite juga lulus sesudah restart aplikasi.
+
+## Better Auth dan akun awal
+
+Login menggunakan Better Auth 1.7.4, tanpa Firebase. Empat tabel `auth_user`, `auth_account`, `auth_session`, `auth_verification` ditambahkan melalui `003_better_auth.sql`; semuanya berada pada schema `nota_app` (total 26 tabel). Password di-hash menggunakan fungsi scrypt bawaan Better Auth. Sesi cookie HttpOnly/Secure/SameSite=Strict disimpan di database dan diperiksa ulang terhadap profil aktif.
+
+`BETTER_AUTH_SECRET` dibuat acak dan disimpan di environment server, bukan di Git. Secret Google Sheets terpisah dari autentikasi aplikasi. Registrasi publik tidak disediakan. Endpoint Better Auth tidak dipasang langsung; API aplikasi memanggil metode server Better Auth untuk login, logout, sesi, dan penggantian password. Pembuatan akun berada di menu admin dan hanya memakai role ADMIN. Akun TOKO wajib memiliki cabang aktif.
+
+Admin pertama dibuat satu kali dari server/tool administrator, dengan guard database yang menolak bootstrap jika admin sudah ada. Kredensial awal lokal: `local-data/LOGIN-ADMIN.txt`, diabaikan Git. Gunakan password manager untuk penyimpanan selanjutnya. Untuk instalasi baru: terapkan migrasi, grant CRUD tabel auth ke runtime, lalu jalankan `npx tsx scripts/bootstrap-admin.ts <file-json-lokal>` dengan environment database tersedia. Jangan menjalankan bootstrap melalui endpoint publik.
+
+Pengaturan role runtime pada database nota: `search_path=nota_app,pg_catalog`. Query Better Auth juga memakai Kysely `withSchema('nota_app')`, sehingga tidak menulis ke schema aplikasi lain. Untuk VPS yang sudah dibuat, role diatur oleh administrator melalui ALTER ROLE setelah migrasi; jangan mengirim parameter startup search_path melalui transaction pooler.
+
+Login tidak mensyaratkan Gemini/R2/Google Sheets. Menu akun mendukung daftar, pembuatan akun, edit, status aktif, serta reset password. Penonaktifan/reset/perubahan akun mencabut sesi pengguna yang bersangkutan. Perubahan password sendiri meminta password saat ini. Akun admin tidak boleh menonaktifkan dirinya sendiri atau menghapus peran admin aktif terakhir.
+
+Daftar nota, kategori, dashboard cabang, serta pemetaan cabang/spreadsheet per periode sudah memiliki handler pembacaan PostgreSQL. Tambah/perbarui cabang dan link tersedia; ini belum menjalankan sinkronisasi Google Sheets. Menu transaksi legacy, OCR/approval, dan operasi lain yang belum dipindahkan mengembalikan pesan fitur belum tersambung tanpa mengubah data. Ini masih tahap pemeriksaan fitur, bukan kelengkapan production seluruh menu.
+
+Uji sebelum deployment: typecheck, build, 8 tes regresi; uji integrasi langsung Better Auth untuk login, logout, penolakan password salah, batas peran TOKO, penonaktifan, reset password, dan pencabutan sesi. Dependency nanoid/undici milik runtime workflow memakai override patch keamanan; npm audit setelah pemasangan melaporkan 0 temuan yang diketahui.

@@ -1,5 +1,6 @@
 import { login, logout, requireSession, setupStatus } from '@/lib/auth';
-import { checkOrigin, sessionCookie } from '@/lib/identity';
+import { rpc } from '@/lib/rpc';
+import { checkOrigin } from '@/lib/identity';
 import { invariant, publicError, AppError } from '@/lib/errors';
 import { database } from '@/lib/db';
 import { authorizedJob } from '@/lib/jobs';
@@ -21,14 +22,14 @@ async function handle(request: Request, context: {params: Promise<{path:string[]
       invariant(payload && typeof payload==='object' && !Array.isArray(payload),'INVALID_PAYLOAD','Permintaan tidak valid.');
     }
     if (path==='auth/login' && request.method==='POST') {
-      const result=await login(payload);
-      return reply({user:result.user},{'set-cookie':sessionCookie(result.token)});
+      const result=await login(payload,request);
+      return reply({user:result.user},result.headers);
     }
     if (path==='auth/logout' && request.method==='POST') {
-      await logout(request);
-      return reply({success:true},{'set-cookie':sessionCookie('',true)});
+      return reply({success:true},await logout(request));
     }
     const user=await requireSession(request);
+    if(path==='rpc' && request.method==='POST')return reply(await rpc(user,payload,request));
     if (path==='auth/session' && request.method==='GET') return reply(user);
     if (path==='uploads' && request.method==='POST') return reply(await prepareUpload(user,payload));
     const complete=path.match(/^uploads\/([0-9a-f-]+)\/complete$/i);

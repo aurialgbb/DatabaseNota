@@ -73,7 +73,7 @@ def main():
                         run(['runuser','-u','postgres','--','pg_restore','--exit-on-error','--no-owner','--no-privileges','-d',db],stdin=inp,stdout=subprocess.PIPE)
                     actual=sql(db,"SELECT string_agg(version,',' ORDER BY version) FROM nota_app.schema_migrations")
                     tables=sql(db,"SELECT count(*) FROM information_schema.tables WHERE table_schema='nota_app'")
-                    if actual!=expected or tables!='22':raise ValueError('RESTORE_MISMATCH')
+                    if actual!=expected or tables!='26':raise ValueError('RESTORE_MISMATCH')
                     report['restore_test']={'ok':True,'tables':int(tables),'migrations':actual}
                 finally:sql('postgres','DROP DATABASE '+db)
                 (ROOT/'last-restore-test.json').write_text(json.dumps(report,indent=2))
