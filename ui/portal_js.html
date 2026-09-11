@@ -5290,9 +5290,11 @@
           deleteBtn.title='Hapus transaksi & batalkan status approval (Admin/Testing)';
           deleteBtn.setAttribute('data-admin-acc-delete','true');
           const badge=document.createElement('span');
-          badge.className='portal-bank-readonly mr-2';
+          badge.className='portal-bank-readonly inline-flex items-center h-8 px-2.5';
           badge.innerHTML='<i class="bi bi-shield-check"></i> ACC';
-          cell.prepend(badge);
+          const container=deleteBtn.parentElement||cell;
+          container.classList.add('items-center');
+          container.insertBefore(badge,deleteBtn);
         }
       } else {
         cell.innerHTML='<span class="portal-bank-readonly"><i class="bi bi-shield-check"></i> Hasil ACC terkunci</span>';

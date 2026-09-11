@@ -90,7 +90,13 @@ export async function legacyMutate(db:Database,user:User,action:string,args:any[
  }else if(['deleteTransaction','deleteListrikTransaction','bulkDeleteListrikTransaction'].includes(action)){
   const ids=action==='bulkDeleteListrikTransaction'?args[0]:[args[0]];invariant(Array.isArray(ids)&&ids.length>0&&ids.length<=500,'INVALID_IDS','Pilih 1–500 transaksi.');
   const allowReadOnly=user.role==='ADMIN';
-  for(const id of [...new Set(ids)].sort()){
+  const uniqueIds=[...new Set(ids)].sort();
+  let deletedCount=0;
+  for(const id of uniqueIds){
+   if(action==='bulkDeleteListrikTransaction'){
+    const exists=(await db.query('SELECT 1 FROM nota_app.transactions WHERE id=$1',[id])).rows.length>0;
+    if(!exists)continue;
+   }
    const row=await record(db,String(id),undefined,undefined,allowReadOnly);
    invariant(action==='deleteTransaction'?row.kind==='OCR':['LISTRIK','UMUM'].includes(row.kind),'INVALID_KIND','Jenis transaksi tidak sesuai.');
    const sourceReceiptId=row.data?.sourceReceiptId;
@@ -100,8 +106,9 @@ export async function legacyMutate(db:Database,user:User,action:string,args:any[
    }else{
     await db.query('DELETE FROM nota_app.transactions WHERE id=$1',[id]);
    }
+   deletedCount++;
   }
-  result=action==='bulkDeleteListrikTransaction'?{success:true,deletedCount:ids.length}:true;
+  result=action==='bulkDeleteListrikTransaction'?{success:true,deletedCount}:true;
  }else if(action==='duplicateToKategori'){
   const row=await record(db,String(args[0]),'OCR'),target=args[1];invariant(['Umum','Listrik'].includes(target),'INVALID_KIND','Kategori tidak valid.');invariant(!row.data.statusPosting,'ALREADY_POSTED','Data sudah pernah diposting.',409);
   const d=row.data,kind=target==='Umum'?'UMUM':'LISTRIK',data={id:(kind==='UMUM'?'UMM-':'LST-')+randomUUID(),timestamp:Date.now(),tanggal:d.tanggalNota,cabang:d.cabang,cv:d.cv,nominal:d.total,fotoUrl:d.fotoUrl,kategori:target,keterangan:kind==='UMUM'?d.name+(d.qty>1?` (${d.qty} ${d.unit})`:''):'-',noUrut:'',jenis:kind==='UMUM'?d.name:'LISTRIK',jumlah:kind==='UMUM'?`${d.qty} ${d.unit||'PCS'}`:'-'};

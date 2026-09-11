@@ -80,4 +80,53 @@ test('Admin dapat menghapus transaksi hasil ACC (APR-*) dan mengembalikan status
  }
 });
 
+test('Admin dapat melakukan bulk delete transaksi hasil ACC bersamaan tanpa error Transaksi tidak ditemukan', async () => {
+ const pg = new PGlite(), db = pg as unknown as Database;
+ const adminUser = { uid: 'admin-1', role: 'ADMIN' } as User;
+ try {
+  for (const file of fs.readdirSync('migrations').filter(x => x.endsWith('.sql')).sort()) {
+   await pg.exec(fs.readFileSync('migrations/' + file, 'utf8'));
+  }
+  await pg.exec("INSERT INTO nota_app.branches(id,name,type,active) VALUES('b1','CABANG B','PT',true);");
+  await pg.exec("INSERT INTO nota_app.profiles(uid,username,auth_email,display_name,role) VALUES('admin-1','admin','admin@test.com','Admin','ADMIN');");
+  await pg.exec(`
+   INSERT INTO nota_app.receipts(id,branch_id,owner_uid,supplier,receipt_date,status,total,data)
+   VALUES('rcpt-bulk','b1','admin-1','TOKO B','2026-09-11','APPROVED',150000,'{"approvedAt":1789145738561}'::jsonb);
+   INSERT INTO nota_app.receipt_items(id,receipt_id,position,description,category,quantity,unit,amount)
+   VALUES('item-b1','rcpt-bulk',1,'Item B1','Umum',1,'PCS',50000),
+         ('item-b2','rcpt-bulk',2,'Item B2','Umum',1,'PCS',50000),
+         ('item-b3','rcpt-bulk',3,'Item B3','Umum',1,'PCS',50000);
+   INSERT INTO nota_app.transactions(id,kind,branch_id,business_date,amount,data)
+   VALUES('APR-item-b1','UMUM','b1','2026-09-11',50000,'{"readOnly":true,"sourceReceiptId":"rcpt-bulk","kategori":"Umum"}'::jsonb),
+         ('APR-item-b2','UMUM','b1','2026-09-11',50000,'{"readOnly":true,"sourceReceiptId":"rcpt-bulk","kategori":"Umum"}'::jsonb),
+         ('APR-item-b3','UMUM','b1','2026-09-11',50000,'{"readOnly":true,"sourceReceiptId":"rcpt-bulk","kategori":"Umum"}'::jsonb);
+  `);
+
+  const mutate = async (user: User, action: string, args: any[], key: string) => {
+   await pg.exec('BEGIN');
+   try {
+    const result = await legacyMutate(db, user, action, args, key);
+    await pg.exec('COMMIT');
+    return result;
+   } catch (e) {
+    await pg.exec('ROLLBACK');
+    throw e;
+   }
+  };
+
+  const res = await mutate(adminUser, 'bulkDeleteListrikTransaction', [['APR-item-b1', 'APR-item-b2', 'APR-item-b3']], 'admin-bulk-del');
+  assert.equal(res.success, true);
+
+  const count = (await pg.query("SELECT count(*)::int as c FROM nota_app.transactions WHERE id LIKE 'APR-item-b%'")).rows[0] as any;
+  assert.equal(count.c, 0);
+
+  const receipt = (await pg.query("SELECT status, (data->>'approvedAt') as approved_at FROM nota_app.receipts WHERE id='rcpt-bulk'")).rows[0] as any;
+  assert.equal(receipt.status, 'PENDING');
+  assert.equal(receipt.approved_at, null);
+ } finally {
+  await pg.close();
+ }
+});
+
+
 

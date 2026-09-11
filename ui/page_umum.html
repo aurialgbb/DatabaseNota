@@ -111,13 +111,13 @@ window.goToUmumPage = function(p) {
     }
 
     window.toggleAllUmumChecks = function(source) {
-       $('.umum-row-check').prop('checked', source.checked);
+       $('.umum-row-check:not(:disabled)').prop('checked', source.checked);
        updateBulkDeleteUmumBtn();
     }
 
     window.updateBulkDeleteUmumBtn = function() {
-       const count = $('.umum-row-check:checked').length;
-       const total = $('.umum-row-check').length;
+       const count = $('.umum-row-check:checked:not(:disabled)').length;
+       const total = $('.umum-row-check:not(:disabled)').length;
        $('#selectAllUmum').prop('checked', count === total && total > 0);
        
        if (count > 0) {
@@ -130,15 +130,20 @@ window.goToUmumPage = function(p) {
 
     window.bulkDeleteUmum = async function() {
        const selectedIds = [];
-       $('.umum-row-check:checked').each(function() {
+       $('.umum-row-check:checked:not(:disabled)').each(function() {
            selectedIds.push($(this).val());
        });
        
        if (selectedIds.length === 0) return;
        
+       const hasApr = selectedIds.some(id => String(id).startsWith('APR-'));
+       const text = hasApr
+           ? `Anda akan menghapus ${selectedIds.length} data. Data hasil ACC akan membatalkan status persetujuan nota terkait dan mengembalikannya ke status PENDING (Khusus Admin / Testing).`
+           : `Anda akan menghapus ${selectedIds.length} data secara permanen!`;
+
        const result = await Swal.fire({
            title: 'Hapus Data Massal?',
-           text: `Anda akan menghapus ${selectedIds.length} data secara permanen!`,
+           text: text,
            icon: 'warning',
            showCancelButton: true,
            confirmButtonColor: '#ef4444',
@@ -153,9 +158,13 @@ window.goToUmumPage = function(p) {
            Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'Menghapus data...', showConfirmButton: false, didOpen: () => { Swal.showLoading() } });
            
            try {
-               await callServer('bulkDeleteListrikTransaction', selectedIds);
-               if (KONTROL_SUMMARY.year) await fetchExpenseSummaryByBranchMonth(false);
-               await fetchExpensePage('umum', EXPENSE_META.umum.page || 1);
+               await (window.callServer ? callServer('bulkDeleteListrikTransaction', selectedIds) : api('bulkDeleteListrikTransaction', [selectedIds]));
+               if (typeof KONTROL_SUMMARY !== 'undefined' && KONTROL_SUMMARY && KONTROL_SUMMARY.year && typeof fetchExpenseSummaryByBranchMonth === 'function') {
+                   await fetchExpenseSummaryByBranchMonth(false);
+               }
+               if (typeof fetchExpensePage === 'function') {
+                   await fetchExpensePage('umum', (typeof EXPENSE_META !== 'undefined' && EXPENSE_META.umum?.page) || 1);
+               }
                
                Toast.fire({ icon: 'success', title: `${selectedIds.length} data berhasil dihapus.` });
                $('#selectAllUmum').prop('checked', false);
