@@ -1,0 +1,15 @@
+[Unit]
+Description=Dispatch queued application jobs
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=/etc/nota/dispatch.json
+[Service]
+Type=oneshot
+DynamicUser=yes
+LoadCredential=dispatch.json:/etc/nota/dispatch.json
+ExecStart=/usr/local/bin/nota-dispatch
+TimeoutStartSec=45s
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
