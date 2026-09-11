@@ -2079,7 +2079,7 @@
   }
 
   window.PortalCore = {
-    Portal, api, swrApi, cachedLegacyCall, clearPortalActionCache, clearPortalDataCache, escapeHtml, formatMoneyInput, isoToday, money, monthNow, parseIdNumber,
+    Portal, api, swrApi, cachedLegacyCall, clearPortalActionCache, clearPortalDataCache, escapeHtml, formatDisplayDate, formatMoneyInput, isoToday, money, monthNow, parseIdNumber,
     refreshPortalCombo, renderPagination, renderCursorPagination, rupiah, setBusy, setIconBusy, setupPortalControls,
     showPage, showTaxBankSkeleton, tableSkeleton, withTimeout, enhancePortalCalendarHeader,
     ensureXlsxRuntime, setPageRefreshing
@@ -2093,7 +2093,7 @@
 ;(function(Core) {
   'use strict';
   const {
-    Portal, api, swrApi, clearPortalDataCache, escapeHtml, formatMoneyInput, isoToday, money, parseIdNumber,
+    Portal, api, swrApi, clearPortalDataCache, escapeHtml, formatDisplayDate, formatMoneyInput, isoToday, money, parseIdNumber,
     renderCursorPagination, rupiah, setBusy, setupPortalControls, showPage, withTimeout
   } = Core;
 
@@ -3028,11 +3028,11 @@
     const mobile = window.matchMedia && window.matchMedia('(max-width: 720px)').matches && document.body.classList.contains('portal-store-active');
     if (mobile) {
       root.className = 'portal-store-history-list';
-      root.innerHTML = rows.map(r => `<article class="portal-store-history-card"><div class="portal-store-history-top"><div><small>NOTA #${escapeHtml(r.displayNumber)}</small><strong>${escapeHtml(r.supplier || 'Tanpa supplier')}</strong></div><span class="portal-badge ${statusBadgeClass(r.status)}">${escapeHtml(statusLabel(r.status))}</span></div><div class="portal-store-history-meta"><span><i class="bi bi-calendar3"></i>${escapeHtml(r.date)}</span><span><i class="bi bi-list-ul"></i>${Number(r.itemCount == null ? (r.items||[]).length : r.itemCount)} item</span><strong>Rp${money(r.receiptTotal)}</strong></div>${r.status==='REJECTED'?'<p class="portal-store-history-note-discarded">Nota ini tidak digunakan untuk pencatatan. Tidak ada perbaikan yang diperlukan.</p>':r.review&&r.review.reason?`<p>${escapeHtml(r.review.reason)}</p>`:''}${!compact && r.status==='NEEDS_CORRECTION'?`<button class="portal-btn portal-btn-soft portal-btn-block" data-correct-id="${escapeHtml(r.id)}"><i class="bi bi-pencil-square"></i> Perbaiki nota</button>`:''}</article>`).join('');
+      root.innerHTML = rows.map(r => `<article class="portal-store-history-card"><div class="portal-store-history-top"><div><small>NOTA #${escapeHtml(r.displayNumber)}</small><strong>${escapeHtml(r.supplier || 'Tanpa supplier')}</strong></div><span class="portal-badge ${statusBadgeClass(r.status)}">${escapeHtml(statusLabel(r.status))}</span></div><div class="portal-store-history-meta"><span><i class="bi bi-calendar3"></i>${escapeHtml(formatDisplayDate(r.date))}</span><span><i class="bi bi-list-ul"></i>${Number(r.itemCount == null ? (r.items||[]).length : r.itemCount)} item</span><strong>${escapeHtml(rupiah(r.receiptTotal))}</strong></div>${r.status==='REJECTED'?'<p class="portal-store-history-note-discarded">Nota ini tidak digunakan untuk pencatatan. Tidak ada perbaikan yang diperlukan.</p>':r.review&&r.review.reason?`<p>${escapeHtml(r.review.reason)}</p>`:''}${!compact && r.status==='NEEDS_CORRECTION'?`<button class="portal-btn portal-btn-soft portal-btn-block" data-correct-id="${escapeHtml(r.id)}"><i class="bi bi-pencil-square"></i> Perbaiki nota</button>`:''}</article>`).join('');
     } else {
       root.className = 'portal-table-wrap';
       root.innerHTML = `<table class="portal-table"><thead><tr><th>Nota</th><th>Tanggal</th><th>Supplier</th><th>Item</th><th>Total</th><th>Status</th><th></th></tr></thead><tbody>${rows.map(r => `<tr>
-      <td>NOTA #${escapeHtml(r.displayNumber)}</td><td>${escapeHtml(r.date)}</td><td>${escapeHtml(r.supplier)}</td><td>${Number(r.itemCount == null ? (r.items||[]).length : r.itemCount)}</td><td>Rp${money(r.receiptTotal)}</td>
+      <td>NOTA #${escapeHtml(r.displayNumber)}</td><td>${escapeHtml(formatDisplayDate(r.date))}</td><td>${escapeHtml(r.supplier)}</td><td>${Number(r.itemCount == null ? (r.items||[]).length : r.itemCount)}</td><td>${escapeHtml(rupiah(r.receiptTotal))}</td>
       <td><span class="portal-badge ${statusBadgeClass(r.status)}">${escapeHtml(statusLabel(r.status))}</span>${r.status==='REJECTED'?'<div style="margin-top:5px;font-size:10px;color:var(--portal-muted)">Tidak ada perbaikan yang diperlukan.</div>':r.review&&r.review.reason?`<div style="margin-top:5px;font-size:10px;color:var(--portal-muted)">${escapeHtml(r.review.reason)}</div>`:''}</td>
       <td>${!compact && r.status==='NEEDS_CORRECTION'?`<button class="portal-btn portal-btn-soft" data-correct-id="${escapeHtml(r.id)}">Perbaiki</button>`:''}</td>
     </tr>`).join('')}</tbody></table>`;
