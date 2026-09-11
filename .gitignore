@@ -19,3 +19,6 @@ public/baseline-manifest.json
 *service-account*.json
 *credentials*.json
 
+
+# Spreadsheet authoring inspection sidecars
+assets/import-templates/*.inspect.ndjson
