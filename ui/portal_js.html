@@ -1357,6 +1357,27 @@
   }
   window.portalToggleSidebar = togglePortalSidebar;
 
+  function groupPortalNavigation() {
+    const nav = document.querySelector('#sidebar > nav');
+    if (!nav || nav.dataset.grouped === 'true') return;
+    const definitions = [
+      { label:'Transaksi', pages:['inputPage','historyPage','listrikPage','umumPage','taxBankPage','taxReceiptEntryPage','tokoDashboardPage','tokoUploadPage','tokoHistoryPage'] },
+      { label:'Pengaturan', pages:['taxMasterLinksPage','taxAccountsPage','tokoAccountPage'] }
+    ];
+    definitions.forEach(definition => {
+      const section = document.createElement('section');
+      section.className = 'portal-nav-group';
+      section.setAttribute('aria-label', definition.label);
+      const title = document.createElement('span');
+      title.className = 'portal-nav-group-title';
+      title.textContent = definition.label;
+      section.append(title);
+      definition.pages.forEach(page => nav.querySelectorAll(`:scope > .nav-item[data-page="${page}"]`).forEach(item => section.append(item)));
+      nav.append(section);
+    });
+    nav.dataset.grouped = 'true';
+  }
+
   async function onPageOpen(pageId) {
     const loaders = {
       tokoDashboardPage: options => runPortalFeature('loadStoreDashboard', options),
@@ -1430,6 +1451,7 @@
       bindEvents();
       const entryNavLabel = document.querySelector('.nav-item[data-page="taxReceiptEntryPage"] .nav-text');
       if (entryNavLabel) entryNavLabel.textContent = 'Riwayat Pengajuan';
+      groupPortalNavigation();
       document.querySelectorAll('#taxBankBranch,#taxBankStatus,#taxEntryBranch').forEach(select => select.setAttribute('data-portal-combo', ''));
       const linkPeriodInput = document.getElementById('taxLinkPeriod');
       if (linkPeriodInput) linkPeriodInput.value = monthNow();
@@ -5220,7 +5242,7 @@
   function lockApprovedBankActions(tableBodyId) {
     const body=document.getElementById(tableBodyId);if(!body||body.dataset.approvedRowsLocked==='true')return;
     body.dataset.approvedRowsLocked='true';
-    const apply=()=>body.querySelectorAll('[data-listrik-action="edit"][data-listrik-value^="APR-"]').forEach(button=>{const cell=button.closest('td');if(cell)cell.innerHTML='<span class="portal-bank-readonly"><i class="bi bi-shield-check"></i> Hasil ACC</span>';});
+    const apply=()=>body.querySelectorAll('[data-listrik-value^="APR-"]').forEach(button=>{const cell=button.closest('td');if(cell&&cell.querySelector('[data-listrik-action="edit"],[data-listrik-action="delete"]'))cell.innerHTML='<span class="portal-bank-readonly"><i class="bi bi-shield-check"></i> Hasil ACC terkunci</span>';});
     new MutationObserver(apply).observe(body,{childList:true});apply();
   }
 

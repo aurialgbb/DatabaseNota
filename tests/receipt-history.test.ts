@@ -64,5 +64,10 @@ test('Matriks dapat dipanggil melalui modul fitur portal',async()=>{
  context.window.PortalFeatures.ensureExpenseMatrixUi('listrik');
  context.window.PortalFeatures.ensureExpenseMatrixUi('umum');
  assert.ok(source.includes("runPortalFeature('ensureExpenseMatrixUi', 'listrik')"));
- assert.ok(source.includes("runPortalFeature('ensureExpenseMatrixUi', 'umum')"));
+  assert.ok(source.includes("runPortalFeature('ensureExpenseMatrixUi', 'umum')"));
+  assert.ok(source.includes("groupPortalNavigation();"));
+  assert.ok(source.includes('Hasil ACC terkunci'));
+  const legacy=await readFile(new URL('../lib/legacy.ts',import.meta.url),'utf8');
+  assert.ok(legacy.includes('tidak dapat diubah atau dihapus dari daftar transaksi'));
+  assert.equal(legacy.includes('diubah melalui Riwayat Pengajuan'),false);
 });
