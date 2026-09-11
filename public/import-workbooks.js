@@ -6,6 +6,7 @@
   const spec=fields[kind];let header=-1,mapping=[];
   for(let i=0;i<Math.min(matrix.length,20);i++){const columns=matrix[i].map(value=>Object.keys(spec).find(k=>spec[k].includes(key(value)))||'');if(Object.keys(spec).filter(k=>k!=='cv').every(k=>columns.includes(k))){header=i;mapping=columns;break;}}
   if(header<0)throw new Error('Header template '+(kind==='branch'?'cabang':'akun')+' tidak ditemukan. Gunakan template dari aplikasi.');
+  if(kind==='branch'&&!mapping.includes('cv'))throw new Error('File memakai template cabang versi lama tanpa kolom Nama CV. Unduh ulang template Excel dari aplikasi, lalu isi data mulai baris 8.');
   if(mapping.filter(Boolean).length!==new Set(mapping.filter(Boolean)).size)throw new Error('Ada nama kolom yang berulang.');
   return matrix.slice(header+1).map((cells,i)=>{const row={_sourceRow:header+i+2};mapping.forEach((name,c)=>{if(name)row[name]=name==='password'?String(cells[c]??''):clean(cells[c]);});if(kind==='branch'){const actions={TAMBAH:'ADD',UBAH:'UPDATE',HAPUS:'DELETE'};row.action=actions[row.action.toUpperCase()]||row.action.toUpperCase();}return row;}).filter(row=>Object.keys(spec).some(k=>row[k]!=null&&row[k]!==''));
  }

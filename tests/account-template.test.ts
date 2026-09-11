@@ -9,10 +9,11 @@ test('Branch XLSX has empty import rows, separate examples, dropdowns and usable
 test('Account XLSX preserves blank credentials and leading zero password through localized import',async()=>{
  const bytes=await accountWorkbook([{name:'DEPOK',type:'Mandiri'}]),book=new ExcelJS.Workbook();await book.xlsx.load(bytes as any);const sheet=book.getWorksheet('Import Akun')!;assert.equal(sheet.getCell('A7').value,'Peran');assert.equal(sheet.getCell('A8').value,'TOKO');assert.equal(sheet.getCell('A9').value,'TAX');assert.equal(sheet.getCell('A10').value,'ADMIN');assert.equal(sheet.getCell('F8').numFmt,'@');assert.equal(sheet.getCell('F8').value,null);sheet.getCell('E8').value='depok';sheet.getCell('F8').value='001234';const rows=parser.matrixRows(matrix(sheet),'account');assert.equal(rows[0].username,'depok');assert.equal(rows[0].password,'001234');assert.equal(rows.length,3);
 });
-test('Old CSV templates retain quoted commas and support Indonesian separator',()=>{
- const rows=parser.csvRows('action,id,name,type\nADD,,"Cabang A, Selatan",Mandiri','branch');assert.equal(rows[0].name,'Cabang A, Selatan');assert.equal(parser.csvRows('action;id;name;type\nADD;;Cabang;Mandiri','branch')[0].action,'ADD');
+test('Branch CSV requires the current CV column and retains quoted commas',()=>{
+ const rows=parser.csvRows('action,id,name,cv,type\nADD,,"Cabang A, Selatan",CV A,Mandiri','branch');assert.equal(rows[0].name,'Cabang A, Selatan');assert.equal(rows[0].cv,'CV A');assert.equal(parser.csvRows('action;id;name;cv;type\nADD;;Cabang;CV A;Mandiri','branch')[0].action,'ADD');
+ assert.throws(()=>parser.csvRows('action,id,name,type\nADD,,Cabang,Mandiri','branch'),/versi lama/);
  const account=parser.csvRows('role,branchName,branchType,displayName,username,password\nTOKO,Depok,Mandiri,Depok,depok,001234','account');assert.equal(account[0].password,'001234');assert.throws(()=>parser.csvRows('a,b\n1,2','branch'),/Header/);
 });
 test('Workbook parser chooses import sheet even when guide is first',()=>{
- const workbook={SheetNames:['Panduan','Import Cabang'],Sheets:{Panduan:{tag:'guide'},'Import Cabang':{tag:'input'}}};const rows=parser.workbookRows(workbook,'branch',{utils:{sheet_to_json:(sheet:any)=>{assert.equal(sheet.tag,'input');return [['action','id','name','type'],['ADD','','TEST','Mandiri']];}}});assert.equal(rows.length,1);
+ const workbook={SheetNames:['Panduan','Import Cabang'],Sheets:{Panduan:{tag:'guide'},'Import Cabang':{tag:'input'}}};const rows=parser.workbookRows(workbook,'branch',{utils:{sheet_to_json:(sheet:any)=>{assert.equal(sheet.tag,'input');return [['action','id','name','cv','type'],['ADD','','TEST','CV Test','Mandiri']];}}});assert.equal(rows.length,1);
 });
