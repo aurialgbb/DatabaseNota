@@ -37,6 +37,13 @@ body.portal-ui-v3 .portal-master-card .portal-link-cell .portal-inline-input:foc
 body.portal-ui-v3 .portal-master-card .portal-link-cell .portal-inline-input:focus-visible { border:0 !important; outline:0 !important; background:transparent !important; box-shadow:none !important; }
 body.portal-ui-v3 .portal-master-card .portal-link-cell .portal-inline-input { cursor:text; }
 body.portal-ui-v3 .portal-master-url-dirty .portal-master-card-foot > span { color:var(--ui-primary-strong); }
+@media (max-width:480px) {
+  body.portal-ui-v3 .portal-master-search-field { min-height:44px; }
+  body.portal-ui-v3 .portal-master-card .portal-link-cell { min-height:44px; }
+  body.portal-ui-v3 .portal-master-card .portal-link-open { width:36px; height:36px; }
+  body.portal-ui-v3 .portal-master-card .portal-icon-button { width:40px; height:40px; }
+  body.portal-ui-v3 .portal-master-card-foot { align-items:center; }
+}
 body.portal-ui-v3 .swal2-icon { box-shadow:none !important; }
 body.portal-ui-v3 .swal2-icon.swal2-question { background:#2456c5 !important; }
 body.portal-ui-v3 .portal-import-dialog { width:min(760px,calc(100vw - 28px)) !important; padding:24px; }
