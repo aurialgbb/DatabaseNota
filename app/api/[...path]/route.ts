@@ -4,7 +4,7 @@ import { checkOrigin } from '@/lib/identity';
 import { invariant, publicError, AppError } from '@/lib/errors';
 import { database } from '@/lib/db';
 import { authorizedJob } from '@/lib/jobs';
-import { prepareUpload, completeUpload } from '@/lib/storage';
+import { prepareUpload, completeUpload, photoUrl } from '@/lib/storage';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 const reply = (result: unknown, headers?: HeadersInit) => Response.json({ok:true,result},{headers});
@@ -34,6 +34,8 @@ async function handle(request: Request, context: {params: Promise<{path:string[]
     if (path==='uploads' && request.method==='POST') return reply(await prepareUpload(user,payload));
     const complete=path.match(/^uploads\/([0-9a-f-]+)\/complete$/i);
     if (complete && request.method==='POST') return reply(await completeUpload(user,complete[1]));
+    const photo=path.match(/^photos\/([0-9a-f-]{36})$/i);
+    if(photo&&request.method==='GET')return new Response(null,{status:307,headers:{Location:await photoUrl(user,photo[1],new URL(request.url).searchParams.get('thumbnail')==='1'),'Cache-Control':'no-store'}});
     const job=path.match(/^jobs\/([0-9a-f-]+)$/i);
     if (job && request.method==='GET') {
       const row=await authorizedJob(database(),user,job[1]);
@@ -46,3 +48,4 @@ async function handle(request: Request, context: {params: Promise<{path:string[]
   }
 }
 export {handle as GET,handle as POST};
+

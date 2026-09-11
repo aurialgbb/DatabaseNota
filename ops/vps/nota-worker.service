@@ -1,0 +1,26 @@
+[Unit]
+Description=Database Nota OCR worker
+After=network-online.target postgresql.service pgbouncer.service
+Wants=network-online.target
+[Service]
+Type=simple
+User=nota-web
+Group=nota-web
+WorkingDirectory=/srv/nota/current
+EnvironmentFile=/etc/nota/web.env
+Environment=DATABASE_POOL_MAX=2
+ExecStart=/opt/nodejs/current/bin/node --import tsx scripts/worker.ts
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=400
+KillSignal=SIGTERM
+UMask=0027
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=strict
+MemoryHigh=512M
+MemoryMax=768M
+TasksMax=64
+[Install]
+WantedBy=multi-user.target

@@ -30,7 +30,7 @@
     for(;;){
       const job=await request('/api/jobs/'+id,'GET');
       if(job.status==='SUCCEEDED')return job.result;
-      if(['FAILED','NEEDS_REVIEW','CANCELLED'].includes(job.status))throw new Error(job.message||'Pekerjaan perlu diperiksa.');
+      if(['FAILED','NEEDS_REVIEW','CANCELLED'].includes(job.status))throw new Error(job.result?.message||job.message||'Pekerjaan perlu diperiksa.');
       window.dispatchEvent(new CustomEvent('nota-job-progress',{detail:job}));
       const delay=document.hidden?15000:Date.now()-started<10000?1000:Date.now()-started<60000?2000:5000;
       await new Promise(resolve=>setTimeout(resolve,delay));
@@ -59,19 +59,41 @@
     let key=sessionStorage.getItem(storageKey);
     if(!key){key=crypto.randomUUID();sessionStorage.setItem(storageKey,key);}
     if(!legacy&&action==='PROCESS_STORE_OCR_PHOTO'&&payload.image?.base64){
-      const uploadKey=storageKey+'-photo';
+      const uploadKey='nota-upload-photo-'+payload.uploadId+'-'+payload.clientPhotoId;
       let photoId=sessionStorage.getItem(uploadKey);
       if(!photoId){photoId=await upload(payload.image,payload.uploadId);sessionStorage.setItem(uploadKey,photoId);}
-      payload={...payload,photoId};delete payload.image;
+      payload={...payload,photoId,fileName:payload.image.fileName};delete payload.image;
+    }
+    if(legacy&&['saveListrikTransaction','updateListrikTransaction'].includes(action)){
+      const data=payload[action==='updateListrikTransaction'?1:0];
+      if(data?.base64){
+        const raw=String(data.base64),mime=raw.match(/^data:([^;]+);/)?.[1]||'image/jpeg';
+        data.photoId=sessionStorage.getItem(storageKey+'-photo');
+        if(!data.photoId){data.photoId=await upload({base64:raw.replace(/^data:[^,]+,/,''),mimeType:mime});sessionStorage.setItem(storageKey+'-photo',data.photoId);}
+        delete data.base64;
+      }
+    }
+    if(legacy&&action==='saveTransactions'&&payload[0]){
+      const date=document.getElementById('dateInput')?._flatpickr?.selectedDates?.[0];
+      if(date)payload[0].tanggal=[date.getFullYear(),String(date.getMonth()+1).padStart(2,'0'),String(date.getDate()).padStart(2,'0')].join('-');
+    }
+    if(legacy&&action==='saveTransactions'&&payload[0]?.base64?.length){
+      payload[0].photoIds=JSON.parse(sessionStorage.getItem(storageKey+'-photos')||'[]');
+      for(let i=payload[0].photoIds.length;i<payload[0].base64.length;i++){
+        const text=String(payload[0].base64[i]);payload[0].photoIds.push(await upload({base64:text.replace(/^data:[^,]+,/,''),mimeType:text.match(/^data:([^;]+);/)?.[1]||'image/jpeg'}));
+        sessionStorage.setItem(storageKey+'-photos',JSON.stringify(payload[0].photoIds));
+      }
+      delete payload[0].base64;
     }
     if(legacy&&action==='processOCRWithGemini'){
       const image=Array.isArray(payload[0])?payload[0][0]:payload[0];
-      const photoId=await upload({base64:String(image).replace(/^data:[^,]+,/,''),mimeType:'image/jpeg'});
+      let photoId=sessionStorage.getItem(storageKey+'-photo');
+      if(!photoId){photoId=await upload({base64:String(image).replace(/^data:[^,]+,/,''),mimeType:String(image).match(/^data:([^;]+);/)?.[1]||'image/jpeg'});sessionStorage.setItem(storageKey+'-photo',photoId);}
       payload=[{photoId}];
     }
     const result=await request('/api/rpc','POST',{operation:legacy?'LEGACY_API':'PORTAL_API',action,payload},key);
     const final=result?.operationId&&result.awaitResult?await waitJob(result.operationId):result;
-    if(final?.success!==false){sessionStorage.removeItem(storageKey);sessionStorage.removeItem(storageKey+'-photo');}
+    if(final?.success!==false&&!final?.pending&&!final?.queued){sessionStorage.removeItem(storageKey);sessionStorage.removeItem(storageKey+'-photo');sessionStorage.removeItem(storageKey+'-photos');}
     return final;
   }
   function runner(success, failure){
@@ -84,3 +106,5 @@
   }
   window.PortalNative={script:{get run(){return runner();}},request,waitJob};
 })();
+
+

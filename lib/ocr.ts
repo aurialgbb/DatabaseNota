@@ -36,7 +36,7 @@ export async function runOcr(job:any) {
    let parsed:any;
    try{parsed=JSON.parse(output.replace(/```json/gi,'').replace(/```/g,'').trim());}catch{throw new AppError('RETRYABLE_OUTPUT','Hasil OCR belum dapat dibaca.',502);}
    invariant(isLegacy?parsed&&Array.isArray(parsed.items):parsed&&Array.isArray(parsed.receipts),'RETRYABLE_OUTPUT','Format hasil OCR tidak sesuai.',502);
-   const result=isLegacy?[{success:true,data:parsed}]:{success:true,photoId:photo.id,receipts:portalNormalizeOcrReceipts_(parsed.receipts,photo.id),warnings:parsed.warnings||[],modelUsed:model,attemptCount:attempt};
+   const result=isLegacy?[{success:true,data:parsed}]:{success:true,pending:false,clientPhotoId:job.payload.clientPhotoId,index:job.payload.index,fileName:job.payload.fileName,photoId:photo.id,receipts:portalNormalizeOcrReceipts_(parsed.receipts,photo.id),warnings:parsed.warnings||[],modelUsed:model,attemptCount:attempt};
    await db.query("UPDATE nota_app.job_steps SET status='SUCCEEDED',result=$3,updated_at=now() WHERE job_id=$1 AND step_key=$2",[job.id,step,JSON.stringify(result)]);
    return result;
   }catch(error){
@@ -49,3 +49,10 @@ export async function runOcr(job:any) {
  }
  throw lastError;
 }
+
+export async function runText(job:any){
+ invariant(process.env.GEMINI_API_KEY,'OCR_NOT_CONFIGURED','Kunci Gemini belum dikonfigurasi.',503);
+ const response=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+legacyModel+':generateContent',{method:'POST',headers:{'content-type':'application/json','x-goog-api-key':process.env.GEMINI_API_KEY!},body:JSON.stringify({contents:[{parts:[{text:job.payload.prompt}]}],...(job.payload.isJson?{generationConfig:{responseMimeType:'application/json'}}:{})}),signal:AbortSignal.timeout(120000)});
+ invariant(response.ok,'OCR_PROVIDER_ERROR','Permintaan AI belum berhasil.',502);const body=await response.json();const output=body.candidates?.[0]?.content?.parts?.map((p:any)=>p.text||'').join('');invariant(output,'OCR_EMPTY','AI belum mengembalikan hasil.',502);return output.replace(/```json/gi,'').replace(/```/g,'').trim();
+}
+

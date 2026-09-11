@@ -10,6 +10,7 @@ export async function createJob(db: Database, user: User, kind: string, payload:
   const inserted = await db.query("INSERT INTO nota_app.jobs(id,uid,kind,branch_id,request_key,payload_hash,payload) VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(uid,kind,request_key) DO NOTHING RETURNING *", [id,user.uid,kind,branchId || null,key,hash,JSON.stringify(payload)]);
   const job = inserted.rows[0] || (await db.query('SELECT * FROM nota_app.jobs WHERE uid=$1 AND kind=$2 AND request_key=$3', [user.uid,kind,key])).rows[0];
   invariant(job.payload_hash === hash, 'IDEMPOTENCY_CONFLICT', 'Permintaan yang sama memiliki isi berbeda.', 409);
+  if(inserted.rows.length){const active=Number((await db.query("SELECT count(*) FROM nota_app.jobs WHERE uid=$1 AND status IN ('QUEUED','RUNNING')",[user.uid])).rows[0].count);invariant(active<=20,'QUEUE_LIMIT','Masih ada 20 pekerjaan dalam antrean. Tunggu beberapa pekerjaan selesai.',429);}
   if (inserted.rows.length) await db.query('INSERT INTO nota_app.outbox(job_id) VALUES($1)', [id]);
   return job;
 }
@@ -49,3 +50,4 @@ export async function cancelJob(user: User, id: string) {
     return { success:true };
   });
 }
+
