@@ -1,0 +1,4 @@
+INSERT INTO nota_app.categories(name,position) VALUES
+ ('TELUR',0),('GAS',1),('TEPUNG',2),('LISTRIK',3),('AIR GALON',4),
+ ('BAHAN BAKU',5),('BAHAN KEMAS',6),('OPERASIONAL TOKO',7),('LAIN-LAIN',8)
+ON CONFLICT(name) DO NOTHING;

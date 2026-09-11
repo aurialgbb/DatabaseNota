@@ -10,7 +10,7 @@ function createAccountAuth() {
   baseURL: process.env.APP_ORIGIN, basePath: '/api/account-auth',
   trustedOrigins: [process.env.APP_ORIGIN || 'http://localhost:3000'],
   database: {db:new Kysely<any>({dialect:new PostgresDialect({pool:database()})}).withSchema('nota_app'),type:'postgres'},
-  emailAndPassword: {enabled:true,disableSignUp:true,minPasswordLength:12,maxPasswordLength:128},
+  emailAndPassword: {enabled:true,disableSignUp:true,minPasswordLength:6,maxPasswordLength:128},
   user: {modelName:'auth_user'}, account: {modelName:'auth_account'},
   verification: {modelName:'auth_verification'},
   session: {modelName:'auth_session',expiresIn:4*60*60,updateAge:60*60,cookieCache:{enabled:false}},

@@ -18,10 +18,6 @@ const read = name => {
 };
 const nativeTransport = source => source
   .replaceAll('Script Properties belum lengkap: ', 'Konfigurasi login belum lengkap: ')
-  .replaceAll('password.length >= 6', 'password.length >= 12')
-  .replaceAll('value.length < 6', 'value.length < 12')
-  .replaceAll('minimal 6 karakter', 'minimal 12 karakter')
-  .replaceAll('Minimal 6 karakter', 'Minimal 12 karakter')
   .replaceAll('window.google', 'window.PortalNative')
   .replaceAll('typeof google', 'typeof PortalNative')
   .replaceAll('google.script', 'PortalNative.script')
@@ -70,7 +66,7 @@ function expand(source, stack = []) {
     return expand(read(name + '.html'), stack.concat(name));
   });
 }
-let html = expand(read('index.html')).replaceAll('minlength="6"', 'minlength="12"').replaceAll('Min. 6:', 'Min. 12:').replaceAll('Minimal 6 karakter', 'Minimal 12 karakter');
+let html = expand(read('index.html'));
 const buildId = 'native-' + sha(JSON.stringify(manifest.files)).slice(0, 12);
 html = html.replaceAll('<?= buildId ?>', buildId);
 html = html.replace('<head>', '<head>\n<script src="/native-transport.js"></script>');

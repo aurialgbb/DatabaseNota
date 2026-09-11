@@ -12,7 +12,7 @@ export function validateAccount(input:any) {
  const role=String(input.role||'TOKO');invariant(['ADMIN','TAX','TOKO'].includes(role),'INVALID_ROLE','Peran tidak valid.');
  return {username,displayName,role,branchId:role==='TOKO'?String(input.branchId||''):null};
 }
-export function validatePassword(value:any) {invariant(typeof value==='string'&&value.length>=12&&value.length<=128,'INVALID_PASSWORD','Password harus berisi 12–128 karakter.');return value as string;}
+export function validatePassword(value:any) {invariant(typeof value==='string'&&value.length>=6&&value.length<=128,'INVALID_PASSWORD','Password harus berisi 6–128 karakter.');return value as string;}
 export async function provisionAccount(input:any,actor:string,bootstrap=false) {
  const data=validateAccount(input),password=validatePassword(input.password||randomBytes(18).toString('base64url'));
  const hashed=await hashPassword(password),uid=randomUUID(),email=uid+'@accounts.invalid';
