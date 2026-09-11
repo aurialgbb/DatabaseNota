@@ -12,7 +12,8 @@ export default {
   if(!Number.isInteger(size)||size<=0||size>24*1024*1024)return reply(413,'Ukuran permintaan tidak valid.');
   if(!request.headers.get('content-type')?.startsWith('application/json'))return reply(415,'Gunakan JSON.');
   try{
-   const upstream=await fetch('https://generativelanguage.googleapis.com'+url.pathname,{method:'POST',headers:{'content-type':'application/json','x-goog-api-key':env.GEMINI_API_KEY},body:request.body,redirect:'error',signal:AbortSignal.timeout(120000)});
+   const upstream=await fetch('https://generativelanguage.googleapis.com'+url.pathname,{method:'POST',headers:{'content-type':'application/json','x-goog-api-key':env.GEMINI_API_KEY},body:request.body,redirect:'manual',signal:AbortSignal.timeout(120000)});
+   if(upstream.status>=300&&upstream.status<400){await upstream.body?.cancel();return reply(502,'Redirect penyedia OCR ditolak.');}
    return new Response(upstream.body,{status:upstream.status,headers:{'content-type':'application/json','cache-control':'no-store'}});
   }catch{return reply(502,'Gemini belum merespons.');}
  }

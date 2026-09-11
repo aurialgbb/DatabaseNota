@@ -33,3 +33,9 @@ Relay Cloudflare telah disiapkan dengan autentikasi server, daftar model terbata
 Rilis aplikasi `a3b3a22` berhasil dibangun di Linux dan diaktifkan di VPS. Web, worker, Nginx, database, akses Google Sheets, dan pemeriksaan backup luar server berhasil.
 
 Uji melalui HTTPS publik berhasil: login, antrean worker VPS untuk tambah/edit/hapus transaksi pada tab sementara, penolakan versi baris lama dengan status pemulihan, serta pembatalan sebelum penulisan. Tab dan fixture SQL telah dibersihkan. Hasil ini mengonfirmasi alur worker rilis yang terpasang, bukan hanya eksekusi fungsi lokal.
+
+## Uji relay Cloudflare
+
+Relay telah dipasang di akun pengguna dengan persetujuan eksplisit penyimpanan Gemini key sebagai secret. Mode redirect disesuaikan menjadi manual untuk runtime Workers, dengan penolakan respons redirect agar key tidak diteruskan ke host lain.
+
+Dari VPS, permintaan Gemini berhasil HTTP 200. Foto nota sintetis dengan prompt baseline juga berhasil: satu nota, total 40.000. Ini membuktikan jalur koneksi dan pembacaan foto melalui relay berfungsi. Belum mengaktifkan jalur produksi: pemeriksaan persetujuan otomatis meminta izin eksplisit untuk pengiriman foto nota nyata melalui Cloudflare. Konfigurasi OCR aplikasi masih diblokir sampai persetujuan tersebut diberikan.
