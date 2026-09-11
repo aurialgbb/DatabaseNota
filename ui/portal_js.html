@@ -5142,7 +5142,11 @@
     const page=document.getElementById('umumPage');if(!page||page.dataset.matrixEnhanced==='true')return;
     page.dataset.matrixEnhanced='true';
     lockApprovedBankActions('umumTableBody');
-    const header=page.firstElementChild,detail=header&&header.nextElementSibling;if(!header||!detail)return;
+    const header=page.firstElementChild;
+    let detail=page.querySelector('#umumTableBody');
+    while(detail&&detail.parentElement!==page)detail=detail.parentElement;
+    if(!detail)detail=header&&header.nextElementSibling;
+    if(!header||!detail)return;
     detail.id='tabUmumDetail';
     const toggle=document.createElement('div');toggle.className='portal-expense-view-toggle';toggle.setAttribute('role','tablist');toggle.setAttribute('aria-label','Tampilan Nota Umum');toggle.innerHTML='<button type="button" class="is-active" data-umum-view="list" role="tab" aria-selected="true">Daftar</button><button type="button" data-umum-view="matrix" role="tab" aria-selected="false">Matriks</button>';
     header.appendChild(toggle);
