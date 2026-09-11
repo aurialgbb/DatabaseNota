@@ -6,14 +6,14 @@ import { mutateOnce } from './jobs';
 const upper=(x:any)=>String(x??'').trim().toUpperCase();
 function money(x:any){const n=Number(x);invariant(Number.isFinite(n)&&n>=0&&n<=1e14,'INVALID_AMOUNT','Nominal tidak valid.');return n;}
 function when(x:any){let s=String(x||'');if(typeof x==='number'){invariant(Number.isFinite(x),'INVALID_DATE','Tanggal tidak valid.');s=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(x));}invariant(/^\d{4}-\d{2}-\d{2}$/.test(s),'INVALID_DATE','Tanggal wajib diisi.');const d=new Date(s+'T00:00:00+07:00');invariant(Number.isFinite(d.getTime())&&new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta',year:'numeric',month:'2-digit',day:'2-digit'}).format(d)===s,'INVALID_DATE','Tanggal tidak valid.');return {date:s,time:d.getTime()};}
-export function legacyRow(row:any){const d=row.data;return row.kind==='OCR'?[row.id,d.timestamp,d.tanggalNota,d.cabang,d.cv,d.supplier,d.name,d.qty,Number(row.amount),d.fotoUrl,d.unit,d.statusPosting||'',row.version]:[row.id,d.timestamp,d.tanggal,d.cabang,d.cv,Number(row.amount),d.fotoUrl,d.kategori,d.keterangan,d.noUrut,d.jenis,d.jumlah,row.version];}
+export function legacyRow(row:any){const d=row.data;return row.kind==='OCR'?[row.id,d.timestamp,d.tanggalNota,d.cabang,d.cv,d.supplier,d.name,d.qty,Number(row.amount),d.fotoUrl,d.unit,d.statusPosting||'',row.version]:[row.id,d.timestamp,d.tanggal,d.cabang,d.cv,Number(row.amount),d.fotoUrl,d.kategori,d.keterangan,d.noUrut,d.jenis,d.jumlah,row.version,!!d.readOnly,d.sourceReceiptId||''];}
 async function branch(db:Database,toko:any){const r=(await db.query('SELECT * FROM nota_app.branches WHERE upper(name)=$1 AND active=true',[upper(toko)])).rows;invariant(r.length===1,'BRANCH_REQUIRED','Pilih cabang aktif dari Master Link.');return r[0];}
 async function photo(db:Database,user:User,id:any,branchId:string){
  if(!id)return '-';
  const row=(await db.query("SELECT * FROM nota_app.photos WHERE id=$1 AND state='READY'",[id])).rows[0];
  invariant(row&&row.owner_uid===user.uid&&(!row.branch_id||row.branch_id===branchId),'PHOTO_NOT_READY','Foto belum siap atau bukan milik akun ini.');return (process.env.APP_ORIGIN||'')+'/api/photos/'+row.id;
 }
-async function record(db:Database,id:string,kind?:string,expected?:number){const row=(await db.query('SELECT * FROM nota_app.transactions WHERE id=$1 FOR UPDATE',[id])).rows[0];invariant(!(await db.query('SELECT resource FROM nota_app.resource_leases WHERE resource=$1 AND expires_at>now()',['transaction/'+id])).rows.length,'SYNC_BUSY','Transaksi sedang disinkronkan. Selesaikan pekerjaan tersebut terlebih dahulu.',409);invariant(row&&(!kind||row.kind===kind),'NOT_FOUND','Transaksi tidak ditemukan.',404);if(expected!==undefined)invariant(row.version===Number(expected),'VERSION_CONFLICT','Data sudah berubah. Muat ulang sebelum mengubahnya.',409);return row;}
+async function record(db:Database,id:string,kind?:string,expected?:number){const row=(await db.query('SELECT * FROM nota_app.transactions WHERE id=$1 FOR UPDATE',[id])).rows[0];invariant(!(await db.query('SELECT resource FROM nota_app.resource_leases WHERE resource=$1 AND expires_at>now()',['transaction/'+id])).rows.length,'SYNC_BUSY','Transaksi sedang disinkronkan. Selesaikan pekerjaan tersebut terlebih dahulu.',409);invariant(row&&(!kind||row.kind===kind),'NOT_FOUND','Transaksi tidak ditemukan.',404);invariant(!row.data?.readOnly,'APPROVED_RECEIPT_LOCKED','Data hasil ACC diubah melalui Riwayat Pengajuan agar seluruh item nota tetap konsisten.',409);if(expected!==undefined)invariant(row.version===Number(expected),'VERSION_CONFLICT','Data sudah berubah. Muat ulang sebelum mengubahnya.',409);return row;}
 async function insert(db:Database,kind:string,branchId:string,date:string,data:any){await db.query('INSERT INTO nota_app.transactions(id,kind,branch_id,business_date,amount,data) VALUES($1,$2,$3,$4,$5,$6)',[data.id,kind,branchId,date,kind==='OCR'?data.total:data.nominal,JSON.stringify(data)]);return legacyRow({id:data.id,kind,data,amount:kind==='OCR'?data.total:data.nominal,version:1});}
 export async function legacyPage(db:Database,history:boolean,opts:any={}){
  const page=Math.max(1,Math.floor(Number(opts.page)||1)),limit=Math.min(5000,Math.max(1,Math.floor(Number(opts.limit)|| (history?25:50))));
@@ -39,6 +39,22 @@ export async function legacyRead(db:Database,user:User,action:string,args:any[])
  }
  if(action==='getHistoryPage')return legacyPage(db,true,args[0]);
  if(action==='getExpensePage')return legacyPage(db,false,args[0]);
+ if(action==='getExpenseDailyMatrix'){
+  const input=args[0]||{},month=String(input.month||''),type=String(input.type||'umum').toUpperCase();
+  invariant(/^\d{4}-(0[1-9]|1[0-2])$/.test(month),'INVALID_PERIOD','Bulan transaksi tidak valid.');
+  invariant(['UMUM','LISTRIK'].includes(type),'INVALID_KIND','Jenis bank nota tidak valid.');
+  const page=Math.max(1,Math.floor(Number(input.page)||1)),limit=Math.min(50,Math.max(10,Math.floor(Number(input.limit)||25))),search=String(input.search||'').trim().slice(0,150);
+  const branchValues:any[]=[];let branchWhere='active=true';
+  if(search){branchValues.push(search);branchWhere+=" AND strpos(lower(concat_ws(' ',name,id)),lower($1))>0";}
+  const totalBranches=Number((await db.query('SELECT count(*)::int AS count FROM nota_app.branches WHERE '+branchWhere,branchValues)).rows[0].count);
+  const branches=(await db.query('SELECT id,name,type FROM nota_app.branches WHERE '+branchWhere+' ORDER BY name LIMIT $'+(branchValues.length+1)+' OFFSET $'+(branchValues.length+2),[...branchValues,limit,(page-1)*limit])).rows;
+  const cells:Record<string,any>={};for(const branch of branches)cells[branch.id]={};
+  if(branches.length){
+   const rows=(await db.query("SELECT t.*,extract(day FROM t.business_date)::int AS day FROM nota_app.transactions t WHERE t.kind=$1 AND t.business_date >= $2::date AND t.business_date < ($2::date + interval '1 month') AND t.branch_id=ANY($3::text[]) ORDER BY t.business_date,t.id",[type,month+'-01',branches.map(b=>b.id)])).rows;
+   for(const row of rows){const day=Number(row.day),cell=cells[row.branch_id][day]||(cells[row.branch_id][day]={count:0,total:0,records:[]});cell.count++;cell.total+=Number(row.amount);cell.records.push(legacyRow(row));}
+  }
+  return {month,type:type.toLowerCase(),page,limit,totalBranches,days:new Date(Number(month.slice(0,4)),Number(month.slice(5,7)),0).getDate(),branches,cells};
+ }
  if(action==='getExpenseSummaryByBranchMonth'){
   const year=Number(args[0])||new Date().getFullYear();invariant(Number.isInteger(year)&&year>=2000&&year<=2200,'INVALID_YEAR','Tahun tidak valid.');
   const branches=(await db.query('SELECT name FROM nota_app.branches WHERE active=true ORDER BY name')).rows.map(r=>upper(r.name));

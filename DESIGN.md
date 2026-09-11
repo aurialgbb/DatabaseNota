@@ -10,7 +10,7 @@ Design read: branch receipt administration for store and tax staff, using the us
 
 Import preview: the dialog puts the pending decision first. Real counts summarize the scope, a scrollable list preserves every row, and status color distinguishes add, update, delete, and unchanged records. Updates show old and new values so users can review the actual effect before confirming. Account previews hide passwords and expose duplicate-branch warnings. The compact two-column mobile reflow prevents horizontal overflow without reducing text size.
 
-Master Link controls: the URL field uses one border and moves its focus state to the complete control so it reads as one input. URL editing stays available without entering branch-edit mode; the pencil action is reserved for branch name and type. Branch search is a plain live filter because users already know the name or ID they need and do not benefit from opening a long dropdown.
+Master Link controls: the URL field uses one border and moves its focus state to the complete control so it reads as one input. The default card is read-only. Edit opens name, branch type, and URL together; Save commits the complete card and Cancel restores the stored values. Branch search is a plain live filter because users already know the name or ID they need and do not benefit from opening a long dropdown.
 
 Mobile transaction readability: visible dates use the Indonesian `11 Sep 2026` form while ISO dates remain internal values for storage and APIs. Rupiah values use a space after the currency label, period grouping, and tabular numerals. Form controls become 16 px on mobile to prevent browser zoom; receipt labels and totals keep a 12–14 px readable hierarchy.
 

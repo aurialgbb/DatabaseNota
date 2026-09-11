@@ -139,7 +139,7 @@
         </div>
       </div>
       <div class="portal-master-toolbar-meta">
-        <span><i class="bi bi-info-circle"></i> URL tersimpan otomatis saat kolom selesai diedit.</span>
+        <span><i class="bi bi-info-circle"></i> Klik Edit pada kartu untuk mengubah nama, jenis, atau URL.</span>
       </div>
       <div class="portal-actions">
         <span class="portal-toolbar-label">Periode data</span>
@@ -154,14 +154,26 @@
 
 <section id="taxReceiptEntryPage" class="page-section portal-page portal-hidden">
   <div class="portal-page-head">
-    <div><h1>Kontrol Data Terkirim</h1><p>Nota yang sudah disetujui dan dikirim ke spreadsheet dapat ditinjau, dipindahkan tanggalnya, atau dieliminasi per kelompok.</p></div>
+    <div><h1>Riwayat Pengajuan</h1><p>Lihat nota yang diajukan pada bulan terpilih dan status pemeriksaan terakhirnya.</p></div>
     <div class="portal-actions">
-      <select id="taxEntryBranch" class="portal-select" style="width:auto;min-width:190px"><option value="">Semua Cabang</option></select>
+      <input id="taxEntryMonth" type="hidden" data-portal-month>
       <button id="taxEntryReload" data-portal-refresh class="portal-btn portal-btn-soft portal-btn-icon" type="button" title="Muat data" aria-label="Muat data"><i class="bi bi-arrow-repeat"></i></button>
     </div>
   </div>
-  <div class="portal-card">
-    <div id="taxEntryReceiptList" class="portal-empty">Memuat Entry Data...</div>
+  <div class="portal-history-summary" role="group" aria-label="Filter status pengajuan">
+    <button type="button" class="portal-history-stat is-active" data-entry-status="ALL" aria-pressed="true"><span>Semua</span><strong id="taxEntryCountAll">0</strong></button>
+    <button type="button" class="portal-history-stat" data-entry-status="PENDING" aria-pressed="false"><span>Menunggu</span><strong id="taxEntryCountPending">0</strong></button>
+    <button type="button" class="portal-history-stat" data-entry-status="APPROVED" aria-pressed="false"><span>Disetujui</span><strong id="taxEntryCountApproved">0</strong></button>
+    <button type="button" class="portal-history-stat" data-entry-status="REJECTED" aria-pressed="false"><span>Ditolak</span><strong id="taxEntryCountRejected">0</strong></button>
+    <button type="button" class="portal-history-stat" data-entry-status="NEEDS_CORRECTION" aria-pressed="false"><span>Dikembalikan</span><strong id="taxEntryCountReturned">0</strong></button>
+  </div>
+  <div class="portal-card portal-history-card">
+    <div class="portal-history-toolbar">
+      <label class="portal-history-search"><span class="sr-only">Cari pengajuan</span><i class="bi bi-search"></i><input id="taxEntrySearch" type="search" autocomplete="off" placeholder="Cari nomor nota, cabang, atau supplier"></label>
+      <label><span>Cabang</span><select id="taxEntryBranch" class="portal-select"><option value="">Semua Cabang</option></select></label>
+    </div>
+    <div id="taxEntryReceiptList" class="portal-empty" aria-live="polite">Memuat riwayat pengajuan...</div>
+    <div id="taxEntryPagination" class="portal-pagination"></div>
   </div>
 </section>
 

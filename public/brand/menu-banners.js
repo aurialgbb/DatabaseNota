@@ -3,10 +3,10 @@
   const menus = {
     inputPage: ['Input Transaksi', 'Baca foto nota, lalu periksa item dan nominal sebelum menyimpan.', 'capture'],
     historyPage: ['History Deteksi', 'Temukan hasil pembacaan nota dan periksa kembali rincian transaksi.', 'records'],
-    listrikPage: ['Nota Listrik', 'Catat tagihan listrik, tanggal pembayaran, dan bukti tiap cabang.', 'records'],
-    umumPage: ['Nota Umum', 'Catat pengeluaran umum beserta keterangan dan bukti transaksinya.', 'records'],
+    listrikPage: ['Nota Listrik', 'Lihat nota listrik yang tercatat untuk setiap cabang dan periode.', 'records'],
+    umumPage: ['Nota Umum', 'Telusuri bank nota umum dalam tampilan daftar atau matriks harian.', 'records'],
     taxBankPage: ['Bank Nota', 'Bandingkan foto dengan rincian nota sebelum memberi keputusan.', 'review'],
-    taxReceiptEntryPage: ['Kontrol Data Terkirim', 'Periksa transaksi yang sudah dikirim dan tindak lanjuti koreksinya.', 'review'],
+    taxReceiptEntryPage: ['Riwayat Pengajuan', 'Lihat nota yang diajukan pada bulan terpilih dan status pemeriksaan terakhirnya.', 'review'],
     taxMasterLinksPage: ['Master Link', 'Atur tujuan spreadsheet sesuai cabang dan periode pencatatan.', 'admin'],
     taxAccountsPage: ['Kelola Akun', 'Atur akun, peran, dan akses cabang untuk pengguna aplikasi.', 'admin'],
     tokoAccountPage: ['Akun', 'Periksa profil dan kelola password akun yang sedang digunakan.', 'admin'],

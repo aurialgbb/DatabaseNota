@@ -1,6 +1,9 @@
 (() => {
   const select = document.getElementById('previewPage');
   const buttons = [...document.querySelectorAll('#sidebar [data-page]')];
+  const historyNav = buttons.find(button => button.dataset.page === 'taxReceiptEntryPage');
+  const historyNavText = historyNav?.querySelector('.nav-text');
+  if (historyNavText) historyNavText.textContent = 'Riwayat Pengajuan';
   const pages = [...document.querySelectorAll('.page-section')];
   const localButtons = new Set();
   const notice = document.createElement('dialog');
@@ -92,7 +95,27 @@
   });
   nativeSelect('btnTarikBulan', ['Pilih Bulan', ...Array.from({length:12}, (_, i) => new Intl.DateTimeFormat('id', {month:'long'}).format(new Date(2026,i,1)))], 'Bulan');
   nativeSelect('btnTarikTahun', ['Pilih Tahun', ...Array.from({length:6}, (_, i) => String(new Date().getFullYear() - i))], 'Tahun');
-  document.querySelectorAll('input[data-portal-date],#dateInput').forEach(input => { input.type = 'date'; input.readOnly = false; });
+  const previewDateInputs = document.querySelectorAll('input[data-portal-date],#dateInput,#listrikDateInput,#editItemDate');
+  previewDateInputs.forEach(input => {
+    if (typeof window.flatpickr !== 'function') return;
+    flatpickr(input, {
+      dateFormat: 'Y-m-d',
+      altInput: true,
+      altFormat: 'j M Y',
+      disableMobile: true,
+      onReady: (_, __, instance) => {
+        instance.calendarContainer.classList.add('portal-preview-calendar');
+        instance.altInput.className = 'portal-input portal-date-input';
+        instance.altInput.placeholder = input.placeholder || 'Pilih tanggal';
+      }
+    });
+  });
+  document.querySelectorAll('input[data-portal-month]').forEach(input => {
+    input.type = 'month';
+    input.value = new Date().toISOString().slice(0, 7);
+    input.classList.add('portal-input');
+    input.style.minWidth = '170px';
+  });
   const navigation = document.querySelector('#sidebar nav');
   for (const [role, label] of [['TAX','Tax · Transaksi'],['ADMIN','Administrator'],['STORE','Cabang']]) {
     const heading = document.createElement('p');

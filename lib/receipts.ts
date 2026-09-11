@@ -31,6 +31,36 @@ export async function listReceipts(db:Database,user:User,payload:any) {
  const date=(r:any)=>r.receipt_date?new Date(r.receipt_date).toISOString().slice(0,10):'0001-01-01';
  return {rows:visible.map((r:any)=>({...r.data,id:r.id,displayNumber:r.data.displayNumber||r.id.slice(-6),branchId:r.branch_id,branchName:r.branch_name,branchType:r.branch_type,supplier:r.supplier,date:date(r),receiptTotal:Number(r.total),status:r.status,version:r.version,itemCount:r.item_count,eliminated:r.eliminated,submittedAt:new Date(r.created_at).getTime()})),hasNext,nextCursor:hasNext?Buffer.from(JSON.stringify([date(visible.at(-1)),visible.at(-1).id])).toString('base64url'):'',limit};
 }
+
+export async function submissionHistory(db:Database,user:User,payload:any) {
+ const month=String(payload.month||'');
+ invariant(/^\d{4}-(0[1-9]|1[0-2])$/.test(month),'INVALID_PERIOD','Bulan pengajuan tidak valid.');
+ const status=String(payload.status||'ALL').toUpperCase();
+ invariant(['ALL','PENDING','APPROVED','REJECTED','NEEDS_CORRECTION'].includes(status),'INVALID_STATUS','Status pengajuan tidak valid.');
+ const page=Math.max(1,Math.floor(Number(payload.page)||1));
+ const limit=Math.min(100,Math.max(10,Math.floor(Number(payload.limit)||25)));
+ const search=String(payload.search||'').trim().slice(0,150);
+ const branchId=String(payload.branchId||'');
+ const values:any[]=[month+'-01'];
+ const clauses=["r.status<>'DRAFT'","r.created_at >= $1::date","r.created_at < ($1::date + interval '1 month')"];
+ if(branchId){values.push(branchId);clauses.push('r.branch_id=$'+values.length);}
+ if(search){values.push(search);clauses.push("strpos(lower(concat_ws(' ',b.name,b.id,r.supplier,coalesce(r.data->>'displayNumber',''),r.id)),lower($"+values.length+'))>0');}
+ const base=clauses.join(' AND ');
+ const counts=(await db.query("SELECT r.status,count(*)::int AS count FROM nota_app.receipts r JOIN nota_app.branches b ON b.id=r.branch_id WHERE "+base+' GROUP BY r.status',values)).rows;
+ const summary={ALL:0,PENDING:0,APPROVED:0,REJECTED:0,NEEDS_CORRECTION:0} as Record<string,number>;
+ for(const row of counts){summary[row.status]=Number(row.count);summary.ALL+=Number(row.count);}
+ const filtered=[...clauses];
+ if(status!=='ALL'){values.push(status);filtered.push('r.status=$'+values.length);}
+ const total=Number((await db.query('SELECT count(*)::int AS count FROM nota_app.receipts r JOIN nota_app.branches b ON b.id=r.branch_id WHERE '+filtered.join(' AND '),values)).rows[0].count);
+ values.push(limit,(page-1)*limit);
+ const rows=(await db.query("SELECT r.*,r.receipt_date::text AS receipt_date,b.name AS branch_name,b.type AS branch_type,(SELECT count(*)::int FROM nota_app.receipt_items i WHERE i.receipt_id=r.id) AS item_count FROM nota_app.receipts r JOIN nota_app.branches b ON b.id=r.branch_id WHERE "+filtered.join(' AND ')+" ORDER BY r.created_at DESC,r.id DESC LIMIT $"+(values.length-1)+' OFFSET $'+values.length,values)).rows;
+ const branches=(await db.query('SELECT id,name,type FROM nota_app.branches WHERE active=true ORDER BY name')).rows;
+ return {month,status,page,limit,total,summary,branches,rows:rows.map((r:any)=>({
+  id:r.id,displayNumber:r.data.displayNumber||r.id.slice(-6),branchId:r.branch_id,branchName:r.branch_name,branchType:r.branch_type,
+  supplier:r.supplier,date:r.receipt_date||'',receiptTotal:Number(r.total),status:r.status,version:r.version,itemCount:Number(r.item_count),
+  submittedAt:new Date(r.created_at).getTime(),review:r.data.review||{},reviewHistory:r.data.reviewHistory||[],photoId:r.data.photoId||'',eliminated:!!r.eliminated
+ }))};
+}
 export async function writeReceipt(db:Database,user:User,input:any,id:string,status='PENDING',existing=false) {
  const names=(await categories(db)).map((c:any)=>c.name);
  let clean:any;try{clean=portalValidateReceiptPayload_(input,names);}catch(e){throw new AppError('INVALID_RECEIPT',e instanceof Error?e.message:'Isi nota tidak valid.');}

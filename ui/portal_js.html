@@ -212,6 +212,10 @@
     taxLinksRevision: '',
     masterLinkPage: 1,
     masterEditingId: '',
+    masterEditingPeriod: '',
+    taxEntryPage: 1,
+    taxEntryStatus: 'ALL',
+    taxEntryLoadSequence: 0,
     accounts: [],
     accountPage: 1,
     accountImportRunning: false,
@@ -1354,10 +1358,12 @@
       },
       listrikPage: async options => {
         await ensureLegacyRuntime(pageId);
+        ensureExpenseMatrixUi('listrik');
         return typeof window.fetchExpensePage === 'function' ? window.fetchExpensePage('listrik', 1, false, options) : undefined;
       },
       umumPage: async options => {
         await ensureLegacyRuntime(pageId);
+        ensureExpenseMatrixUi('umum');
         return typeof window.fetchExpensePage === 'function' ? window.fetchExpensePage('umum', 1, false, options) : undefined;
       }
     };
@@ -1403,9 +1409,13 @@
       const dependencies = portalDependencyStatus();
       window.PORTAL_DEPENDENCIES = dependencies;
       bindEvents();
+      const entryNavLabel = document.querySelector('.nav-item[data-page="taxReceiptEntryPage"] .nav-text');
+      if (entryNavLabel) entryNavLabel.textContent = 'Riwayat Pengajuan';
       document.querySelectorAll('#taxBankBranch,#taxBankStatus,#taxEntryBranch').forEach(select => select.setAttribute('data-portal-combo', ''));
       const linkPeriodInput = document.getElementById('taxLinkPeriod');
       if (linkPeriodInput) linkPeriodInput.value = monthNow();
+      const entryMonthInput = document.getElementById('taxEntryMonth');
+      if (entryMonthInput) entryMonthInput.value = monthNow();
       setupPortalControls(document);
       const missing = Object.keys(dependencies).filter(name => !dependencies[name]);
       if (missing.length) {
@@ -1967,9 +1977,17 @@
     on('taxPhotoRotate', 'click', () => runPortalFeature('rotateTaxPhoto'));
     on('taxPhotoReset', 'click', () => runPortalFeature('resetTaxPhotoViewer'));
     on('taxPhotoFullscreen', 'click', () => runPortalFeature('toggleTaxPhotoFullscreen'));
-    on('taxEntryReload', 'click', () => runManualPortalRefresh('tax-entry', 'taxReceiptEntryPage', 'taxEntryReload', () => runPortalFeature('loadTaxEntryReceipts', { background:true }), 'Kontrol data diperbarui'));
+    on('taxEntryReload', 'click', () => runManualPortalRefresh('tax-entry', 'taxReceiptEntryPage', 'taxEntryReload', () => runPortalFeature('loadTaxEntryReceipts', { background:true }), 'Riwayat diperbarui'));
+    on('taxEntryMonth', 'change', () => { Portal.taxEntryPage = 1; runPortalFeature('loadTaxEntryReceipts'); });
+    on('taxEntryBranch', 'change', () => { Portal.taxEntryPage = 1; runPortalFeature('loadTaxEntryReceipts'); });
+    on('taxEntrySearch', 'input', () => schedulePortalInputWork('entry-search', () => { Portal.taxEntryPage = 1; runPortalFeature('loadTaxEntryReceipts'); }));
+    document.querySelectorAll('[data-entry-status]').forEach(button => button.addEventListener('click', () => {
+      Portal.taxEntryStatus = button.dataset.entryStatus || 'ALL';
+      Portal.taxEntryPage = 1;
+      runPortalFeature('loadTaxEntryReceipts');
+    }));
     on('taxLoadLinks', 'click', () => runManualPortalRefresh('master-links', 'taxMasterLinksPage', 'taxLoadLinks', () => runPortalFeature('loadMasterLinks', { background:true }), 'Master Link diperbarui'));
-    on('taxLinkPeriod', 'change', () => runManualPortalRefresh('master-period', 'taxMasterLinksPage', 'taxLoadLinks', () => runPortalFeature('loadMasterLinks', { background:true }), false));
+    on('taxLinkPeriod', 'change', () => { Portal.masterEditingId=''; Portal.masterEditingPeriod=''; runManualPortalRefresh('master-period', 'taxMasterLinksPage', 'taxLoadLinks', () => runPortalFeature('loadMasterLinks', { background:true }), false); });
     on('taxAddMasterBranch', 'click', () => runPortalFeature('openMasterBranchDialog'));
     on('taxLinkBranchFilter', 'input', () => schedulePortalInputWork('master-link-search', () => { Portal.masterLinkPage = 1; runPortalFeature('renderMasterLinks'); }));
     on('taxBranchBulkMenuButton', 'click', event => { event.stopPropagation(); togglePortalActionMenu(document.getElementById('taxBranchBulkMenu'), event.currentTarget); });
@@ -4335,77 +4353,38 @@
       const editing = Portal.masterEditingId === branch.id;
       const sequence = ((Portal.masterLinkPage - 1) * pageSize) + localIndex + 1;
       const nameCell = editing
-        ? `<input class="portal-inline-input" data-master-name="${escapeHtml(branch.id)}" value="${escapeHtml(branch.name)}" aria-label="Nama cabang">`
-        : `<strong>${escapeHtml(branch.name)}</strong>`;
+        ? `<label class="portal-master-field"><span>Nama cabang</span><input class="portal-inline-input" data-master-name="${escapeHtml(branch.id)}" value="${escapeHtml(branch.name)}" aria-label="Nama cabang"></label>`
+        : `<div class="portal-master-read-field"><span>Nama cabang</span><strong>${escapeHtml(branch.name)}</strong></div>`;
       const typeCell = editing
-        ? `<select class="portal-inline-input" data-master-type="${escapeHtml(branch.id)}" data-portal-combo aria-label="Tipe cabang"><option value="Mandiri" ${branch.type === 'Mandiri' ? 'selected' : ''}>Mandiri</option><option value="Central Kitchen" ${branch.type === 'Central Kitchen' ? 'selected' : ''}>Central Kitchen</option></select>`
-        : `<span class="portal-badge ${branch.type === 'Central Kitchen' ? 'portal-badge-pending' : 'portal-badge-approved'}">${escapeHtml(branch.type)}</span>`;
+        ? `<label class="portal-master-field"><span>Jenis cabang</span><select class="portal-inline-input" data-master-type="${escapeHtml(branch.id)}" data-portal-combo aria-label="Jenis cabang"><option value="Mandiri" ${branch.type === 'Mandiri' ? 'selected' : ''}>Mandiri</option><option value="Central Kitchen" ${branch.type === 'Central Kitchen' ? 'selected' : ''}>Central Kitchen</option></select></label>`
+        : `<div class="portal-master-read-field"><span>Jenis cabang</span><strong>${escapeHtml(branch.type)}</strong></div>`;
       return `<article data-master-row="${escapeHtml(branch.id)}" class="portal-master-card ${editing ? 'portal-master-row-editing' : ''}">
         <header class="portal-master-card-head">
           <span class="portal-master-index">${String(sequence).padStart(2, '0')}</span>
-          <div class="portal-master-identity">${nameCell}<div>${typeCell}<span class="portal-master-code">${escapeHtml(branch.id)}</span></div></div>
+          <div class="portal-master-identity"><div class="portal-master-identity-grid">${nameCell}${typeCell}</div><span class="portal-master-code">ID ${escapeHtml(branch.id)}</span></div>
           <div data-master-status="${escapeHtml(branch.id)}"><span class="portal-badge ${safeUrl?'portal-badge-approved':'portal-badge-pending'}"><i class="bi ${safeUrl?'bi-check-circle-fill':'bi-exclamation-circle-fill'}"></i> ${invalidUrl?'Link tidak valid':safeUrl?'Terhubung':'Perlu link'}</span></div>
         </header>
         <div class="portal-master-connection">
           <label for="master-url-${escapeHtml(branch.id)}">URL Spreadsheet</label>
-          <div class="portal-link-cell"><i class="bi bi-file-earmark-spreadsheet"></i><input id="master-url-${escapeHtml(branch.id)}" class="portal-inline-input" data-master-url="${escapeHtml(branch.id)}" value="${escapeHtml(url)}" placeholder="Tempel URL Google Spreadsheet" aria-label="URL spreadsheet ${escapeHtml(branch.name)}" inputmode="url" autocomplete="off" spellcheck="false"><a class="portal-link-open ${safeUrl ? '' : 'portal-hidden'}" data-master-open="${escapeHtml(branch.id)}" href="${escapeHtml(safeUrl || '#')}" target="_blank" rel="noopener noreferrer" title="Buka spreadsheet"><i class="bi bi-box-arrow-up-right"></i></a></div>
+          <div class="portal-link-cell ${editing ? 'is-editable' : 'is-readonly'}"><i class="bi bi-file-earmark-spreadsheet"></i><input id="master-url-${escapeHtml(branch.id)}" class="portal-inline-input" data-master-url="${escapeHtml(branch.id)}" value="${escapeHtml(url)}" placeholder="${editing ? 'Tempel URL Google Spreadsheet' : 'Belum ada URL. Klik Edit untuk menambahkan.'}" aria-label="URL spreadsheet ${escapeHtml(branch.name)}" inputmode="url" autocomplete="off" spellcheck="false" ${editing ? '' : 'readonly aria-readonly="true"'}><a class="portal-link-open ${safeUrl ? '' : 'portal-hidden'}" data-master-open="${escapeHtml(branch.id)}" href="${escapeHtml(safeUrl || '#')}" target="_blank" rel="noopener noreferrer" title="Buka spreadsheet"><i class="bi bi-box-arrow-up-right"></i></a></div>
         </div>
         <footer class="portal-master-card-foot">
           <span><i class="bi bi-cloud-check"></i> ${safeUrl ? 'Tujuan siap digunakan' : 'Belum menjadi tujuan transaksi'}</span>
-          <div class="portal-inline-actions">${editing ? `<button class="portal-icon-button portal-icon-save" data-master-save="${escapeHtml(branch.id)}" title="Simpan nama dan tipe" aria-label="Simpan nama dan tipe"><i class="bi bi-check-lg"></i></button><button class="portal-icon-button" data-master-cancel="${escapeHtml(branch.id)}" title="Batal" aria-label="Batal"><i class="bi bi-x-lg"></i></button>` : `<button class="portal-icon-button" data-master-edit="${escapeHtml(branch.id)}" title="Edit nama dan tipe" aria-label="Edit nama dan tipe"><i class="bi bi-pencil-square"></i></button>`}<button class="portal-icon-button portal-icon-danger" data-master-delete="${escapeHtml(branch.id)}" title="Hapus" aria-label="Hapus"><i class="bi bi-trash3"></i></button></div>
+          <div class="portal-inline-actions">${editing ? `<button class="portal-btn portal-btn-primary" data-master-save="${escapeHtml(branch.id)}" aria-label="Simpan perubahan cabang"><i class="bi bi-check-lg"></i> Simpan</button><button class="portal-btn portal-btn-soft" data-master-cancel="${escapeHtml(branch.id)}" aria-label="Batalkan perubahan cabang"><i class="bi bi-x-lg"></i> Batal</button>` : `<button class="portal-btn portal-btn-soft" data-master-edit="${escapeHtml(branch.id)}" aria-label="Edit cabang"><i class="bi bi-pencil-square"></i> Edit</button>`}<button class="portal-icon-button portal-icon-danger" data-master-delete="${escapeHtml(branch.id)}" title="Hapus" aria-label="Hapus"><i class="bi bi-trash3"></i></button></div>
         </footer>
       </article>`;
     }).join('');
     setupPortalControls(body);
-    body.querySelectorAll('[data-master-edit]').forEach(button => button.addEventListener('click', () => { Portal.masterEditingId = button.dataset.masterEdit; renderMasterLinks(); }));
+    body.querySelectorAll('[data-master-edit]').forEach(button => button.addEventListener('click', () => { Portal.masterEditingId = button.dataset.masterEdit; Portal.masterEditingPeriod = masterLinkPeriod(); renderMasterLinks(); const input = body.querySelector(`[data-master-name="${safeCssEscape(Portal.masterEditingId)}"]`); if (input) input.focus(); }));
     body.querySelectorAll('[data-master-cancel]').forEach(button => button.addEventListener('click', () => cancelMasterBranchInline(button.dataset.masterCancel)));
     body.querySelectorAll('[data-master-save]').forEach(button => button.addEventListener('click', () => saveMasterBranchInline(button.dataset.masterSave)));
-    body.querySelectorAll('[data-master-url]').forEach(input => {
-      input.addEventListener('input', () => markMasterUrlDirty(input.dataset.masterUrl));
-      input.addEventListener('blur', () => saveMasterUrlInline(input.dataset.masterUrl, input.value));
-      input.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); input.blur(); } });
-    });
+    body.querySelectorAll('[data-master-url]:not([readonly]),[data-master-name]').forEach(input => input.addEventListener('input', () => markMasterUrlDirty(input.dataset.masterUrl || input.dataset.masterName)));
+    body.querySelectorAll('[data-master-type]').forEach(input => input.addEventListener('change', () => markMasterUrlDirty(input.dataset.masterType)));
     body.querySelectorAll('[data-master-delete]').forEach(button => button.addEventListener('click', () => deleteMasterBranch(Portal.taxBranches.find(branch => branch.id === button.dataset.masterDelete))));
   }
 
   function masterLinkPeriod() {
     return document.getElementById('taxLinkPeriod').value.replace('-', '') || monthNow().replace('-', '');
-  }
-
-  function updateMasterLinkRowStatus(id, url) {
-    const safeUrl = strictSpreadsheetUrl(url);
-    const row = document.querySelector(`[data-master-row="${safeCssEscape(id)}"]`);
-    if (!row) return;
-    const status = row.querySelector(`[data-master-status="${safeCssEscape(id)}"]`);
-    const open = row.querySelector(`[data-master-open="${safeCssEscape(id)}"]`);
-    if (status) status.innerHTML = `<span class="portal-badge ${safeUrl ? 'portal-badge-approved' : 'portal-badge-pending'}">${url && !safeUrl ? 'Link tidak valid' : safeUrl ? 'Terhubung' : 'Belum ada link'}</span>`;
-    if (open) { open.href = safeUrl || '#'; open.classList.toggle('portal-hidden', !safeUrl); }
-  }
-
-  async function saveMasterUrlInline(id, url) {
-    const branch = Portal.taxBranches.find(item => item.id === id);
-    if (!branch) return;
-    const cleanUrl = String(url || '').trim();
-    if (cleanUrl && !strictSpreadsheetUrl(cleanUrl)) {
-      portalNotifyError('Link tidak valid', new Error('Gunakan URL HTTPS Google Spreadsheet dengan format https://docs.google.com/spreadsheets/d/...'));
-      renderMasterLinks();
-      return;
-    }
-    const current = Portal.taxLinks[id] || {};
-    if (cleanUrl === String(current.url || current.spreadsheetUrl || '').trim()) return;
-    const input = document.querySelector(`[data-master-url="${safeCssEscape(id)}"]`);
-    if (input) { input.disabled = true; input.classList.add('portal-inline-saving'); }
-    try {
-      await api('UPSERT_MASTER_BRANCH', { id:branch.id, name:branch.name, type:branch.type, url:cleanUrl, period:masterLinkPeriod() });
-      Portal.taxLinks[id] = Object.assign({}, current, { url:cleanUrl, spreadsheetUrl:cleanUrl });
-      renderMasterLinks();
-      Swal.fire({ toast:true, position:'top-end', icon:'success', title:'Link disimpan', showConfirmButton:false, timer:1400 });
-    } catch (error) {
-      Swal.fire('Gagal menyimpan link', error.message, 'error');
-      renderMasterLinks();
-    } finally {
-      if (input && document.body.contains(input)) { input.disabled = false; input.classList.remove('portal-inline-saving'); }
-    }
   }
 
   async function saveMasterBranchInline(id) {
@@ -4422,10 +4401,11 @@
     }
     setMasterRowBusy(row, true, saveButton, 'Menyimpan...');
     try {
-      await api('UPSERT_MASTER_BRANCH', { id:branch.id, name, type, url, period:masterLinkPeriod() });
+      await api('UPSERT_MASTER_BRANCH', { id:branch.id, name, type, url, period:Portal.masterEditingPeriod || masterLinkPeriod() });
       Object.assign(branch, { name:String(name).trim(), type });
       Portal.taxLinks[id] = Object.assign({}, Portal.taxLinks[id] || {}, { url:String(url).trim(), spreadsheetUrl:String(url).trim() });
       Portal.masterEditingId = '';
+      Portal.masterEditingPeriod = '';
       renderMasterLinks();
       Swal.fire({ toast:true, position:'top-end', icon:'success', title:'Baris diperbarui', showConfirmButton:false, timer:1400 });
     } catch (error) {
@@ -4445,7 +4425,7 @@
     const row = document.querySelector(`[data-master-row="${safeCssEscape(id)}"]`);
     const button = row && row.querySelector(`[data-master-cancel="${safeCssEscape(id)}"]`);
     setMasterRowBusy(row, true, button, 'Membatalkan...');
-    setTimeout(() => { Portal.masterEditingId = ''; renderMasterLinks(); }, 180);
+    setTimeout(() => { Portal.masterEditingId = ''; Portal.masterEditingPeriod = ''; renderMasterLinks(); }, 180);
   }
 
   async function openMasterBranchDialog(branch) {
@@ -4483,37 +4463,69 @@
   async function loadTaxEntryReceipts(options = {}) {
     const branchSelect = document.getElementById('taxEntryBranch');
     const initialRoot = document.getElementById('taxEntryReceiptList');
-    if (!Portal.pageRendered.taxReceiptEntryPage && !options.background && initialRoot) { initialRoot.className = ''; initialRoot.innerHTML = '<div class="portal-skeleton" style="height:118px;margin-bottom:12px"></div><div class="portal-skeleton" style="height:118px;margin-bottom:12px"></div><div class="portal-skeleton" style="height:118px"></div>'; }
-    const data = await api('GET_TAX_RECEIPTS', { status:'APPROVED', branchId:branchSelect.value, limit:100 });
+    if (!Portal.pageRendered.taxReceiptEntryPage && !options.background && initialRoot) { initialRoot.className = ''; initialRoot.innerHTML = '<div class="portal-skeleton" style="height:104px;margin-bottom:12px"></div><div class="portal-skeleton" style="height:104px;margin-bottom:12px"></div><div class="portal-skeleton" style="height:104px"></div>'; }
+    const sequence = ++Portal.taxEntryLoadSequence;
+    const monthInput = document.getElementById('taxEntryMonth');
+    const searchInput = document.getElementById('taxEntrySearch');
+    const data = await api('GET_SUBMISSION_HISTORY', {
+      month:(monthInput && monthInput.value) || monthNow(),
+      status:Portal.taxEntryStatus,
+      branchId:branchSelect.value,
+      search:searchInput ? searchInput.value : '',
+      page:Portal.taxEntryPage,
+      limit:25
+    });
+    if (sequence !== Portal.taxEntryLoadSequence) return;
     Portal.taxBranches = data.branches || Portal.taxBranches;
     const selected = branchSelect.value;
     branchSelect.innerHTML = '<option value="">Semua Cabang</option>' + Portal.taxBranches.map(b=>`<option value="${escapeHtml(b.id)}">${escapeHtml(b.name)}</option>`).join('');
     branchSelect.value = selected;
     refreshPortalCombo(branchSelect);
+    const summary = data.summary || {};
+    const counts = { taxEntryCountAll:'ALL', taxEntryCountPending:'PENDING', taxEntryCountApproved:'APPROVED', taxEntryCountRejected:'REJECTED', taxEntryCountReturned:'NEEDS_CORRECTION' };
+    Object.entries(counts).forEach(([id,key]) => { const node=document.getElementById(id); if(node) node.textContent=String(Number(summary[key]||0)); });
+    document.querySelectorAll('[data-entry-status]').forEach(button => {
+      const active = button.dataset.entryStatus === Portal.taxEntryStatus;
+      button.classList.toggle('is-active', active);
+      button.setAttribute('aria-pressed', String(active));
+    });
     const root = document.getElementById('taxEntryReceiptList');
     const rows = data.rows || [];
     if (!rows.length) {
       root.className = 'portal-empty';
-      root.innerHTML = 'Belum ada nota yang disetujui pada filter ini.';
+      root.innerHTML = '<i class="bi bi-inbox"></i><strong>Tidak ada pengajuan pada filter ini</strong><span>Ubah bulan, status, cabang, atau kata pencarian.</span>';
+      renderPagination(document.getElementById('taxEntryPagination'), 1, 0, 25, () => {});
       Portal.pageLoadedAt.taxReceiptEntryPage = Date.now();
       Portal.pageRendered.taxReceiptEntryPage = true;
       return;
     }
-    root.className = '';
-    root.innerHTML = rows.map(receipt=>`<div class="portal-receipt-editor" style="margin-bottom:12px">
-      <div class="portal-receipt-head"><strong>NOTA #${escapeHtml(receipt.displayNumber)} · ${Number(receipt.itemCount || 0)} ITEM · ${escapeHtml(receipt.branchName)}</strong><span class="portal-badge ${receipt.eliminated?'portal-badge-correction':'portal-badge-approved'}">${receipt.eliminated?'Dieliminasi':'Aktif'}</span></div>
+    root.className = 'portal-history-list';
+    const historyStatus = value => ({PENDING:['Menunggu','portal-badge-pending'],APPROVED:['Disetujui','portal-badge-approved'],REJECTED:['Ditolak','portal-badge-discarded'],NEEDS_CORRECTION:['Dikembalikan','portal-badge-correction']}[value] || [statusLabel(value),'portal-badge-pending']);
+    root.innerHTML = rows.map(receipt=>{const mapped=historyStatus(receipt.status);const reason=receipt.review&&receipt.review.reason?String(receipt.review.reason):'';return `<article class="portal-receipt-editor portal-history-row">
+      <div class="portal-receipt-head"><strong>NOTA #${escapeHtml(receipt.displayNumber)} · ${Number(receipt.itemCount || 0)} ITEM · ${escapeHtml(receipt.branchName)}</strong><span class="portal-badge ${mapped[1]}">${escapeHtml(mapped[0])}</span></div>
       <div class="portal-receipt-body">
         <div style="display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:12px">
-          <div><strong>${escapeHtml(formatDisplayDate(receipt.date))} · ${escapeHtml(receipt.supplier)}</strong><div class="portal-entry-receipt-total">Total ${escapeHtml(rupiah(receipt.receiptTotal))}</div></div>
+          <div><strong>Transaksi ${escapeHtml(formatDisplayDate(receipt.date))} · ${escapeHtml(receipt.supplier || 'Tanpa supplier')}</strong><div class="portal-entry-receipt-total">Diajukan ${escapeHtml(new Date(receipt.submittedAt).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}))} · Total ${escapeHtml(rupiah(receipt.receiptTotal))}</div>${reason?`<p class="portal-history-reason">${escapeHtml(reason)}</p>`:''}</div>
           <div class="portal-actions">
-            <button class="portal-btn portal-btn-soft" data-entry-move="${escapeHtml(receipt.id)}" data-version="${Number(receipt.version)}" data-current-date="${escapeHtml(receipt.date)}"><i class="bi bi-calendar-event"></i> Ubah Tanggal</button>
+            <button class="portal-btn portal-btn-soft" data-entry-detail="${escapeHtml(receipt.id)}"><i class="bi bi-eye"></i> Lihat Detail</button>
+            ${receipt.status==='APPROVED'?`<button class="portal-btn portal-btn-soft" data-entry-move="${escapeHtml(receipt.id)}" data-version="${Number(receipt.version)}" data-current-date="${escapeHtml(receipt.date)}"><i class="bi bi-calendar-event"></i> Ubah Tanggal</button>`:''}
+            ${receipt.status==='APPROVED'&&!receipt.eliminated?`<button class="portal-btn portal-btn-danger" data-entry-eliminate="${escapeHtml(receipt.id)}"><i class="bi bi-slash-circle"></i> Eliminasi Nota</button>`:''}
             ${receipt.photoId?`<button class="portal-btn portal-btn-soft" data-entry-photo="${escapeHtml(receipt.photoId)}"><i class="bi bi-image"></i> Lihat Foto</button>`:''}
-            ${!receipt.eliminated?`<button class="portal-btn portal-btn-danger" data-entry-eliminate="${escapeHtml(receipt.id)}" data-version="${Number(receipt.version)}" data-item-count="${Number(receipt.itemCount || 0)}"><i class="bi bi-slash-circle"></i> Eliminasi Nota</button>`:''}
           </div>
         </div>
-        <div class="portal-alert portal-alert-info"><i class="bi bi-info-circle"></i><span>Detail item tetap tersimpan aman dan hanya diambil saat dibutuhkan oleh proses server.</span></div>
       </div>
-    </div>`).join('');
+    </article>`}).join('');
+
+    renderPagination(document.getElementById('taxEntryPagination'), Number(data.page)||1, Number(data.total)||0, Number(data.limit)||25, page => { Portal.taxEntryPage=page; loadTaxEntryReceipts(); });
+
+    root.querySelectorAll('[data-entry-detail]').forEach(btn=>btn.addEventListener('click',async()=>{
+      try {
+        const detail=await api('GET_RECEIPT_DETAIL',{receiptId:btn.dataset.entryDetail});
+        const events=[...(detail.reviewHistory||[]),detail.review].filter(Boolean).map(item=>`<li><strong>${escapeHtml(({APPROVE:'Disetujui',DISCARD:'Ditolak',REQUEST_CORRECTION:'Dikembalikan'}[item.decision]||item.decision||'Diperbarui'))}</strong>${item.reason?`<span>${escapeHtml(item.reason)}</span>`:''}</li>`).join('');
+        const items=(detail.items||[]).map(item=>`<tr><td>${escapeHtml(item.description)}</td><td>${escapeHtml(item.category)}</td><td>${escapeHtml(rupiah(item.amount))}</td></tr>`).join('');
+        Swal.fire({title:`Nota #${escapeHtml(detail.displayNumber)}`,width:760,html:`<div class="portal-history-detail"><p>${escapeHtml(detail.branchName)} · ${escapeHtml(formatDisplayDate(detail.date))}</p><table><thead><tr><th>Item</th><th>Kategori</th><th>Nominal</th></tr></thead><tbody>${items}</tbody></table>${events?`<h3>Riwayat status</h3><ol>${events}</ol>`:''}</div>`,confirmButtonText:'Tutup'});
+      } catch(error) { Swal.fire('Detail gagal dimuat',error.message,'error'); }
+    }));
 
     root.querySelectorAll('[data-entry-move]').forEach(btn=>btn.addEventListener('click',async()=>{
       const result=await Swal.fire({title:'Ubah tanggal seluruh nota',input:'text',inputValue:btn.dataset.currentDate,inputAttributes:{readonly:'readonly',class:'portal-input portal-date-input'},showCancelButton:true,confirmButtonText:'Pindahkan',didOpen:()=>{const input=Swal.getInput();if(!input||!window.flatpickr)return;flatpickr(input,{dateFormat:'Y-m-d',defaultDate:btn.dataset.currentDate,altInput:true,altFormat:'j M Y',disableMobile:true,onReady:(_,__,instance)=>{instance.altInput.className='portal-input portal-date-input';enhancePortalCalendarHeader(_,__,instance);}});}});
@@ -4522,9 +4534,9 @@
     }));
     root.querySelectorAll('[data-entry-eliminate]').forEach(btn=>btn.addEventListener('click',async()=>{
       let detail;
-      try { detail=await api('GET_RECEIPT_DETAIL',{receiptId:btn.dataset.entryEliminate}); } catch(error) { Swal.fire('Detail belum dapat dimuat',error.message,'error'); return; }
-      const scopeHtml='<p>Seluruh item berikut tetap tersimpan dengan tanda eliminasi:</p><ul>'+detail.items.map(item=>'<li>'+escapeHtml(item.description)+' | '+Number(item.amount||0).toLocaleString('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0})+'</li>').join('')+'</ul>';
-      const result=await Swal.fire({title:'Eliminasi seluruh nota?',html:scopeHtml,input:'text',inputPlaceholder:'Alasan eliminasi',showCancelButton:true,confirmButtonText:'Eliminasi',confirmButtonColor:'#ef5d67'});
+      try{detail=await api('GET_RECEIPT_DETAIL',{receiptId:btn.dataset.entryEliminate});}catch(error){Swal.fire('Detail belum dapat dimuat',error.message,'error');return;}
+      const scopeHtml='<p>Seluruh item berikut tetap tersimpan dengan tanda eliminasi:</p><ul>'+detail.items.map(item=>`<li>${escapeHtml(item.description)} · ${escapeHtml(rupiah(item.amount))}</li>`).join('')+'</ul>';
+      const result=await Swal.fire({title:'Eliminasi seluruh nota?',html:scopeHtml,input:'text',inputPlaceholder:'Alasan eliminasi',showCancelButton:true,confirmButtonText:'Eliminasi',confirmButtonColor:'#b42318'});
       if(!result.isConfirmed)return;
       try{await api('ELIMINATE_RECEIPT',{receiptId:btn.dataset.entryEliminate,reason:result.value||'',expectedVersion:Number(detail.version)});await clearPortalDataCache();Swal.fire('Berhasil','Seluruh item dalam nota sudah dieliminasi.','success');await loadTaxEntryReceipts();}catch(error){Swal.fire('Gagal',error.message,'error');}
     }));
@@ -4577,7 +4589,7 @@
     if (!row) return;
     row.classList.add('portal-master-url-dirty');
     const hint = row.querySelector('.portal-master-card-foot > span');
-    if (hint) hint.innerHTML = '<i class="bi bi-pencil-square"></i> Tekan Enter atau klik di luar untuk menyimpan';
+    if (hint) hint.innerHTML = '<i class="bi bi-pencil-square"></i> Perubahan belum disimpan';
   }
 
   function bulkBranchErrorsHtml(errors) {
@@ -5145,6 +5157,74 @@
     } catch (error) {
       await Swal.fire('Gagal menyimpan akun', error.message, 'error');
     }
+  }
+
+  function ensureExpenseMatrixUi(type) {
+    if (type === 'listrik') {
+      const page=document.getElementById('listrikPage');
+      const body=document.getElementById('kontrolTableBody');
+      if(!page||!body||page.dataset.matrixEnhanced==='true')return;
+      page.dataset.matrixEnhanced='true';
+      const title=document.querySelector('#tabListrikKontrol h3');if(title)title.textContent='Matriks Nota Listrik';
+      const header=title&&title.parentElement;
+      const search=document.createElement('label');search.className='portal-expense-matrix-search';search.innerHTML='<span class="sr-only">Cari cabang pada matriks listrik</span><i class="bi bi-search"></i><input id="listrikMatrixSearch" type="search" autocomplete="off" placeholder="Cari cabang">';
+      if(header)header.insertBefore(search,header.lastElementChild);
+      const wrap=body.closest('.overflow-x-auto');if(wrap)wrap.classList.add('portal-expense-matrix-box');
+      lockApprovedBankActions('listrikTableBody');
+      const apply=()=>{const query=String(search.querySelector('input').value||'').trim().toLocaleLowerCase('id-ID');let shown=0;body.querySelectorAll('tr').forEach(row=>{const match=!query||String(row.querySelector('td')?.textContent||'').toLocaleLowerCase('id-ID').includes(query);const visible=match&&shown<50;row.hidden=!visible;if(visible)shown++;});body.querySelectorAll('[data-listrik-action="kontrol"]').forEach(button=>{button.title=String(button.title||'').replace(/^Lunas:/,'Nota tercatat:');});};
+      search.querySelector('input').addEventListener('input',()=>schedulePortalInputWork('listrik-matrix-search',apply));
+      new MutationObserver(apply).observe(body,{childList:true});apply();
+      return;
+    }
+    const page=document.getElementById('umumPage');if(!page||page.dataset.matrixEnhanced==='true')return;
+    page.dataset.matrixEnhanced='true';
+    lockApprovedBankActions('umumTableBody');
+    const header=page.firstElementChild,detail=header&&header.nextElementSibling;if(!header||!detail)return;
+    detail.id='tabUmumDetail';
+    const toggle=document.createElement('div');toggle.className='portal-expense-view-toggle';toggle.setAttribute('role','tablist');toggle.setAttribute('aria-label','Tampilan Nota Umum');toggle.innerHTML='<button type="button" class="is-active" data-umum-view="list" role="tab" aria-selected="true">Daftar</button><button type="button" data-umum-view="matrix" role="tab" aria-selected="false">Matriks</button>';
+    header.appendChild(toggle);
+    const matrix=document.createElement('section');matrix.id='tabUmumMatrix';matrix.className='portal-expense-matrix-panel portal-hidden';matrix.innerHTML='<div class="portal-expense-matrix-toolbar"><div><h2>Matriks Nota Umum</h2><p>Nota yang sudah disetujui berdasarkan tanggal transaksi.</p></div><div class="portal-expense-matrix-controls"><label class="portal-expense-matrix-search"><span class="sr-only">Cari cabang</span><i class="bi bi-search"></i><input id="umumMatrixSearch" type="search" autocomplete="off" placeholder="Cari cabang"></label><input id="umumMatrixMonth" type="hidden" data-portal-month></div></div><div id="umumMatrixBox" class="portal-expense-matrix-box" aria-live="polite"></div><div id="umumMatrixPagination" class="portal-pagination"></div>';
+    detail.insertAdjacentElement('afterend',matrix);
+    const month=matrix.querySelector('#umumMatrixMonth');month.value=monthNow();setupPortalControls(matrix);
+    toggle.querySelectorAll('[data-umum-view]').forEach(button=>button.addEventListener('click',()=>{
+      const matrixMode=button.dataset.umumView==='matrix';detail.classList.toggle('portal-hidden',matrixMode);matrix.classList.toggle('portal-hidden',!matrixMode);
+      toggle.querySelectorAll('button').forEach(item=>{const active=item===button;item.classList.toggle('is-active',active);item.setAttribute('aria-selected',String(active));});
+      if(matrixMode)loadExpenseMatrix('umum');
+    }));
+    matrix.querySelector('#umumMatrixSearch').addEventListener('input',()=>schedulePortalInputWork('umum-matrix-search',()=>{Portal.umumMatrixPage=1;loadExpenseMatrix('umum');}));
+    month.addEventListener('change',()=>{Portal.umumMatrixPage=1;loadExpenseMatrix('umum');});
+  }
+
+  async function loadExpenseMatrix(type) {
+    const root=document.getElementById(type==='umum'?'umumMatrixBox':'listrikMatrixBox');if(!root)return;
+    const month=document.getElementById(type==='umum'?'umumMatrixMonth':'listrikMatrixMonth');
+    const search=document.getElementById(type==='umum'?'umumMatrixSearch':'listrikMatrixSearch');
+    const pageKey=type==='umum'?'umumMatrixPage':'listrikMatrixPage';Portal[pageKey]=Number(Portal[pageKey]||1);
+    root.setAttribute('aria-busy','true');root.innerHTML='<div class="portal-expense-matrix-state"><i class="bi bi-arrow-repeat"></i><span>Memuat matriks nota...</span></div>';
+    try {
+      const data=await api('GET_EXPENSE_MATRIX',{type,month:(month&&month.value)||monthNow(),search:search?search.value:'',page:Portal[pageKey],limit:25});
+      if(!data.branches.length){root.innerHTML='<div class="portal-expense-matrix-state"><i class="bi bi-inbox"></i><strong>Cabang tidak ditemukan</strong><span>Ubah pencarian atau bulan yang dipilih.</span></div>';renderPagination(document.getElementById(type==='umum'?'umumMatrixPagination':'listrikMatrixPagination'),1,0,25,()=>{});return;}
+      const days=Array.from({length:Number(data.days)},(_,index)=>index+1);
+      root.innerHTML=`<table class="portal-expense-matrix-table"><thead><tr><th>Cabang</th>${days.map(day=>`<th>${day}</th>`).join('')}</tr></thead><tbody>${data.branches.map(branch=>`<tr><th scope="row"><strong>${escapeHtml(branch.name)}</strong><span>${escapeHtml(branch.id)}</span></th>${days.map(day=>{const cell=data.cells[branch.id]&&data.cells[branch.id][day];return cell?`<td><button type="button" data-matrix-branch="${escapeHtml(branch.id)}" data-matrix-day="${day}" aria-label="${cell.count} nota ${branch.name} tanggal ${day}, total ${rupiah(cell.total)}"><strong>${cell.count}</strong><span>${escapeHtml(compactRupiah(cell.total))}</span></button></td>`:'<td><span class="portal-matrix-empty" aria-label="Tidak ada nota">·</span></td>'}).join('')}</tr>`).join('')}</tbody></table>`;
+      root.querySelectorAll('[data-matrix-branch]').forEach(button=>button.addEventListener('click',()=>{
+        const cell=data.cells[button.dataset.matrixBranch][Number(button.dataset.matrixDay)],branch=data.branches.find(item=>item.id===button.dataset.matrixBranch);
+        const rows=cell.records.map(record=>`<tr><td>${escapeHtml(record[8]||record[10]||'-')}</td><td>${escapeHtml(record[10]||record[7]||'-')}</td><td>${escapeHtml(rupiah(record[5]))}</td></tr>`).join('');
+        Swal.fire({title:`${escapeHtml(branch.name)} · ${button.dataset.matrixDay} ${new Date(data.month+'-01T00:00:00').toLocaleDateString('id-ID',{month:'long',year:'numeric'})}`,width:720,html:`<div class="portal-history-detail"><table><thead><tr><th>Keterangan</th><th>Jenis</th><th>Nominal</th></tr></thead><tbody>${rows}</tbody></table><p><strong>Total ${escapeHtml(rupiah(cell.total))}</strong></p></div>`,confirmButtonText:'Tutup'});
+      }));
+      renderPagination(document.getElementById(type==='umum'?'umumMatrixPagination':'listrikMatrixPagination'),data.page,data.totalBranches,data.limit,next=>{Portal[pageKey]=next;loadExpenseMatrix(type);});
+    } catch(error) {root.innerHTML=`<div class="portal-expense-matrix-state is-error"><i class="bi bi-exclamation-triangle"></i><strong>Matriks gagal dimuat</strong><span>${escapeHtml(error.message)}</span></div>`;}
+    finally {root.removeAttribute('aria-busy');}
+  }
+
+  function lockApprovedBankActions(tableBodyId) {
+    const body=document.getElementById(tableBodyId);if(!body||body.dataset.approvedRowsLocked==='true')return;
+    body.dataset.approvedRowsLocked='true';
+    const apply=()=>body.querySelectorAll('[data-listrik-action="edit"][data-listrik-value^="APR-"]').forEach(button=>{const cell=button.closest('td');if(cell)cell.innerHTML='<span class="portal-bank-readonly"><i class="bi bi-shield-check"></i> Hasil ACC</span>';});
+    new MutationObserver(apply).observe(body,{childList:true});apply();
+  }
+
+  function compactRupiah(value) {
+    const amount=Number(value)||0;if(amount>=1000000000)return 'Rp '+(amount/1000000000).toLocaleString('id-ID',{maximumFractionDigits:1})+' M';if(amount>=1000000)return 'Rp '+(amount/1000000).toLocaleString('id-ID',{maximumFractionDigits:1})+' jt';if(amount>=1000)return 'Rp '+(amount/1000).toLocaleString('id-ID',{maximumFractionDigits:0})+' rb';return 'Rp '+amount.toLocaleString('id-ID');
   }
 
   window.portalShowPage = showPage;

@@ -14,7 +14,7 @@ import { database, transaction } from './db';
 import { requireRole, type User } from './identity';
 import { accountAction,validatePassword } from './accounts';
 import { accountAuth } from './better-auth';
-import { categories,listReceipts,receiptDetail } from './receipts';
+import { categories,listReceipts,receiptDetail,submissionHistory } from './receipts';
 import { invariant,AppError } from './errors';
 import { randomUUID } from 'node:crypto';
 const accountActions=['GET_ACCOUNTS','PROVISION_ACCOUNTS','SET_ACCOUNT_ACTIVE','RESET_ACCOUNT_PASSWORD','UPDATE_ACCOUNT'];
@@ -65,6 +65,8 @@ export async function rpc(user:User,body:any,request:Request) {
  }
  if(action==='GET_CATEGORIES')return categories(db);
  if(action==='GET_TAX_RECEIPTS'){requireRole(user,['ADMIN','TAX']);return listReceipts(db,user,payload);}
+ if(action==='GET_SUBMISSION_HISTORY'){requireRole(user,['ADMIN','TAX']);return submissionHistory(db,user,payload);}
+ if(action==='GET_EXPENSE_MATRIX')return legacyRead(db,user,'getExpenseDailyMatrix',[payload]);
  if(action==='GET_STORE_HISTORY'){requireRole(user,['TOKO']);return listReceipts(db,user,payload);}
  if(action==='GET_RECEIPT_DETAIL')return receiptDetail(db,user,String(payload.receiptId||''));
  if(action==='GET_STORE_DASHBOARD'){

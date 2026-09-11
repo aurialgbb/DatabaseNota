@@ -64,6 +64,15 @@ export async function executePlan(jobId:string,step:string,user:User,build:()=>P
    await tx.query('UPDATE nota_app.receipts SET status=$2,supplier=$3,receipt_date=$4,total=$5,eliminated=$6,data=$7,version=version+1,updated_at=now() WHERE id=$1',[r.id,r.status,r.supplier,r.date,r.receiptTotal,!!r.eliminated,JSON.stringify(r.data)]);
    if(r.items){await tx.query('DELETE FROM nota_app.receipt_items WHERE receipt_id=$1',[r.id]);for(let i=0;i<r.items.length;i++){const item=r.items[i];await tx.query('INSERT INTO nota_app.receipt_items(id,receipt_id,position,description,category,quantity,unit,amount,data) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)',[item.id,r.id,i,item.description,item.category,item.quantity,item.unit||'',item.amount,JSON.stringify(item)]);}}
    if(r.photoId!==undefined){await tx.query('DELETE FROM nota_app.receipt_photos WHERE receipt_id=$1',[r.id]);if(r.photoId)await tx.query('INSERT INTO nota_app.receipt_photos(receipt_id,photo_id) VALUES($1,$2)',[r.id,r.photoId]);}
+   await tx.query("DELETE FROM nota_app.transactions WHERE data->>'sourceReceiptId'=$1",[r.id]);
+   if(r.status==='APPROVED'){
+    const projectedItems=r.items||(await tx.query('SELECT id,description,category,quantity,unit,amount FROM nota_app.receipt_items WHERE receipt_id=$1 ORDER BY position',[r.id])).rows;
+    for(const item of projectedItems){
+     const kind=String(item.category||'').trim().toUpperCase()==='LISTRIK'?'LISTRIK':'UMUM';
+     const data={id:'APR-'+item.id,timestamp:Number(r.data.approvedAt||Date.now()),tanggal:new Date(r.date+'T00:00:00+07:00').getTime(),cabang:String(r.data.branchName||'').toUpperCase(),cv:String(r.data.branchType||''),nominal:Number(item.amount),fotoUrl:r.data.photoId?(process.env.APP_ORIGIN||'')+'/api/photos/'+r.data.photoId:'-',kategori:kind==='LISTRIK'?'Listrik':'Umum',keterangan:item.description||'-',noUrut:'',jenis:String(item.category||kind).toUpperCase(),jumlah:String(item.quantity)+(item.unit?' '+item.unit:''),sourceReceiptId:r.id,sourceItemId:item.id,readOnly:true};
+     await tx.query('INSERT INTO nota_app.transactions(id,kind,branch_id,business_date,amount,data) VALUES($1,$2,$3,$4,$5,$6)',[data.id,kind,r.data.branchId||r.branchId,r.date,item.amount,JSON.stringify(data)]);
+    }
+   }
   }
   for(const e of plan.expenses){
    const row=(await tx.query('SELECT version FROM nota_app.transactions WHERE id=$1 FOR UPDATE',[e.id])).rows[0];invariant(e.expectedVersion==null?!row:row?.version===e.expectedVersion,'TRANSACTION_CONFLICT','Transaksi arsip telah berubah. Perlu pemeriksaan.',409);
