@@ -1,13 +1,13 @@
 (function(root){
  'use strict';
- const fields={branch:{action:['action','tindakan'],id:['id','idcabang'],name:['name','nama','namacabang'],type:['type','tipe','tipecabang']},account:{role:['role','peran'],branchName:['branchname','namacabang'],branchType:['branchtype','tipecabang'],displayName:['displayname','namatampilan'],username:['username'],password:['password']}};
+ const fields={branch:{action:['action','tindakan'],id:['id','idcabang'],name:['name','nama','namacabang'],cv:['cv','namacv'],type:['type','tipe','tipecabang']},account:{role:['role','peran'],branchName:['branchname','namacabang'],branchType:['branchtype','tipecabang'],displayName:['displayname','namatampilan'],username:['username'],password:['password']}};
  const clean=value=>String(value??'').replace(/^\uFEFF/,'').trim();const key=value=>clean(value).toLowerCase().replace(/[\s_*]/g,'');
  function matrixRows(matrix,kind){
   const spec=fields[kind];let header=-1,mapping=[];
-  for(let i=0;i<Math.min(matrix.length,20);i++){const columns=matrix[i].map(value=>Object.keys(spec).find(k=>spec[k].includes(key(value)))||'');if(Object.keys(spec).every(k=>columns.includes(k))){header=i;mapping=columns;break;}}
+  for(let i=0;i<Math.min(matrix.length,20);i++){const columns=matrix[i].map(value=>Object.keys(spec).find(k=>spec[k].includes(key(value)))||'');if(Object.keys(spec).filter(k=>k!=='cv').every(k=>columns.includes(k))){header=i;mapping=columns;break;}}
   if(header<0)throw new Error('Header template '+(kind==='branch'?'cabang':'akun')+' tidak ditemukan. Gunakan template dari aplikasi.');
   if(mapping.filter(Boolean).length!==new Set(mapping.filter(Boolean)).size)throw new Error('Ada nama kolom yang berulang.');
-  return matrix.slice(header+1).map((cells,i)=>{const row={_sourceRow:header+i+2};mapping.forEach((name,c)=>{if(name)row[name]=name==='password'?String(cells[c]??''):clean(cells[c]);});if(kind==='branch'){const actions={TAMBAH:'ADD',UBAH:'UPDATE',HAPUS:'DELETE'};row.action=actions[row.action.toUpperCase()]||row.action.toUpperCase();}return row;}).filter(row=>Object.keys(spec).some(k=>row[k]!==''));
+  return matrix.slice(header+1).map((cells,i)=>{const row={_sourceRow:header+i+2};mapping.forEach((name,c)=>{if(name)row[name]=name==='password'?String(cells[c]??''):clean(cells[c]);});if(kind==='branch'){const actions={TAMBAH:'ADD',UBAH:'UPDATE',HAPUS:'DELETE'};row.action=actions[row.action.toUpperCase()]||row.action.toUpperCase();}return row;}).filter(row=>Object.keys(spec).some(k=>row[k]!=null&&row[k]!==''));
  }
  function csvMatrix(text){
   text=String(text||'').replace(/^\uFEFF/,'');const first=text.split(/\r?\n/,1)[0],separator=first.split(';').length>first.split(',').length?';':',';

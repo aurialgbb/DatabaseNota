@@ -4577,9 +4577,10 @@
     ].filter(Boolean);
     const rows = (preview.changes || []).slice(0, 8).map(change => {
       const details = change.action === 'DELETE' ? 'Akan dihapus' : (change.changedFields || []).length ? `Ubah: ${change.changedFields.join(', ')}` : 'Tidak ada perubahan';
-      return `<li><strong>Baris ${change.row}</strong> · ${escapeHtml(change.id)} <span class="portal-muted">| ${escapeHtml(details)}</span></li>`;
+      const cvLabel = change.after ? ' | CV: ' + (change.after.type === 'Central Kitchen' ? 'Tidak berlaku (CK)' : change.after.data?.cv || 'Belum diisi') : '';
+      return `<li><strong>Baris ${change.row}</strong> · ${escapeHtml(change.id)} <span class="portal-muted">| ${escapeHtml(details + cvLabel)}</span></li>`;
     }).join('');
-    return `<div style="text-align:left"><p><strong>${escapeHtml(parts.join(' · ') || 'Tidak ada perubahan')}</strong></p><p style="font-size:12px;color:var(--portal-muted)">Kolom yang dikosongkan pada UPDATE/UPSERT tidak akan menimpa data lama. Penghapusan hanya melalui action DELETE.</p><ul style="margin:0;padding-left:20px;max-height:190px;overflow:auto">${rows || '<li>Tidak ada perubahan data.</li>'}</ul>${(preview.changes || []).length > 8 ? `<p style="font-size:12px;color:var(--portal-muted)">+ ${(preview.changes || []).length - 8} baris lainnya</p>` : ''}</div>`;
+    return `<div style="text-align:left"><p><strong>${escapeHtml(parts.join(' · ') || 'Tidak ada perubahan')}</strong></p><p style="font-size:12px;color:var(--portal-muted)">Kolom yang dikosongkan pada UPDATE/UPSERT tidak akan menimpa data lama. CK tidak memakai CV. Penghapusan hanya melalui action DELETE.</p><ul style="margin:0;padding-left:20px;max-height:190px;overflow:auto">${rows || '<li>Tidak ada perubahan data.</li>'}</ul>${(preview.changes || []).length > 8 ? `<p style="font-size:12px;color:var(--portal-muted)">+ ${(preview.changes || []).length - 8} baris lainnya</p>` : ''}</div>`;
   }
 
   function bulkBranchErrorsHtml(errors) {

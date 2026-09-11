@@ -16,9 +16,15 @@ export function planBranches(rows:any[],stored:any[],month:string){
   }
   invariant(action!=='ADD'||!before,'ALREADY_EXISTS','ID sudah ada; gunakan UPDATE.');invariant(action!=='UPDATE'||suppliedId&&before,'NOT_FOUND','UPDATE wajib memakai ID yang sudah ada.');invariant(action!=='UPSERT'||!before||suppliedId,'ID_REQUIRED','UPSERT cabang lama wajib memakai ID.');
   const after={...before,id,name:name||before?.name,type:type||before?.type,active:before?.active!==false};
+  const cv=String(r.cv||'').trim();
+  invariant(cv.length<=150,'INVALID_CV','Nama CV maksimal 150 karakter.');
+  invariant(after.type!=='Central Kitchen'||!cv,'INVALID_CV','CK berdiri sendiri sebagai pooling. Kosongkan Nama CV untuk Central Kitchen.');
+  after.data={...before?.data,cv:after.type==='Central Kitchen'?'':cv||before?.data?.cv||''};
+  invariant(after.type!=='Mandiri'||after.data.cv,'CV_REQUIRED','Nama CV wajib untuk cabang Mandiri. Isi kolom Nama CV pada template terbaru.');
   invariant(after.name&&after.name.length<=150&&['Mandiri','Central Kitchen'].includes(after.type),'INVALID_BRANCH','Nama dan tipe Mandiri/Central Kitchen wajib diisi.');
   invariant(![...working.values()].some(b=>b.id!==id&&b.name.toUpperCase()===after.name.toUpperCase()),'DUPLICATE_NAME','Nama cabang sudah dipakai ID lain.');
   const changedFields=['name','type'].filter(k=>!before||before[k]!==after[k]);changes.push({row:sourceRow,id,action:before?changedFields.length?'UPDATE':'NO_CHANGE':'ADD',before,after,changedFields});working.set(id,after);
+  if((before?.data?.cv||'')!==after.data.cv){changedFields.push('cv');if(before)changes[changes.length-1].action='UPDATE';}
  }catch(e){errors.push({row:sourceRow,error:e instanceof Error?e.message:'Baris tidak valid.'});}});
  return {period:month,changes,errors,summary:{add:changes.filter(c=>c.action==='ADD').length,update:changes.filter(c=>c.action==='UPDATE').length,remove:changes.filter(c=>c.action==='DELETE').length,unchanged:changes.filter(c=>c.action==='NO_CHANGE').length}};
 }
@@ -32,7 +38,7 @@ export async function bulkBranches(user:User,action:string,p:any,key:string){
    const plan=planBranches(p.rows,await storedBranches(db),month);invariant(!plan.errors.length,'INVALID_ROWS',plan.errors.map(e=>'Baris '+e.row+': '+e.error).join(' | '));
    for(const c of plan.changes){
     if(c.action==='DELETE'){await db.query('DELETE FROM nota_app.master_links WHERE branch_id=$1',[c.id]);await db.query('DELETE FROM nota_app.branches WHERE id=$1',[c.id]);}
-    else if(c.action!=='NO_CHANGE')await db.query('INSERT INTO nota_app.branches(id,name,type,active) VALUES($1,$2,$3,$4) ON CONFLICT(id) DO UPDATE SET name=$2,type=$3',[c.id,c.after.name,c.after.type,c.after.active]);
+    else if(c.action!=='NO_CHANGE')await db.query('INSERT INTO nota_app.branches(id,name,type,active,data) VALUES($1,$2,$3,$4,$5) ON CONFLICT(id) DO UPDATE SET name=$2,type=$3,data=$5',[c.id,c.after.name,c.after.type,c.after.active,JSON.stringify(c.after.data)]);
    }
    await db.query("INSERT INTO nota_app.audit_events(uid,action,details) VALUES($1,'BULK_MANAGE_BRANCHES',$2)",[user.uid,JSON.stringify({period:month,summary:plan.summary})]);return {results:plan.changes.map(c=>({row:c.row,success:true,action:c.action,id:c.id,changedFields:c.changedFields})),summary:plan.summary};
   });
