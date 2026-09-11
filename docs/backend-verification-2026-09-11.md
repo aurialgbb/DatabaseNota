@@ -27,3 +27,9 @@ Schema tetap `nota_app`, tanpa migrasi struktur baru pada rilis ini. Data aplika
 Prompt dan normalisasi tetap dari baseline. Kunci Gemini lokal dan VPS telah dibandingkan dan identik. Komputer lokal berhasil membaca nota sintetis Rp40.000, sedangkan VPS ditolak HTTP 400 FAILED_PRECONDITION: `User location is not supported for the API use.` Pemeriksaan IP pihak lain menunjukkan Indonesia; klasifikasi Google sendiri belum diketahui. Indonesia dan Singapura tercantum sebagai wilayah yang didukung: https://ai.google.dev/gemini-api/docs/available-regions
 
 Relay Cloudflare telah disiapkan dengan autentikasi server, daftar model terbatas, dan endpoint Google tetap. Relay belum diaktifkan: membutuhkan token deployment Cloudflare, lalu panggilan Gemini melalui relay harus berhasil dari VPS. `OCR_REGION_BLOCKED=true` dipertahankan sampai verifikasi itu selesai. URL GAS lama tidak digunakan sebagai relay dan tidak diubah.
+
+## Verifikasi setelah deployment
+
+Rilis aplikasi `a3b3a22` berhasil dibangun di Linux dan diaktifkan di VPS. Web, worker, Nginx, database, akses Google Sheets, dan pemeriksaan backup luar server berhasil.
+
+Uji melalui HTTPS publik berhasil: login, antrean worker VPS untuk tambah/edit/hapus transaksi pada tab sementara, penolakan versi baris lama dengan status pemulihan, serta pembatalan sebelum penulisan. Tab dan fixture SQL telah dibersihkan. Hasil ini mengonfirmasi alur worker rilis yang terpasang, bukan hanya eksekusi fungsi lokal.
