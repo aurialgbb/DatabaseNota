@@ -1,3 +1,4 @@
+import {geminiFetch} from './gemini-client';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { database } from './db';
 import { storage } from './storage';
@@ -25,10 +26,7 @@ export async function runOcr(job:any) {
   if(previous?.status==='RUNNING')throw new AppError('OCR_OUTCOME_UNKNOWN','Respons OCR sebelumnya belum dapat dipastikan.',409);
   await db.query("INSERT INTO nota_app.job_steps(job_id,step_key,status,attempts) VALUES($1,$2,'RUNNING',1) ON CONFLICT(job_id,step_key) DO UPDATE SET status='RUNNING',attempts=job_steps.attempts+1,updated_at=now()",[job.id,step]);
   try{
-   const response=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent',{
-    method:'POST',headers:{'content-type':'application/json','x-goog-api-key':process.env.GEMINI_API_KEY!},
-    body:JSON.stringify({contents:[{parts:[{text:prompt},{inlineData:{mimeType:photo.mime_type,data:base64}}]}],generationConfig:isLegacy?{temperature:0.0,responseMimeType:'application/json'}:{responseMimeType:'application/json',maxOutputTokens:8192}}),signal:AbortSignal.timeout(120000)
-   });
+   const response=await geminiFetch(model,{contents:[{parts:[{text:prompt},{inlineData:{mimeType:photo.mime_type,data:base64}}]}],generationConfig:isLegacy?{temperature:0.0,responseMimeType:'application/json'}:{responseMimeType:'application/json',maxOutputTokens:8192}});
    if(response.status===429||response.status>=500)throw new AppError('RETRYABLE_HTTP','Layanan OCR sementara sibuk.',503);
    if(!response.ok){
     const failure=await response.json().catch(()=>({}));
@@ -56,6 +54,6 @@ export async function runOcr(job:any) {
 
 export async function runText(job:any){
  invariant(process.env.GEMINI_API_KEY,'OCR_NOT_CONFIGURED','Kunci Gemini belum dikonfigurasi.',503);
- const response=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+legacyModel+':generateContent',{method:'POST',headers:{'content-type':'application/json','x-goog-api-key':process.env.GEMINI_API_KEY!},body:JSON.stringify({contents:[{parts:[{text:job.payload.prompt}]}],...(job.payload.isJson?{generationConfig:{responseMimeType:'application/json'}}:{})}),signal:AbortSignal.timeout(120000)});
+ const response=await geminiFetch(legacyModel,{contents:[{parts:[{text:job.payload.prompt}]}],...(job.payload.isJson?{generationConfig:{responseMimeType:'application/json'}}:{})});
  if(!response.ok){const failure=await response.json().catch(()=>({}));if(response.status===400&&/location is not supported/i.test(failure.error?.message||''))throw new AppError('OCR_REGION_UNAVAILABLE','Gemini belum menerima lokasi IP server. Hubungi admin; nota masih bisa diisi secara manual.',503);throw new AppError('OCR_PROVIDER_ERROR','Permintaan AI belum berhasil.',502);}const body=await response.json();const output=body.candidates?.[0]?.content?.parts?.map((p:any)=>p.text||'').join('');invariant(output,'OCR_EMPTY','AI belum mengembalikan hasil.',502);return output.replace(/```json/gi,'').replace(/```/g,'').trim();
 }

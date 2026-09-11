@@ -1,3 +1,4 @@
+import {syncAction,syncActions,startSync} from './sync-actions';
 import {accountTemplate} from './account-template';
 import {bulkBranches} from './bulk-branches';
 import {approvalAction,approvalActions} from './approval';
@@ -20,6 +21,7 @@ export async function rpc(user:User,body:any,request:Request) {
  const action=String(body.action||''),payload=body.payload||{},db=database();
  if(body.operation==='LEGACY_API'){
   invariant(Array.isArray(payload),'INVALID_PAYLOAD','Parameter menu tidak valid.');
+  if(['submitTarikDataBatch','resetTarikDataBatch'].includes(action))return startSync(user,payload[0]||{},request.headers.get('idempotency-key')||'',action==='resetTarikDataBatch');
   if(action==='fetchExternalData'){requireRole(user,['ADMIN','TAX']);return fetchSheet(payload[0]||{});}
   const read=await legacyRead(db,user,action,payload);if(read!==undefined)return read;
   if(action==='getLegacyPhoto'){
@@ -37,6 +39,7 @@ export async function rpc(user:User,body:any,request:Request) {
  }
  invariant(body.operation==='PORTAL_API','FEATURE_PENDING','Menu ini belum tersambung ke backend baru.',501);
  if(['PREVIEW_BULK_MANAGE_BRANCHES','BULK_MANAGE_BRANCHES'].includes(action))return bulkBranches(user,action,payload,request.headers.get('idempotency-key')||'');
+ if(syncActions.includes(action))return syncAction(user,action,payload,request.headers.get('idempotency-key')||'');
  if(approvalActions.includes(action))return approvalAction(user,action,payload,request.headers.get('idempotency-key')||'');
  if(action==='GET_ACCOUNT_TEMPLATE')return accountTemplate(user);
  if(accountActions.includes(action))return accountAction(user,action,payload);

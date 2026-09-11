@@ -1,33 +1,29 @@
 # Verifikasi backend 11 September 2026
 
-Status: belum siap produksi untuk seluruh fitur.
+Status: fungsi pengelolaan dan sinkronisasi sudah diimplementasikan; OCR publik masih tertahan penolakan lokasi oleh Gemini. Belum menyatakan seluruh aplikasi siap produksi sampai OCR dari VPS berhasil diuji.
 
-Lulus: 10 tes otomatis dan build Linux; API publik untuk CRUD Nota Listrik, Nota Umum dan History Deteksi, posting kategori tanpa duplikasi, paginasi/filter/total, kontrol listrik bulanan, serta Master Link dengan pemeriksaan versi. Browser sudah diuji untuk membuka ketiga menu, kontrol transaksi, refresh, dan pilihan jumlah baris.
+## Hasil pemeriksaan
 
-Alur publik input manual akun toko juga lulus: unggah R2, finalisasi, submit ke Bank Nota, klaim review, edit dengan pemeriksaan versi, dan foto privat. Data uji telah dibersihkan.
+- 17 tes otomatis lulus, termasuk kesamaan prompt OCR dengan baseline, otorisasi, idempotensi, isolasi schema, CRUD, template akun, dan pembatasan akses relay OCR.
+- API publik: login Better Auth, Nota Listrik/Umum/History, paginasi/filter/total, kontrol listrik bulanan, Master Link dengan pemeriksaan versi, unggah R2, submit manual, klaim/edit review, dan foto privat telah diuji.
+- Approval publik diproses worker VPS: permintaan koreksi, penolakan, template akun XLSX, dan validasi kelola cabang massal lulus.
+- Approval Mandiri dan CK: penulisan ke tab sementara, verifikasi ulang, status SQL, dan pengulangan tanpa duplikasi lulus.
+- Tarik Data: edit nominal beserta total nota, eliminasi seluruh nota, pindah tanggal, reset/hapus seluruh nota, pemakaian ulang baris kosong, tambah/hapus arsip transaksi, serta penggantian/penghapusan asosiasi foto lulus.
+- Simulasi koneksi terputus setelah penulisan: database tidak diperbarui sebelum hasil terverifikasi; pemulihan melanjutkan hasil tulis tanpa duplikasi.
+- Pemulihan prioritas Spreadsheet: perubahan manual nominal menjadi 42.000 di tab pengujian diterapkan ke database, bukan ditimpa nominal rencana sebelumnya.
+- Distribusi CK diuji dengan sumber, tujuan Mandiri, dan link pada tab sementara. Skenario gangguan lintas spreadsheet yang berbeda belum diuji menyeluruh.
+- Pengujian tulis Google Sheets hanya memakai tab sementara pada spreadsheet pengujian pengguna. Interceptor menolak setiap request tulis ke sheetId lain. Fixture SQL dan tab sementara dibersihkan.
 
-Google Sheets: service account berhasil membaca, menulis, mengedit dan menghapus sel pada tab sementara di spreadsheet pengujian pengguna. Tab sementara dihapus dan daftar tab awal tetap utuh.
+## Implementasi dan batasan
 
-OCR: prompt dan normalisasi tetap berasal dari baseline. Gemini dari komputer lokal berhasil membaca nota sintetis Rp40.000 sampai tersimpan sebagai Pending. Namun panggilan dari VPS ditolak HTTP 400 FAILED_PRECONDITION: `User location is not supported for the API use.` Kunci lokal dan VPS telah dibandingkan dan identik. Negara yang dianggap Google belum diketahui. Indonesia dan Singapura ada di daftar wilayah resmi: https://ai.google.dev/gemini-api/docs/available-regions
+Pekerjaan approval dan sinkronisasi dijalankan oleh worker VPS, dengan rencana tersimpan dan penguncian sumber daya. Pembatalan hanya tersedia sebelum penulisan dimulai. Setelah penulisan dimulai, pekerjaan harus dipulihkan agar database dan Spreadsheet dapat diselaraskan. Konflik identitas, rumus, versi, dan kepemilikan distribusi diperiksa. Google Sheets tidak menyediakan transaksi bersama PostgreSQL; perubahan manusia pada saat yang sama tetap dapat memerlukan pemeriksaan manual.
 
-Pekerja OCR VPS aktif dengan dua pekerjaan bersamaan. Kesiapan OCR publik ditandai false sampai kendala lokasi IP terselesaikan. Penyedia VPS perlu memeriksa geolokasi IP, atau pemrosesan perlu ditempatkan pada layanan di wilayah yang diterima Gemini. Respons kesalahan ditampilkan tanpa kredensial.
+Semua aksi UI yang ditemukan untuk pengelolaan akun/cabang, approval, dan Tarik Data sudah memiliki handler. Hook pemeliharaan Firebase lama yang tidak dipanggil UI bukan menu aktif; backup terjadwal VPS dan indeks PostgreSQL menggantikan kebutuhan tersebut. Pemeriksaan aksi tidak menggantikan pengujian setiap kombinasi data produksi.
 
-Pekerjaan kode yang belum selesai:
-- Approval ke Spreadsheet, rekonsiliasi hasil tulis, dan pemulihan pekerjaan.
-- Kontrol Data Terkirim/Tarik Data: pemetaan Mandiri dan Central Kitchen, perubahan/eliminasi/pindah tanggal dan sinkronisasi.
-- Kelola cabang massal dan unduhan template Excel akun.
-- Menu pemeliharaan/indeks lama dan backup manual melalui UI. Backup terjadwal VPS tetap layanan terpisah yang sudah tersedia.
+Schema tetap `nota_app`, tanpa migrasi struktur baru pada rilis ini. Data aplikasi lama tidak dimigrasi atau diubah. Kredensial tidak masuk Git. Layanan `nota-worker.service` perlu direstart bersama aplikasi saat rilis diganti.
 
-PostgreSQL, R2, Better Auth, service account Google dan kunci Gemini sudah tersedia. Kekurangan implementasi tersebut tidak boleh disebut kekurangan API key.
+## OCR yang belum selesai
 
-Schema tetap `nota_app`; rilis ini tidak mengubah struktur database. Kredensial tidak masuk Git. Layanan `nota-worker.service` membaca environment privat server dan perlu direstart saat rilis diganti.
+Prompt dan normalisasi tetap dari baseline. Kunci Gemini lokal dan VPS telah dibandingkan dan identik. Komputer lokal berhasil membaca nota sintetis Rp40.000, sedangkan VPS ditolak HTTP 400 FAILED_PRECONDITION: `User location is not supported for the API use.` Pemeriksaan IP pihak lain menunjukkan Indonesia; klasifikasi Google sendiri belum diketahui. Indonesia dan Singapura tercantum sebagai wilayah yang didukung: https://ai.google.dev/gemini-api/docs/available-regions
 
-Pembaruan berikutnya — approval dan pengelolaan:
-- Approval Mandiri: tulis Spreadsheet, verifikasi ulang identitas/baris, status SQL, dan eksekusi ulang tanpa duplikasi lulus pada tab sementara.
-- Approval CK: distribusi ke tab Mandiri sementara dan eksekusi ulang tanpa duplikasi lulus. Semua request tulis pengujian dibatasi ke sheetId tab yang baru dibuat; tab asli tidak ditulis.
-- Keputusan REQUEST_CORRECTION/DISCARD lulus dengan status NEEDS_CORRECTION/REJECTED.
-- Pemulihan menyimpan rencana dan mengunci sumber daya sampai penulisan diverifikasi; konflik tidak ditimpa. Skenario gangguan jaringan lintas-file belum diuji menyeluruh.
-- Cabang massal: preview, tambah/ubah/hapus, idempotensi, dan penolakan batch salah lulus uji SQL.
-- Template akun XLSX: seluruh role, daftar cabang, dan kredensial kosong lulus uji baca kembali Excel.
-- 16 tes otomatis lulus. Tarik Data sudah dapat membaca model spreadsheet; operasi simpan/reset/pindah tanggal/eliminasi dan menu pemeliharaan belum diaktifkan dalam rilis ini.
-- Pengguna mengonfirmasi belum ada proyek Vercel. URL GAS lama tidak dipakai sebagai relay OCR dan tidak diubah.
+Relay Cloudflare telah disiapkan dengan autentikasi server, daftar model terbatas, dan endpoint Google tetap. Relay belum diaktifkan: membutuhkan token deployment Cloudflare, lalu panggilan Gemini melalui relay harus berhasil dari VPS. `OCR_REGION_BLOCKED=true` dipertahankan sampai verifikasi itu selesai. URL GAS lama tidak digunakan sebagai relay dan tidak diubah.

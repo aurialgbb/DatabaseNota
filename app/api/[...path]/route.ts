@@ -39,7 +39,7 @@ async function handle(request: Request, context: {params: Promise<{path:string[]
     const job=path.match(/^jobs\/([0-9a-f-]+)$/i);
     if (job && request.method==='GET') {
       const row=await authorizedJob(database(),user,job[1]);
-      return reply({operationId:row.id,status:row.status,progress:row.progress,result:row.result,errorCode:row.error_code});
+      return reply({operationId:row.id,kind:row.kind,status:row.status,progress:row.progress,result:row.result,errorCode:row.error_code});
     }
     throw new AppError('NOT_IMPLEMENTED','Fitur ini belum selesai dipindahkan ke aplikasi baru.',501);
   } catch(error) {

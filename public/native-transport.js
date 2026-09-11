@@ -30,6 +30,7 @@
     for(;;){
       const job=await request('/api/jobs/'+id,'GET');
       if(job.status==='SUCCEEDED')return job.result;
+      if(['FAILED','NEEDS_REVIEW'].includes(job.status)&&job.kind==='SHEET_SYNC')return job.result?.status==='RECOVERY_REQUIRED'?job.result:{success:false,status:'RECOVERY_REQUIRED',operationId:'TARIK-'+id,message:'Pekerjaan perlu diperiksa sebelum dilanjutkan.'};
       if(['FAILED','NEEDS_REVIEW','CANCELLED'].includes(job.status))throw new Error(job.result?.message||job.message||'Pekerjaan perlu diperiksa.');
       window.dispatchEvent(new CustomEvent('nota-job-progress',{detail:job}));
       const delay=document.hidden?15000:Date.now()-started<10000?1000:Date.now()-started<60000?2000:5000;
@@ -73,6 +74,15 @@
         delete data.base64;
       }
     }
+    if(legacy&&['submitTarikDataBatch','resetTarikDataBatch'].includes(action)&&payload[0])payload[0].cabang=document.getElementById('tarikCabang')?.value||payload[0].cabang;
+    if(legacy&&action==='submitTarikDataBatch'){
+      for(const group of ['newItems','photoItemsExisting'])for(let index=0;index<(payload[0]?.[group]||[]).length;index++){
+        const item=payload[0][group][index];if(!item.base64)continue;
+        const photoKey=storageKey+'-'+group+'-'+index,raw=String(item.base64);item.photoId=sessionStorage.getItem(photoKey);
+        if(!item.photoId){item.photoId=await upload({base64:raw.replace(/^data:[^,]+,/,''),mimeType:raw.match(/^data:([^;]+);/)?.[1]||'image/jpeg'});sessionStorage.setItem(photoKey,item.photoId);}
+        delete item.base64;
+      }
+    }
     if(legacy&&action==='saveTransactions'&&payload[0]){
       const date=document.getElementById('dateInput')?._flatpickr?.selectedDates?.[0];
       if(date)payload[0].tanggal=[date.getFullYear(),String(date.getMonth()+1).padStart(2,'0'),String(date.getDate()).padStart(2,'0')].join('-');
@@ -94,6 +104,7 @@
     const result=await request('/api/rpc','POST',{operation:legacy?'LEGACY_API':'PORTAL_API',action,payload},key);
     const final=result?.operationId&&result.awaitResult?await waitJob(result.operationId):result;
     if(final?.success!==false&&!final?.pending&&!final?.queued){sessionStorage.removeItem(storageKey);sessionStorage.removeItem(storageKey+'-photo');sessionStorage.removeItem(storageKey+'-photos');}
+    if(!legacy&&['MOVE_RECEIPT_DATE','ELIMINATE_RECEIPT'].includes(action)&&final?.success===false)throw new Error(final.message+' ('+final.operationId+')');
     return final;
   }
   function runner(success, failure){

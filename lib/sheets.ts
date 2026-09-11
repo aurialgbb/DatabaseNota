@@ -16,7 +16,7 @@ async function accessToken(){
 }
 export async function sheetsRequest(id:string,suffix='',method='GET',body?:unknown){
  invariant(/^[A-Za-z0-9_-]{20,150}$/.test(id),'INVALID_SHEET','ID Spreadsheet tidak valid.');
- const response=await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+id+suffix,{method,headers:{authorization:'Bearer '+await accessToken(),'content-type':'application/json'},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(30000)});
+ let response:Response;for(let attempt=0;;attempt++){response=await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+id+suffix,{method,headers:{authorization:'Bearer '+await accessToken(),'content-type':'application/json'},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(30000)});if(response.status!==429||attempt>=4)break;await response.body?.cancel();await new Promise(resolve=>setTimeout(resolve,1000*2**attempt+Math.floor(Math.random()*500)));}
  if(response.status===403)throw new AppError('SHEET_ACCESS_DENIED','Bagikan Spreadsheet ke service account sebagai Editor, lalu coba lagi.',403);
  if(response.status===404)throw new AppError('SHEET_NOT_FOUND','Spreadsheet tidak ditemukan atau belum dibagikan ke service account.',404);
  invariant(response.ok,'SHEETS_REQUEST_FAILED','Permintaan Spreadsheet belum berhasil ('+response.status+'). Periksa hasil sebelum mengulang perubahan.',502);

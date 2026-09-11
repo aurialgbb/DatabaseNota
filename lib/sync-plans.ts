@@ -11,7 +11,7 @@ const same=(a:any,b:any)=>stableJson(a)===stableJson(b);
 function blankPlan(t:Target):Plan{return {edits:[],receipts:[],expenses:[],resources:['sheet/'+t.fileId],branchName:t.branchName,period:t.period,createdAt:Date.now()};}
 function rowId(model:Model,index:number){return (model.tags[index]||[]).find(t=>t.metadataKey==='NOTA_ROW_ID')?.metadataValue||randomUUID();}
 function makeEdit(model:Model,index:number,after:any[],mapping:any,startColumn=3):Edit{
- const id=rowId(model,index);return {target:model.target,sheetId:model.sheetId,rowIndex:index,startColumn,before:padded(model.values[index-1],startColumn+after.length).slice(startColumn),after,rowId:id,mapping:mapping?{...mapping,snapshot:{...mapping.snapshot,rowId:id}}:undefined};
+ const id=rowId(model,index);return {target:model.target,sheetId:model.sheetId,rowIndex:index,startColumn,identity:startColumn===3?padded(model.values[index-1],3).slice(1,3):undefined,before:padded(model.values[index-1],startColumn+after.length).slice(startColumn),after,rowId:id,mapping:mapping?{...mapping,snapshot:{...mapping.snapshot,rowId:id}}:undefined};
 }
 function freeRow(model:Model,date:string,used:Set<number>){
  const result=model.values.findIndex((values,i)=>{
@@ -22,7 +22,7 @@ function freeRow(model:Model,date:string,used:Set<number>){
 }
 function normalizedItem(item:any,t:Target,names:string[]){
  const date=isoDay(item.tanggal,t.period);invariant(date,'INVALID_DATE','Tanggal di luar periode yang dipilih.');const amount=Number(item.nominal),name=String(item.keterangan||'').trim(),category=String(item.jenis||'').trim().toUpperCase(),branch=t.type==='Mandiri'?t.branchName:String(item.cabang||'').trim().toUpperCase();
- invariant(name&&name.length<=250&&names.includes(category),'INVALID_ITEM','Keterangan atau jenis pengeluaran belum valid.');invariant(Number.isFinite(amount)&&amount>0&&amount<=1e12,'INVALID_AMOUNT','Nominal harus lebih besar dari nol.');
+ invariant(branch,'BRANCH_REQUIRED','Cabang tujuan distribusi wajib dipilih.');invariant(name&&name.length<=250&&names.includes(category),'INVALID_ITEM','Keterangan atau jenis pengeluaran belum valid.');invariant(Number.isFinite(amount)&&amount>0&&amount<=1e12,'INVALID_AMOUNT','Nominal harus lebih besar dari nol.');
  const eliminated=String(item.eliminasi||'TIDAK').toUpperCase();invariant(['YA','TIDAK',''].includes(eliminated),'INVALID_ELIMINATION','Pilihan eliminasi tidak valid.');return {...item,tanggal:date.slice(8)+'-'+date.slice(5,7)+'-'+date.slice(0,4),isoDate:date,cabang:branch,keterangan:name,jenis:category,jumlah:String(item.jumlah||''),nominal:amount,eliminasi:eliminated};
 }
 function cellsOf(row:any,t:Target){const cells=[row.keterangan,row.jenis,row.jumlah,row.nominal,row.eliminasi];return t.type==='Central Kitchen'?[row.cabang,...cells]:cells;}
@@ -67,8 +67,11 @@ export async function mutationPlan(user:User,p:any):Promise<Plan>{
  const t=await targetFor(p),model=await readModel(t),plan=blankPlan(t),names=(await categories(database())).map(c=>c.name),selected=new Map<string,{old:any;next:any}>();
  for(const [items,remove] of [[p.editedItems||[],false],[p.photoItemsExisting||[],false],[p.deletedItems||[],true]] as [any[],boolean][]){invariant(Array.isArray(items)&&items.length<=500,'INVALID_ITEMS','Maksimal 500 perubahan per pekerjaan.');for(const item of items){
   const old=model.rows.find(r=>r.sheetRowIndex===Number(item.sheetRowIndex));invariant(old&&old.rowId===item.rowId&&old.version===item.version,'SHEET_CONFLICT','Identitas atau versi baris berubah. Muat ulang data.',409);invariant(!old.ownershipConflict&&!old.distributionSource,'ROW_PROTECTED','Ubah salinan distribusi melalui CK asal atau selesaikan konflik kepemilikan.',409);
-  const base=selected.get(old.rowId)?.next||old;const next=remove?null:{...base,...Object.fromEntries(['keterangan','jenis','jumlah','nominal','eliminasi','cabang','photoId','removePhoto'].filter(k=>item[k]!==undefined).map(k=>[k,item[k]]))};selected.set(old.rowId,{old,next});
+  const base=selected.get(old.rowId)?.next||old;const next=remove?null:{...base,...Object.fromEntries(['keterangan','jenis','jumlah','nominal','eliminasi','cabang','photoId','removePhoto','clientIndex'].filter(k=>item[k]!==undefined).map(k=>[k,item[k]]))};selected.set(old.rowId,{old,next});
  }}
+ for(const change of [...selected.values()])if(change.old.receiptId&&change.next&&(change.next.photoId||change.next.removePhoto)){
+  for(const old of model.rows.filter(r=>r.receiptId===change.old.receiptId)){const existing=selected.get(old.rowId);if(existing?.next===null)continue;selected.set(old.rowId,{old,next:{...(existing?.next||old),photoId:change.next.photoId,removePhoto:change.next.removePhoto}});}
+ }
  for(const change of [...selected.values()])if(change.old.receiptId&&(!change.next||change.next.eliminasi!==change.old.eliminasi)){
   const scope=model.rows.filter(r=>r.receiptId===change.old.receiptId),confirmation=(p.confirmedReceipts||[]).find((r:any)=>r.receiptId===change.old.receiptId);invariant(confirmation&&Number(confirmation.version)===change.old.receiptVersion&&same([...(confirmation.itemIds||[])].sort(),scope.map(r=>r.itemId).sort()),'RECEIPT_CONFIRMATION_REQUIRED','Konfirmasikan seluruh item nota sebelum hapus atau eliminasi.');
   for(const old of scope)selected.set(old.rowId,{old,next:change.next?{...(selected.get(old.rowId)?.next||old),eliminasi:change.next.eliminasi}:null});
@@ -76,13 +79,15 @@ export async function mutationPlan(user:User,p:any):Promise<Plan>{
  const changes=[...selected.values()] as {old:any;next:any;index?:number}[],used=new Set(model.rows.map(r=>r.sheetRowIndex));
  invariant(Array.isArray(p.newItems||[])&&(p.newItems||[]).length<=100,'INVALID_ITEMS','Maksimal 100 baris baru.');
  for(const item of p.newItems||[]){const next=normalizedItem(item,t,names);changes.push({old:null,next,index:freeRow(model,next.isoDate,used)});}
- invariant(changes.length>0,'NO_CHANGES','Belum ada perubahan yang dikirim.');const receiptChanges=new Map<string,any[]>();
+ invariant(changes.length>0,'NO_CHANGES','Belum ada perubahan yang dikirim.');const receiptChanges=new Map<string,any[]>();plan.clientResult={addedResults:[],photoResults:[],warnings:[]};
  for(const change of changes){
   const old=change.old,next=change.next?normalizedItem(change.next,t,names):null,index=old?.sheetRowIndex||change.index!;
   let fotoUrl=next?.removePhoto?'':old?.fotoUrl||'';if(next?.photoId)fotoUrl=await photoFor(user,next.photoId);
   const mapping=model.mappings.find(m=>m.snapshot.rowId===old?.rowId),itemId=old?.itemId||mapping?.item_id||'ROW-'+randomUUID();
   const edit=makeEdit(model,index,next?cellsOf(next,t):Array(model.width-3).fill(''),next?{itemId,receiptId:old?.receiptId||null,snapshot:{date:next.isoDate,fotoUrl}}:undefined);
-  if(!next&&mapping)edit.removeMapping=mapping.item_id;
+  if(!next){edit.removeRowId=true;if(mapping)edit.removeMapping=mapping.item_id;}
+  if(!old&&next)plan.clientResult.addedResults.push({clientIndex:next.clientIndex,sheetRowIndex:index,rowId:edit.rowId,no:model.values[index-1]?.[2]||''});
+  if(next?.photoId)plan.clientResult.photoResults.push({clientIndex:next.clientIndex,fotoUrl});
   if(old?.receiptId){plan.resources.push('receipt/'+old.receiptId);if(!receiptChanges.has(old.receiptId))receiptChanges.set(old.receiptId,[]);receiptChanges.get(old.receiptId)!.push({old,next,fotoUrl});}
   else {
    const id=old?.expenseId||'UMM-'+randomUUID(),before=old?.expenseId?(await database().query('SELECT * FROM nota_app.transactions WHERE id=$1',[id])).rows[0]:null;
@@ -95,10 +100,28 @@ export async function mutationPlan(user:User,p:any):Promise<Plan>{
  for(const [id,changes] of receiptChanges){
   const receipt=await receiptDetail(database(),user,id);invariant(receipt.status==='APPROVED'&&receipt.version===changes[0].old.receiptVersion,'RECEIPT_CONFLICT','Nota berubah saat data dimuat.',409);
   const deleted=changes.every(c=>!c.next),items=receipt.items.map((item:any)=>{const c=changes.find(c=>c.old.itemId===item.id);if(!c?.next)return item;const match=c.next.jumlah.match(/^([\d.,]+)\s*(.*)$/);return {...item,description:c.next.keterangan,category:c.next.jenis,quantity:match?Number(match[1].replace(',','.')):item.quantity,unit:match?match[2]:item.unit,amount:c.next.nominal,grossAmount:c.next.nominal+Number(item.discountAllocated||0),distributionBranch:c.next.cabang};});
-  let clean:any;try{clean=portalValidateReceiptPayload_({...receipt,items},names);}catch(e){throw new AppError('INVALID_RECEIPT',e instanceof Error?e.message:'Nota tidak valid.');}
-  const photoIds=[...new Set(changes.map(c=>c.next?.photoId).filter(Boolean))];invariant(photoIds.length<=1,'PHOTO_CONFLICT','Gunakan satu foto pengganti untuk seluruh nota.');const photoId=photoIds[0]||receipt.photoId,eliminated=changes.some(c=>c.next?.eliminasi==='YA')||(changes.every(c=>c.next?.eliminasi!=='TIDAK')&&receipt.eliminated);
-  plan.receipts.push({id,expectedVersion:receipt.version,status:deleted?'REJECTED':'APPROVED',supplier:receipt.supplier,date:receipt.date,receiptTotal:clean.receiptTotal,eliminated,data:{...receipt,...clean,photoId,eliminated,review:deleted?{decision:'DISCARD',reviewedAt:Date.now(),reviewedBy:user.uid}:receipt.review},items:clean.items,photoId:photoIds[0]});
+  let clean:any;try{clean=portalValidateReceiptPayload_({...receipt,items,receiptTotal:items.reduce((total:number,item:any)=>total+Number(item.amount),0)},names);}catch(e){throw new AppError('INVALID_RECEIPT',e instanceof Error?e.message:'Nota tidak valid.');}
+  const photoIds=[...new Set(changes.map(c=>c.next?.photoId).filter(Boolean))];invariant(photoIds.length<=1,'PHOTO_CONFLICT','Gunakan satu foto pengganti untuk seluruh nota.');const photoChanged=photoIds.length>0||changes.some(c=>c.next?.removePhoto),photoId=photoIds[0]||(photoChanged?'':receipt.photoId),eliminated=changes.some(c=>c.next?.eliminasi==='YA')||(changes.every(c=>c.next?.eliminasi!=='TIDAK')&&receipt.eliminated);
+  plan.receipts.push({id,expectedVersion:receipt.version,status:deleted?'REJECTED':'APPROVED',supplier:receipt.supplier,date:receipt.date,receiptTotal:clean.receiptTotal,eliminated,data:{...receipt,...clean,photoId,photoIds:photoChanged?(photoId?[photoId]:[]):receipt.photoIds,eliminated,review:deleted?{decision:'DISCARD',reviewedAt:Date.now(),reviewedBy:user.uid}:receipt.review},items:clean.items,photoId:photoChanged?photoId:undefined});
  }
  await addDistribution(plan,model);return plan;
+}
+
+export async function receiptMutationPlan(user:User,p:any):Promise<Plan>{
+ const receipt=await receiptDetail(database(),user,String(p.receiptId||''));invariant(receipt.status==='APPROVED'&&receipt.version===Number(p.expectedVersion),'VERSION_CONFLICT','Nota sudah berubah atau belum disetujui.',409);
+ const target=await targetFor({branchId:receipt.branchId,period:receipt.date.replaceAll('-','').slice(0,6)}),model=await readModel(target),rows=model.rows.filter(r=>r.receiptId===receipt.id);
+ invariant(rows.length===receipt.items.length&&rows.every(r=>receipt.items.some((i:any)=>i.id===r.itemId)&&!r.ownershipConflict&&!r.distributionSource),'MAPPING_CONFLICT','Pemetaan seluruh item nota belum cocok. Periksa sebelum mengubahnya.',409);
+ if(p.mode==='ELIMINATE_RECEIPT'){
+  const plan=await mutationPlan(user,{branchId:receipt.branchId,period:target.period,editedItems:rows.map(r=>({...r,eliminasi:'YA'})),confirmedReceipts:[{receiptId:receipt.id,version:receipt.version,itemIds:rows.map(r=>r.itemId)}]});
+  for(const r of plan.receipts)r.data.eliminationReason=String(p.reason||'').slice(0,2000);return plan;
+ }
+ const date=String(p.newDate||''),period=date.replaceAll('-','').slice(0,6);invariant(isoDay(date,period)===date,'INVALID_DATE','Tanggal tujuan tidak valid.');
+ const plan=blankPlan(target);plan.resources.push('receipt/'+receipt.id);if(date===receipt.date)return plan;
+ const nextTarget=await targetFor({branchId:receipt.branchId,period}),nextModel=target.fileId===nextTarget.fileId&&target.sheetName===nextTarget.sheetName?{...model,target:nextTarget}:await readModel(nextTarget),used=new Set<number>();
+ plan.resources.push('sheet/'+nextTarget.fileId);
+ for(const row of rows){const removal=makeEdit(model,row.sheetRowIndex,Array(model.width-3).fill(''),null);removal.removeMapping=row.itemId;removal.removeRowId=true;plan.edits.push(removal);}
+ for(const item of receipt.items){const index=freeRow(nextModel,date,used),cells=[item.description,item.category,String(item.quantity)+(item.unit?' '+item.unit:''),Number(item.amount),receipt.eliminated?'YA':'TIDAK'];plan.edits.push(makeEdit(nextModel,index,nextTarget.type==='Central Kitchen'?[String(item.distributionBranch||'').toUpperCase(),...cells]:cells,{itemId:item.id,receiptId:receipt.id,snapshot:{date,fotoUrl:receipt.photoId?(process.env.APP_ORIGIN||'')+'/api/photos/'+receipt.photoId:''}}));}
+ plan.receipts.push({id:receipt.id,expectedVersion:receipt.version,status:'APPROVED',supplier:receipt.supplier,date,receiptTotal:receipt.receiptTotal,eliminated:receipt.eliminated,data:{...receipt,date,period,movedAt:Date.now(),movedBy:user.uid}});
+ await addDistribution(plan,model);if(target.fileId!==nextTarget.fileId||target.sheetName!==nextTarget.sheetName)await addDistribution(plan,nextModel);return plan;
 }
 

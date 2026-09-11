@@ -26,9 +26,13 @@ export async function valuesOf(id:string,range:string,formula=false):Promise<any
 export function rowTags(meta:any,sheetId:number){const map:Record<number,any[]>={};for(const tag of [...(meta.developerMetadata||[]),...(meta.sheets||[]).flatMap((s:any)=>s.developerMetadata||[])]){const r=tag.location?.dimensionRange;if(r?.sheetId===sheetId&&r.dimension==='ROWS'&&r.endIndex===r.startIndex+1){(map[r.startIndex+1]||=[]).push(tag);}}return map;}
 export async function readModel(target:Target){
  const range=quoteTab(target.sheetName)+'!A:I';
- const [meta,values,formulas]=await Promise.all([sheetsRequest(target.fileId,'?fields=properties(title),sheets(properties,developerMetadata),developerMetadata'),valuesOf(target.fileId,range),valuesOf(target.fileId,range,true)]);
+ const meta=await sheetsRequest(target.fileId,'?ranges='+encodeURIComponent(range)+'&fields='+encodeURIComponent('properties(title),sheets(properties,data(startRow,rowData(values(effectiveValue,userEnteredValue)),rowMetadata(developerMetadata)))'));
  const sheet=meta.sheets.find((s:any)=>s.properties.title===target.sheetName);invariant(sheet,'SHEET_TAB_NOT_FOUND','Tab '+target.sheetName+' tidak ditemukan.');
- const sheetId=sheet.properties.sheetId,width=target.type==='Central Kitchen'?9:8,tags=rowTags({developerMetadata:((await sheetsRequest(target.fileId,'/developerMetadata:search','POST',{dataFilters:[{developerMetadataLookup:{locationType:'ROW'}}]})).matchedDeveloperMetadata||[]).map((m:any)=>m.developerMetadata)},sheetId);
+ const sheetId=sheet.properties.sheetId,width=target.type==='Central Kitchen'?9:8,grid=sheet.data?.[0]||{},rawRows=grid.rowData||[];
+ const scalar=(v:any)=>v?.numberValue??v?.stringValue??v?.boolValue??'';
+ const values:any[][]=rawRows.map((r:any)=>Array.from({length:width},(_,i)=>scalar(r.values?.[i]?.effectiveValue)));
+ const formulas:any[][]=rawRows.map((r:any)=>Array.from({length:width},(_,i)=>r.values?.[i]?.userEnteredValue?.formulaValue??scalar(r.values?.[i]?.effectiveValue)));
+ const tags=rowTags({developerMetadata:(grid.rowMetadata||[]).flatMap((r:any)=>r.developerMetadata||[])},sheetId);
  const mappings=(await database().query('SELECT m.*,r.version AS receipt_version,r.data AS receipt_data,(SELECT count(*)::int FROM nota_app.receipt_items i WHERE i.receipt_id=r.id) AS item_count FROM nota_app.sheet_mappings m LEFT JOIN nota_app.receipts r ON r.id=m.receipt_id WHERE m.spreadsheet_id=$1 AND m.sheet_id=$2',[target.fileId,sheetId])).rows;
  const byRowId=new Map(mappings.map(m=>[m.snapshot.rowId,m]));const rows:any[]=[];
  for(let index=0;index<values.length;index++){
@@ -50,7 +54,7 @@ export async function summaryFor(model:Model){
    const convert=(r:any[])=>({...Object.fromEntries(keys.map((key,j)=>[key,num(r?.[j+1])])),totalPct:num(r?.[8]),nominalTotal:num(r?.[9])});summaries.push({cabang:name.toUpperCase(),target:convert(a),real:convert(b),selisih:num(a[10])});
   }return summaries;
  }
- if(!model.meta.sheets.some((s:any)=>s.properties.title===t.summarySheetName))return null;
+
  const rows=await valuesOf(t.fileId,quoteTab(t.summarySheetName)+'!A40:T48'),real=rows[2]||[],target=rows[3]||[],base=num(rows[8]?.[1]);
  return {nominal:{totalReal:rows.length>=9?base*num(real[19]):num(rows[0]?.[18]),totalTarget:rows.length>=9?base*num(target[19]):num(rows[0]?.[19])},categories:Object.fromEntries(keys.map((key,i)=>[key,{real:num(real[[3,5,7,9,13,15,17][i]]),target:num(target[[3,5,7,9,13,15,17][i]])}]))};
 }
