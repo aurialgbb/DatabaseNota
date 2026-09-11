@@ -13,7 +13,7 @@ async function photo(db:Database,user:User,id:any,branchId:string){
  const row=(await db.query("SELECT * FROM nota_app.photos WHERE id=$1 AND state='READY'",[id])).rows[0];
  invariant(row&&row.owner_uid===user.uid&&(!row.branch_id||row.branch_id===branchId),'PHOTO_NOT_READY','Foto belum siap atau bukan milik akun ini.');return (process.env.APP_ORIGIN||'')+'/api/photos/'+row.id;
 }
-async function record(db:Database,id:string,kind?:string,expected?:number){const row=(await db.query('SELECT * FROM nota_app.transactions WHERE id=$1 FOR UPDATE',[id])).rows[0];invariant(!(await db.query('SELECT resource FROM nota_app.resource_leases WHERE resource=$1 AND expires_at>now()',['transaction/'+id])).rows.length,'SYNC_BUSY','Transaksi sedang disinkronkan. Selesaikan pekerjaan tersebut terlebih dahulu.',409);invariant(row&&(!kind||row.kind===kind),'NOT_FOUND','Transaksi tidak ditemukan.',404);invariant(!row.data?.readOnly,'APPROVED_RECEIPT_LOCKED','Data hasil ACC terkunci dan tidak dapat diubah atau dihapus dari daftar transaksi.',409);if(expected!==undefined)invariant(row.version===Number(expected),'VERSION_CONFLICT','Data sudah berubah. Muat ulang sebelum mengubahnya.',409);return row;}
+async function record(db:Database,id:string,kind?:string,expected?:number,allowReadOnly=false){const row=(await db.query('SELECT * FROM nota_app.transactions WHERE id=$1 FOR UPDATE',[id])).rows[0];invariant(!(await db.query('SELECT resource FROM nota_app.resource_leases WHERE resource=$1 AND expires_at>now()',['transaction/'+id])).rows.length,'SYNC_BUSY','Transaksi sedang disinkronkan. Selesaikan pekerjaan tersebut terlebih dahulu.',409);invariant(row&&(!kind||row.kind===kind),'NOT_FOUND','Transaksi tidak ditemukan.',404);invariant(allowReadOnly||!row.data?.readOnly,'APPROVED_RECEIPT_LOCKED','Data hasil ACC terkunci dan tidak dapat diubah atau dihapus dari daftar transaksi.',409);if(expected!==undefined)invariant(row.version===Number(expected),'VERSION_CONFLICT','Data sudah berubah. Muat ulang sebelum mengubahnya.',409);return row;}
 async function insert(db:Database,kind:string,branchId:string,date:string,data:any){await db.query('INSERT INTO nota_app.transactions(id,kind,branch_id,business_date,amount,data) VALUES($1,$2,$3,$4,$5,$6)',[data.id,kind,branchId,date,kind==='OCR'?data.total:data.nominal,JSON.stringify(data)]);return legacyRow({id:data.id,kind,data,amount:kind==='OCR'?data.total:data.nominal,version:1});}
 export async function legacyPage(db:Database,history:boolean,opts:any={}){
  const page=Math.max(1,Math.floor(Number(opts.page)||1)),limit=Math.min(5000,Math.max(1,Math.floor(Number(opts.limit)|| (history?25:50))));
@@ -89,7 +89,18 @@ export async function legacyMutate(db:Database,user:User,action:string,args:any[
   result=kind==='OCR'?true:{id,tanggal:data.tanggal,toko:data.cabang,cv:data.cv,nominal:data.nominal,url:data.fotoUrl,kategori:data.kategori,keterangan:data.keterangan};
  }else if(['deleteTransaction','deleteListrikTransaction','bulkDeleteListrikTransaction'].includes(action)){
   const ids=action==='bulkDeleteListrikTransaction'?args[0]:[args[0]];invariant(Array.isArray(ids)&&ids.length>0&&ids.length<=500,'INVALID_IDS','Pilih 1–500 transaksi.');
-  for(const id of [...new Set(ids)].sort()){const row=await record(db,String(id));invariant(action==='deleteTransaction'?row.kind==='OCR':['LISTRIK','UMUM'].includes(row.kind),'INVALID_KIND','Jenis transaksi tidak sesuai.');await db.query('DELETE FROM nota_app.transactions WHERE id=$1',[id]);}
+  const allowReadOnly=user.role==='ADMIN';
+  for(const id of [...new Set(ids)].sort()){
+   const row=await record(db,String(id),undefined,undefined,allowReadOnly);
+   invariant(action==='deleteTransaction'?row.kind==='OCR':['LISTRIK','UMUM'].includes(row.kind),'INVALID_KIND','Jenis transaksi tidak sesuai.');
+   const sourceReceiptId=row.data?.sourceReceiptId;
+   if(sourceReceiptId&&user.role==='ADMIN'){
+    await db.query("UPDATE nota_app.receipts SET status='PENDING',data=jsonb_set(coalesce(data,'{}'::jsonb),'{approvedAt}','null'),version=version+1,updated_at=now() WHERE id=$1",[sourceReceiptId]);
+    await db.query("DELETE FROM nota_app.transactions WHERE id=$1 OR data->>'sourceReceiptId'=$2",[id,sourceReceiptId]);
+   }else{
+    await db.query('DELETE FROM nota_app.transactions WHERE id=$1',[id]);
+   }
+  }
   result=action==='bulkDeleteListrikTransaction'?{success:true,deletedCount:ids.length}:true;
  }else if(action==='duplicateToKategori'){
   const row=await record(db,String(args[0]),'OCR'),target=args[1];invariant(['Umum','Listrik'].includes(target),'INVALID_KIND','Kategori tidak valid.');invariant(!row.data.statusPosting,'ALREADY_POSTED','Data sudah pernah diposting.',409);

@@ -4207,6 +4207,27 @@
     }
   }
 
+  const DISMISSED_APPROVAL_JOBS_KEY = 'portal_dismissed_approval_jobs';
+  function getDismissedApprovalJobs() {
+    try {
+      const stored = localStorage.getItem(DISMISSED_APPROVAL_JOBS_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function dismissApprovalJob(jobId) {
+    try {
+      const list = getDismissedApprovalJobs();
+      if (!list.includes(jobId)) {
+        list.push(jobId);
+        if (list.length > 100) list.splice(0, list.length - 100);
+        localStorage.setItem(DISMISSED_APPROVAL_JOBS_KEY, JSON.stringify(list));
+      }
+    } catch (_) {}
+  }
+
   function renderApprovalJobs() {
     const root = document.getElementById('taxApprovalJobs');
     if (!root) return;
@@ -4222,11 +4243,21 @@
       const retryable = settled && (job.items || []).some(item => ['FAILED','RECOVERY_REQUIRED'].includes(item.status));
       const recoveryLabel = Number(counts.recoveryRequired || 0) > 0 ? 'Lanjutkan recovery' : 'Coba lagi';
       const actions = `${retryable ? '<button class="portal-btn portal-btn-primary portal-btn-compact" data-job-retry="'+escapeHtml(job.id)+'"><i class="bi bi-arrow-repeat"></i> '+recoveryLabel+'</button>' : ''}${approvalJobDone(job) ? '<button class="portal-btn portal-btn-soft portal-btn-compact" data-job-dismiss="'+escapeHtml(job.id)+'">Tutup</button>' : ''}`;
-      return `<div class="portal-approval-job" data-approval-job="${escapeHtml(job.id)}"><div class="portal-approval-job-head"><strong>Approval ${escapeHtml(job.id)}</strong><span class="portal-badge ${job.status === 'SUCCEEDED' ? 'portal-badge-approved' : /FAILED|RECOVERY/.test(job.status) ? 'portal-badge-correction' : 'portal-badge-pending'}">${escapeHtml(job.status)}</span></div><div class="portal-approval-progress"><span style="width:${Math.round(completed / total * 100)}%"></span></div><div class="portal-approval-job-meta"><span>${completed}/${total} selesai · ${Number(counts.queued || 0)} antre · ${Number(counts.processing || 0)} diproses</span><div class="portal-approval-job-actions">${actions}</div></div>${errors.length ? `<ul class="portal-approval-errors">${errors.map(item=>`<li>Nota ${escapeHtml(item.displayNumber || item.receiptId)}: ${escapeHtml(item.error)}</li>`).join('')}</ul>` : ''}</div>`;
+      const statusText = job.status === 'SUCCEEDED' ? 'Selesai' :
+        job.status === 'RUNNING' ? 'Sedang Diproses' :
+        job.status === 'QUEUED' ? 'Menunggu Antrean' :
+        job.status === 'CANCELLED' ? 'Dibatalkan' :
+        /FAILED|RECOVERY/.test(job.status) ? 'Perlu Tinjauan' : escapeHtml(job.status);
+      const titleText = `Proses Persetujuan Nota (${total} nota)`;
+      const metaProgressText = completed === total && settled ?
+        `${total} nota selesai diproses` :
+        `${completed}/${total} selesai · ${Number(counts.queued || 0)} antre · ${Number(counts.processing || 0)} diproses`;
+      return `<div class="portal-approval-job" data-approval-job="${escapeHtml(job.id)}"><div class="portal-approval-job-head"><strong>${escapeHtml(titleText)}</strong><span class="portal-badge ${job.status === 'SUCCEEDED' ? 'portal-badge-approved' : /FAILED|RECOVERY/.test(job.status) ? 'portal-badge-correction' : 'portal-badge-pending'}">${statusText}</span></div><div class="portal-approval-progress"><span style="width:${Math.round(completed / total * 100)}%"></span></div><div class="portal-approval-job-meta"><span>${metaProgressText}</span><div class="portal-approval-job-actions">${actions}</div></div>${errors.length ? `<ul class="portal-approval-errors">${errors.map(item=>`<li>Nota ${escapeHtml(item.displayNumber || item.receiptId)}: ${escapeHtml(item.error)}</li>`).join('')}</ul>` : ''}</div>`;
     }).join('');
     root.querySelectorAll('[data-job-retry]').forEach(button => button.addEventListener('click', () => retryApprovalJob(button.dataset.jobRetry, button)));
     root.querySelectorAll('[data-job-dismiss]').forEach(button => button.addEventListener('click', () => {
       stopApprovalJobPolling(button.dataset.jobDismiss);
+      dismissApprovalJob(button.dataset.jobDismiss);
       delete Portal.activeApprovalJobs[button.dataset.jobDismiss];
       renderApprovalJobs();
     }));
@@ -4337,8 +4368,12 @@
       document.addEventListener('visibilitychange', handleApprovalVisibilityChange);
     }
     try {
+      const dismissed = new Set(getDismissedApprovalJobs());
       const jobs = await api('LIST_ACTIVE_APPROVAL_JOBS', {});
-      (jobs || []).forEach(job => { Portal.activeApprovalJobs[job.id] = job; });
+      (jobs || []).forEach(job => {
+        if (dismissed.has(job.id) && approvalJobDone(job)) return;
+        Portal.activeApprovalJobs[job.id] = job;
+      });
       renderApprovalJobs();
       (jobs || []).forEach(job => { if (!approvalJobDone(job)) kickApprovalJob(job.id); });
     } catch (error) { Portal.approvalJobsRestored = false; }
@@ -5242,8 +5277,71 @@
   function lockApprovedBankActions(tableBodyId) {
     const body=document.getElementById(tableBodyId);if(!body||body.dataset.approvedRowsLocked==='true')return;
     body.dataset.approvedRowsLocked='true';
-    const apply=()=>body.querySelectorAll('[data-listrik-value^="APR-"]').forEach(button=>{const cell=button.closest('td');if(cell&&cell.querySelector('[data-listrik-action="edit"],[data-listrik-action="delete"]'))cell.innerHTML='<span class="portal-bank-readonly"><i class="bi bi-shield-check"></i> Hasil ACC terkunci</span>';});
+    const isAdmin = Boolean(Portal.user && Portal.user.role === 'ADMIN');
+    const apply=()=>body.querySelectorAll('[data-listrik-value^="APR-"]').forEach(button=>{
+      const cell=button.closest('td');
+      if(!cell) return;
+      const editBtn=cell.querySelector('[data-listrik-action="edit"]');
+      const deleteBtn=cell.querySelector('[data-listrik-action="delete"]');
+      if(!editBtn && !deleteBtn) return;
+      if(isAdmin) {
+        if(editBtn) editBtn.remove();
+        if(deleteBtn && !cell.querySelector('.portal-bank-readonly')) {
+          deleteBtn.title='Hapus transaksi & batalkan status approval (Admin/Testing)';
+          deleteBtn.setAttribute('data-admin-acc-delete','true');
+          const badge=document.createElement('span');
+          badge.className='portal-bank-readonly mr-2';
+          badge.innerHTML='<i class="bi bi-shield-check"></i> ACC';
+          cell.prepend(badge);
+        }
+      } else {
+        cell.innerHTML='<span class="portal-bank-readonly"><i class="bi bi-shield-check"></i> Hasil ACC terkunci</span>';
+        const row=button.closest('tr');
+        if(row) {
+          const check=row.querySelector('.umum-row-check,.listrik-row-check');
+          if(check) check.disabled=true;
+        }
+      }
+    });
     new MutationObserver(apply).observe(body,{childList:true});apply();
+  }
+
+  // Hook global deleteListrik to show informative confirmation for APR- items
+  if (typeof window !== 'undefined') {
+    const origDel = window.deleteListrik;
+    window.deleteListrik = async function(id) {
+      const isApr = String(id || '').startsWith('APR-');
+      if (isApr) {
+        const result = await Swal.fire({
+          title: 'Hapus Transaksi & Batalkan Approval?',
+          text: 'Transaksi hasil ACC ini akan dihapus dan status nota akan dikembalikan ke antrean Pending Review (Khusus Admin / Testing).',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#FF6B6B',
+          cancelButtonColor: '#EAEBFA',
+          confirmButtonText: 'Ya, Hapus & Batalkan ACC!',
+          cancelButtonText: 'Batal',
+          customClass: { cancelButton: 'text-brand-black font-bold' }
+        });
+        if (!result.isConfirmed) return;
+        try {
+          Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'Menghapus data...', showConfirmButton: false, didOpen: () => { Swal.showLoading(); } });
+          await (window.callServer ? callServer('deleteListrikTransaction', id) : api('deleteListrikTransaction', [id]));
+          const activeType = $('.nav-item.active-page').data('page') === 'umumPage' ? 'umum' : 'listrik';
+          if (typeof KONTROL_SUMMARY !== 'undefined' && KONTROL_SUMMARY && KONTROL_SUMMARY.year && typeof fetchExpenseSummaryByBranchMonth === 'function') {
+            await fetchExpenseSummaryByBranchMonth(false);
+          }
+          if (typeof fetchExpensePage === 'function') {
+            await fetchExpensePage(activeType, (typeof EXPENSE_META !== 'undefined' && EXPENSE_META[activeType]?.page) || 1);
+          }
+          Toast.fire({ icon: 'success', title: 'Transaksi dihapus & status approval dicabut' });
+        } catch (e) {
+          Toast.fire({ icon: 'error', title: e.message });
+        }
+        return;
+      }
+      if (typeof origDel === 'function') return origDel(id);
+    };
   }
 
   function compactRupiah(value) {

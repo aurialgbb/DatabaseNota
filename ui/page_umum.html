@@ -1,0 +1,171 @@
+    <div id="umumPage" class="page-section hidden max-w-[1400px] mx-auto pb-20">
+      <div class="hidden">
+        <div>
+          <h1 class="text-[32px] font-black tracking-tight mb-2 text-brand-black">Nota Umum</h1>
+          <p class="text-brand-muted font-bold text-[14px] flex items-center gap-2">
+             Kelola data pengeluaran umum lainnya.
+          </p>
+        </div>
+      </div>
+
+      <div class="animate-[fadeIn_0.4s_ease-out]">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between mb-6 gap-4">
+          <div class="flex items-center gap-3 flex-1 min-w-0">
+            <div class="legacy-filter-surface flex-1 flex bg-white border border-brand-stone rounded-xl shadow-sm p-1 items-center max-w-2xl">
+              <div class="legacy-filter-search flex-[6] relative flex items-center px-4 border-r border-brand-stone">
+                <i class="bi bi-search text-brand-muted mr-3"></i>
+                <input type="text" id="umumSearchBar" class="w-full bg-transparent border-none py-2 font-bold text-brand-black outline-none" placeholder="Cari Keterangan/Toko...">
+              </div>
+              <div id="umumDateFilterWrapper" class="flex-[4] relative flex items-center justify-between px-4 cursor-pointer hover:bg-brand-paper rounded-r-lg h-full min-h-[40px] transition-colors" onclick="if(FP_UMUM_FILTER) FP_UMUM_FILTER.open()">
+                <div class="flex items-center gap-2 text-brand-black font-bold text-[10px] uppercase tracking-widest"><span id="umumStartDisplay">START</span><i class="bi bi-arrow-right text-brand-muted"></i><span id="umumEndDisplay">TO</span></div>
+                <i class="bi bi-calendar-range calendar-icon text-brand-muted ml-2"></i>
+                <i class="bi bi-x-circle-fill clear-date-btn" onclick="clearUmumDateFilter(event)"></i>
+                <input type="text" id="umumDateRangeFilter" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
+              </div>
+            </div>
+            <button id="btnBulkDeleteUmum" onclick="bulkDeleteUmum()" class="hidden px-5 py-2.5 bg-red-100 hover:bg-red-500 text-red-600 hover:text-white rounded-xl font-bold text-[13px] transition-colors items-center gap-2 shrink-0">
+                <i class="bi bi-trash3-fill"></i> Hapus Terpilih (<span id="bulkDeleteUmumCount">0</span>)
+            </button>
+          </div>
+          <button data-portal-refresh onclick="fetchListrik()" class="flex items-center gap-2 text-brand-coral hover:text-brand-light font-bold text-[13px] bg-brand-paper border border-brand-stone hover:border-brand-light px-5 py-2.5 rounded-xl transition-all shadow-sm shrink-0 self-end sm:self-center">
+             <i class="bi bi-arrow-clockwise text-base"></i> Refresh Data
+          </button>
+        </div>
+
+        <div class="bg-white rounded-[2rem] shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-brand-stone overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse min-w-[1000px]">
+              <thead id="umumTableHead" class="bg-brand-paper border-b border-brand-stone text-brand-muted text-[10px] font-black uppercase tracking-widest select-none">
+                <tr>
+                   <th class="p-5 pl-8 w-10 text-center"><input type="checkbox" id="selectAllUmum" onclick="toggleAllUmumChecks(this)" class="accent-[#7651FF] cursor-pointer w-4 h-4 rounded"></th>
+                   <th class="p-5">No</th>
+                   <th class="p-5 cursor-pointer sortable" onclick="handleSort('umum', 2, 'date')">Tanggal <i class="bi bi-arrow-down-up ml-1 opacity-50"></i></th>
+                   <th class="p-5 cursor-pointer sortable" onclick="handleSort('umum', 3, 'string')">Cabang <i class="bi bi-arrow-down-up ml-1 opacity-50"></i></th>
+                   <th class="p-5">Keterangan</th>
+                   <th class="p-5">Jenis</th>
+                   <th class="p-5">Jumlah</th>
+                   <th class="p-5 text-right cursor-pointer sortable" onclick="handleSort('umum', 5, 'number')">Nominal <i class="bi bi-arrow-down-up ml-1 opacity-50"></i></th>
+                   <th class="p-5 text-center">Foto</th>
+                   <th class="p-5 text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody id="umumTableBody" class="divide-y divide-brand-stone/50 text-[11px]"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="legacy-table-footer mt-6 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <span class="text-[11px] font-bold text-brand-muted uppercase tracking-widest whitespace-nowrap">Baris per halaman</span>
+            <div class="legacy-limit-control" id="umumLimitDropdownWrapper">
+              <button type="button" id="umumLimitBtn" class="legacy-limit-trigger" data-expense-limit-toggle="umum" data-value="50" aria-haspopup="listbox" aria-controls="umumLimitMenu" aria-expanded="false">
+                <span id="umumLimitLabel">50 baris</span><i class="bi bi-chevron-down" aria-hidden="true"></i>
+              </button>
+              <div id="umumLimitMenu" class="legacy-limit-menu hidden" role="listbox" aria-label="Jumlah baris per halaman">
+                <button type="button" class="legacy-limit-option limit-opt-umum" data-expense-limit-value="10" role="option"><span>10 baris</span></button>
+                <button type="button" class="legacy-limit-option limit-opt-umum" data-expense-limit-value="25" role="option"><span>25 baris</span></button>
+                <button type="button" class="legacy-limit-option limit-opt-umum active-limit" data-expense-limit-value="50" role="option"><span>50 baris</span><i class="bi bi-check2" aria-hidden="true"></i></button>
+                <button type="button" class="legacy-limit-option limit-opt-umum" data-expense-limit-value="100" role="option"><span>100 baris</span></button>
+              </div>
+            </div>
+          </div>
+          <!-- Info total & pagination -->
+          <div class="flex items-center gap-3">
+            <span id="umumRowInfo" class="text-[11px] font-bold text-brand-muted"></span>
+            <div id="umumPaginationControls" class="flex items-center gap-1.5"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+<script>
+window.goToUmumPage = function(p) {
+  fetchExpensePage('umum', p);
+};
+    async function deleteListrik(id) {
+       const isApr = String(id || '').startsWith('APR-');
+       const result = await Swal.fire({
+          title: isApr ? 'Hapus Transaksi & Batalkan Approval?' : 'Hapus Data?',
+          text: isApr ? 'Transaksi hasil ACC ini akan dihapus dan status nota akan dikembalikan ke antrean Pending Review (Khusus Admin / Testing).' : 'Data ini akan dihapus permanen!',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#FF6B6B',
+          cancelButtonColor: '#EAEBFA', 
+          confirmButtonText: isApr ? 'Ya, Hapus & Batalkan ACC!' : 'Ya, Hapus!',
+          cancelButtonText: 'Batal',
+          customClass: { cancelButton: 'text-brand-black font-bold' }
+       });
+
+       if (result.isConfirmed) {
+          try {
+             Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'Menghapus data...', showConfirmButton: false, didOpen: () => { Swal.showLoading() } });
+             await callServer('deleteListrikTransaction', id);
+             const activeType = $('.nav-item.active-page').data('page') === 'umumPage' ? 'umum' : 'listrik';
+             if (KONTROL_SUMMARY.year) await fetchExpenseSummaryByBranchMonth(false);
+             await fetchExpensePage(activeType, EXPENSE_META[activeType].page || 1);
+             
+             Toast.fire({ icon: 'success', title: isApr ? 'Transaksi dihapus & status approval dicabut' : 'Data berhasil dihapus' });
+          } catch(e) {
+             Toast.fire({ icon: 'error', title: e.message });
+          }
+       }
+    }
+
+    window.toggleAllUmumChecks = function(source) {
+       $('.umum-row-check').prop('checked', source.checked);
+       updateBulkDeleteUmumBtn();
+    }
+
+    window.updateBulkDeleteUmumBtn = function() {
+       const count = $('.umum-row-check:checked').length;
+       const total = $('.umum-row-check').length;
+       $('#selectAllUmum').prop('checked', count === total && total > 0);
+       
+       if (count > 0) {
+           $('#bulkDeleteUmumCount').text(count);
+           $('#btnBulkDeleteUmum').removeClass('hidden').addClass('flex');
+       } else {
+           $('#btnBulkDeleteUmum').removeClass('flex').addClass('hidden');
+       }
+    }
+
+    window.bulkDeleteUmum = async function() {
+       const selectedIds = [];
+       $('.umum-row-check:checked').each(function() {
+           selectedIds.push($(this).val());
+       });
+       
+       if (selectedIds.length === 0) return;
+       
+       const result = await Swal.fire({
+           title: 'Hapus Data Massal?',
+           text: `Anda akan menghapus ${selectedIds.length} data secara permanen!`,
+           icon: 'warning',
+           showCancelButton: true,
+           confirmButtonColor: '#ef4444',
+           cancelButtonColor: '#EAEBFA',
+           confirmButtonText: 'Ya, Hapus Semua!',
+           cancelButtonText: 'Batal',
+           customClass: { cancelButton: 'text-brand-black font-bold' }
+       });
+       
+       if (result.isConfirmed) {
+           toggleBtnState('btnBulkDeleteUmum', true);
+           Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'Menghapus data...', showConfirmButton: false, didOpen: () => { Swal.showLoading() } });
+           
+           try {
+               await callServer('bulkDeleteListrikTransaction', selectedIds);
+               if (KONTROL_SUMMARY.year) await fetchExpenseSummaryByBranchMonth(false);
+               await fetchExpensePage('umum', EXPENSE_META.umum.page || 1);
+               
+               Toast.fire({ icon: 'success', title: `${selectedIds.length} data berhasil dihapus.` });
+               $('#selectAllUmum').prop('checked', false);
+               $('#btnBulkDeleteUmum').removeClass('flex').addClass('hidden');
+           } catch (e) {
+               Toast.fire({ icon: 'error', title: e.message });
+           } finally {
+               toggleBtnState('btnBulkDeleteUmum', false);
+           }
+       }
+    }
+
+</script>

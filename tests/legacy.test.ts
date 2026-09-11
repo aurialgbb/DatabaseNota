@@ -23,3 +23,61 @@ test('Menu listrik, umum, history: CRUD, paginasi, filter dan idempotensi',async
  }finally{await pg.close();}
 });
 
+test('Admin dapat menghapus transaksi hasil ACC (APR-*) dan mengembalikan status receipt ke PENDING, sedangkan non-admin diblokir', async () => {
+ const pg = new PGlite(), db = pg as unknown as Database;
+ const adminUser = { uid: 'admin-1', role: 'ADMIN' } as User;
+ const taxUser = { uid: 'tax-1', role: 'TAX' } as User;
+ try {
+  for (const file of fs.readdirSync('migrations').filter(x => x.endsWith('.sql')).sort()) {
+   await pg.exec(fs.readFileSync('migrations/' + file, 'utf8'));
+  }
+  await pg.exec("INSERT INTO nota_app.branches(id,name,type,active) VALUES('b1','CABANG B','PT',true);");
+  await pg.exec("INSERT INTO nota_app.profiles(uid,username,auth_email,display_name,role) VALUES('admin-1','admin','admin@test.com','Admin','ADMIN'),('tax-1','tax','tax@test.com','Tax','TAX');");
+  await pg.exec(`
+   INSERT INTO nota_app.receipts(id,branch_id,owner_uid,supplier,receipt_date,status,total,data)
+   VALUES('rcpt-1','b1','admin-1','TOKO A','2026-09-11','APPROVED',100000,'{"approvedAt":1789145738561}'::jsonb);
+   INSERT INTO nota_app.receipt_items(id,receipt_id,position,description,category,quantity,unit,amount)
+   VALUES('item-1','rcpt-1',1,'Item 1','Umum',1,'PCS',50000),('item-2','rcpt-1',2,'Item 2','Umum',1,'PCS',50000);
+   INSERT INTO nota_app.transactions(id,kind,branch_id,business_date,amount,data)
+   VALUES('APR-item-1','UMUM','b1','2026-09-11',50000,'{"readOnly":true,"sourceReceiptId":"rcpt-1","kategori":"Umum"}'::jsonb),
+         ('APR-item-2','UMUM','b1','2026-09-11',50000,'{"readOnly":true,"sourceReceiptId":"rcpt-1","kategori":"Umum"}'::jsonb);
+  `);
+
+  const mutate = async (user: User, action: string, args: any[], key: string) => {
+   await pg.exec('BEGIN');
+   try {
+    const result = await legacyMutate(db, user, action, args, key);
+    await pg.exec('COMMIT');
+    return result;
+   } catch (e) {
+    await pg.exec('ROLLBACK');
+    throw e;
+   }
+  };
+
+  await assert.rejects(
+   () => mutate(taxUser, 'deleteListrikTransaction', ['APR-item-1'], 'tax-del-1'),
+   (err: any) => err.code === 'APPROVED_RECEIPT_LOCKED'
+  );
+
+  await assert.rejects(
+   () => mutate(taxUser, 'bulkDeleteListrikTransaction', [['APR-item-1', 'APR-item-2']], 'tax-del-bulk'),
+   (err: any) => err.code === 'APPROVED_RECEIPT_LOCKED'
+  );
+
+  const delResult = await mutate(adminUser, 'deleteListrikTransaction', ['APR-item-1'], 'admin-del-1');
+  assert.equal(delResult, true);
+
+  const remainingTx = (await pg.query("SELECT count(*)::int as c FROM nota_app.transactions WHERE id IN ('APR-item-1', 'APR-item-2')")).rows[0] as any;
+  assert.equal(remainingTx.c, 0);
+
+  const receipt = (await pg.query("SELECT status, (data->>'approvedAt') as approved_at, version FROM nota_app.receipts WHERE id='rcpt-1'")).rows[0] as any;
+  assert.equal(receipt.status, 'PENDING');
+  assert.equal(receipt.approved_at, null);
+  assert.ok(Number(receipt.version) >= 2);
+ } finally {
+  await pg.close();
+ }
+});
+
+
