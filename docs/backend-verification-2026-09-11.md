@@ -1,6 +1,6 @@
 # Verifikasi backend 11 September 2026
 
-Status: fungsi pengelolaan dan sinkronisasi sudah diimplementasikan; OCR publik masih tertahan penolakan lokasi oleh Gemini. Belum menyatakan seluruh aplikasi siap produksi sampai OCR dari VPS berhasil diuji.
+Status terbaru: OCR publik sudah diaktifkan melalui relay Cloudflare setelah persetujuan pengguna. Dua uji alur publik berurutan berhasil setelah penempatan relay dekat Singapura. Catatan kendala dan persetujuan di bawah merupakan riwayat sebelum aktivasi.
 
 ## Hasil pemeriksaan
 
@@ -39,3 +39,14 @@ Uji melalui HTTPS publik berhasil: login, antrean worker VPS untuk tambah/edit/h
 Relay telah dipasang di akun pengguna dengan persetujuan eksplisit penyimpanan Gemini key sebagai secret. Mode redirect disesuaikan menjadi manual untuk runtime Workers, dengan penolakan respons redirect agar key tidak diteruskan ke host lain.
 
 Dari VPS, permintaan Gemini berhasil HTTP 200. Foto nota sintetis dengan prompt baseline juga berhasil: satu nota, total 40.000. Ini membuktikan jalur koneksi dan pembacaan foto melalui relay berfungsi. Belum mengaktifkan jalur produksi: pemeriksaan persetujuan otomatis meminta izin eksplisit untuk pengiriman foto nota nyata melalui Cloudflare. Konfigurasi OCR aplikasi masih diblokir sampai persetujuan tersebut diberikan.
+
+
+## Aktivasi dan verifikasi OCR publik
+
+Pengguna menyetujui pengiriman foto nota nyata beserta prompt melalui Cloudflare ke Gemini. Environment privat VPS diperbarui dengan URL/secret relay dan OCR_REGION_BLOCKED=false; web dan worker direstart. Health web, database, serta backup luar server lulus.
+
+Pengujian awal sesudah aktivasi sempat menunjukkan hasil tidak konsisten (berhasil dan penolakan lokasi). Relay kemudian diberi placement region aws:ap-southeast-1 melalui API resmi Cloudflare. Respons teramati dengan penanda relay dan colo SIN. Ini merupakan lokasi pengamatan, bukan jaminan lokasi permanen Cloudflare.
+
+Dua pengujian publik berurutan setelah perubahan tersebut berhasil: akun toko sementara login, upload PNG ke R2, worker VPS menjalankan OCR melalui relay, hasil satu nota Rp40.000, finalisasi, submit ke Bank Nota, review/edit dengan pemeriksaan versi, dan akses foto privat. Semua fixture pengujian dibersihkan. Uji ini belum merupakan load test 150 cabang atau jaminan penerimaan seluruh rentang IP Cloudflare oleh Gemini.
+
+Tidak ada upgrade paket berbayar. Secret tidak masuk Git. Worker menolak permintaan tanpa autentikasi dan redirect upstream, serta hanya menerima model yang diizinkan.
