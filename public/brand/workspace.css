@@ -25,6 +25,18 @@ body.portal-ui-v3 .portal-account-card-icon-profile { color:#2456c5; background:
 body.portal-ui-v3 .portal-account-identity { border-color:#e2e6ed; background:#f3f5f8; }
 body.portal-ui-v3 .portal-account-avatar { background:#2456c5; box-shadow:none; }
 body.portal-ui-v3 .portal-master-hero { background:#f0f4fc; border-color:#e2e6ed; border-radius:12px; }
+body.portal-ui-v3 .portal-master-search-field { display:grid; grid-template-columns:18px minmax(0,1fr); align-items:center; gap:7px; min-height:42px; padding:0 11px; border:1px solid var(--ui-border-strong); border-radius:8px; background:#fff; transition:border-color var(--ui-motion-fast),box-shadow var(--ui-motion-fast); }
+body.portal-ui-v3 .portal-master-search-field > i { color:var(--ui-muted); font-size:13px; }
+body.portal-ui-v3 .portal-master-search-field > input { width:100%; min-width:0; border:0; outline:0; background:transparent; color:var(--ui-ink); font:600 13px Nunito,sans-serif; }
+body.portal-ui-v3 .portal-master-search-field > input::placeholder { color:var(--ui-muted-soft); font-weight:500; }
+body.portal-ui-v3 .portal-master-search-field:focus-within { border-color:var(--ui-primary); box-shadow:var(--ui-focus); }
+body.portal-ui-v3 .portal-master-search-field > input:focus-visible { outline:0 !important; }
+body.portal-ui-v3 .portal-master-card .portal-link-cell { transition:border-color var(--ui-motion-fast),box-shadow var(--ui-motion-fast),background var(--ui-motion-fast); }
+body.portal-ui-v3 .portal-master-card .portal-link-cell:focus-within { border-color:var(--ui-primary); background:#fff; box-shadow:var(--ui-focus); }
+body.portal-ui-v3 .portal-master-card .portal-link-cell .portal-inline-input:focus,
+body.portal-ui-v3 .portal-master-card .portal-link-cell .portal-inline-input:focus-visible { border:0 !important; outline:0 !important; background:transparent !important; box-shadow:none !important; }
+body.portal-ui-v3 .portal-master-card .portal-link-cell .portal-inline-input { cursor:text; }
+body.portal-ui-v3 .portal-master-url-dirty .portal-master-card-foot > span { color:var(--ui-primary-strong); }
 body.portal-ui-v3 .swal2-icon { box-shadow:none !important; }
 body.portal-ui-v3 .swal2-icon.swal2-question { background:#2456c5 !important; }
 body.portal-ui-v3 .portal-import-dialog { width:min(760px,calc(100vw - 28px)) !important; padding:24px; }

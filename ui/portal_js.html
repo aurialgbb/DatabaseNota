@@ -797,7 +797,7 @@
   }
 
   function portalComboIsSearchable(select) {
-    return ['taxLinkBranchFilter', 'taxBankBranch', 'taxEntryBranch'].includes(select.id);
+    return ['taxBankBranch', 'taxEntryBranch'].includes(select.id);
   }
 
   function filterPortalCombo(combo, value) {
@@ -1968,7 +1968,7 @@
     on('taxLoadLinks', 'click', () => runManualPortalRefresh('master-links', 'taxMasterLinksPage', 'taxLoadLinks', () => runPortalFeature('loadMasterLinks', { background:true }), 'Master Link diperbarui'));
     on('taxLinkPeriod', 'change', () => runManualPortalRefresh('master-period', 'taxMasterLinksPage', 'taxLoadLinks', () => runPortalFeature('loadMasterLinks', { background:true }), false));
     on('taxAddMasterBranch', 'click', () => runPortalFeature('openMasterBranchDialog'));
-    on('taxLinkBranchFilter', 'change', () => { Portal.masterLinkPage = 1; runPortalFeature('renderMasterLinks'); });
+    on('taxLinkBranchFilter', 'input', () => schedulePortalInputWork('master-link-search', () => { Portal.masterLinkPage = 1; runPortalFeature('renderMasterLinks'); }));
     on('taxBranchBulkMenuButton', 'click', event => { event.stopPropagation(); togglePortalActionMenu(document.getElementById('taxBranchBulkMenu'), event.currentTarget); });
     on('taxDownloadBranchTemplate', 'click', () => runPortalFeature('downloadBranchTemplate'));
     on('taxUploadBranchBulk', 'click', () => document.getElementById('taxBranchBulkFile').click());
@@ -4295,11 +4295,6 @@
       const data = await api('GET_MASTER_LINKS',{period});
       Portal.taxLinks = data.links || {}; Portal.taxBranches = data.branches || []; Portal.taxLinksRevision = String(data.revision || '');
       if (!options.background) Portal.masterLinkPage = 1;
-      const filter = document.getElementById('taxLinkBranchFilter');
-      const selected = filter.value;
-      filter.innerHTML = '<option value="">Semua cabang</option>' + Portal.taxBranches.map(branch => `<option value="${escapeHtml(branch.id)}">${escapeHtml(branch.name)} · ${escapeHtml(branch.type)}</option>`).join('');
-      filter.value = selected;
-      refreshPortalCombo(filter);
       renderMasterLinks();
       Portal.pageLoadedAt.taxMasterLinksPage = Date.now();
       Portal.pageRendered.taxMasterLinksPage = true;
@@ -4310,8 +4305,8 @@
 
   function renderMasterLinks() {
     const body = document.getElementById('taxLinksBody');
-    const filter = document.getElementById('taxLinkBranchFilter').value;
-    const rows = Portal.taxBranches.filter(branch => !filter || branch.id === filter);
+    const filter = String(document.getElementById('taxLinkBranchFilter').value || '').trim().toLocaleLowerCase('id-ID');
+    const rows = Portal.taxBranches.filter(branch => !filter || [branch.name,branch.id,branch.type].some(value => String(value || '').toLocaleLowerCase('id-ID').includes(filter)));
     const total = Portal.taxBranches.length;
     const connected = Portal.taxBranches.filter(branch => {
       const link = Portal.taxLinks[branch.id] || {};
@@ -4350,11 +4345,11 @@
         </header>
         <div class="portal-master-connection">
           <label for="master-url-${escapeHtml(branch.id)}">URL Spreadsheet</label>
-          <div class="portal-link-cell"><i class="bi bi-file-earmark-spreadsheet"></i><input id="master-url-${escapeHtml(branch.id)}" class="portal-inline-input" data-master-url="${escapeHtml(branch.id)}" value="${escapeHtml(url)}" placeholder="Tempel URL Google Spreadsheet" aria-label="URL spreadsheet"><a class="portal-link-open ${safeUrl ? '' : 'portal-hidden'}" data-master-open="${escapeHtml(branch.id)}" href="${escapeHtml(safeUrl || '#')}" target="_blank" rel="noopener noreferrer" title="Buka spreadsheet"><i class="bi bi-box-arrow-up-right"></i></a></div>
+          <div class="portal-link-cell"><i class="bi bi-file-earmark-spreadsheet"></i><input id="master-url-${escapeHtml(branch.id)}" class="portal-inline-input" data-master-url="${escapeHtml(branch.id)}" value="${escapeHtml(url)}" placeholder="Tempel URL Google Spreadsheet" aria-label="URL spreadsheet ${escapeHtml(branch.name)}" inputmode="url" autocomplete="off" spellcheck="false"><a class="portal-link-open ${safeUrl ? '' : 'portal-hidden'}" data-master-open="${escapeHtml(branch.id)}" href="${escapeHtml(safeUrl || '#')}" target="_blank" rel="noopener noreferrer" title="Buka spreadsheet"><i class="bi bi-box-arrow-up-right"></i></a></div>
         </div>
         <footer class="portal-master-card-foot">
           <span><i class="bi bi-cloud-check"></i> ${safeUrl ? 'Tujuan siap digunakan' : 'Belum menjadi tujuan transaksi'}</span>
-          <div class="portal-inline-actions">${editing ? `<button class="portal-icon-button portal-icon-save" data-master-save="${escapeHtml(branch.id)}" title="Simpan" aria-label="Simpan"><i class="bi bi-check-lg"></i></button><button class="portal-icon-button" data-master-cancel="${escapeHtml(branch.id)}" title="Batal" aria-label="Batal"><i class="bi bi-x-lg"></i></button>` : `<button class="portal-icon-button" data-master-edit="${escapeHtml(branch.id)}" title="Edit cabang" aria-label="Edit cabang"><i class="bi bi-pencil-square"></i></button>`}<button class="portal-icon-button portal-icon-danger" data-master-delete="${escapeHtml(branch.id)}" title="Hapus" aria-label="Hapus"><i class="bi bi-trash3"></i></button></div>
+          <div class="portal-inline-actions">${editing ? `<button class="portal-icon-button portal-icon-save" data-master-save="${escapeHtml(branch.id)}" title="Simpan nama dan tipe" aria-label="Simpan nama dan tipe"><i class="bi bi-check-lg"></i></button><button class="portal-icon-button" data-master-cancel="${escapeHtml(branch.id)}" title="Batal" aria-label="Batal"><i class="bi bi-x-lg"></i></button>` : `<button class="portal-icon-button" data-master-edit="${escapeHtml(branch.id)}" title="Edit nama dan tipe" aria-label="Edit nama dan tipe"><i class="bi bi-pencil-square"></i></button>`}<button class="portal-icon-button portal-icon-danger" data-master-delete="${escapeHtml(branch.id)}" title="Hapus" aria-label="Hapus"><i class="bi bi-trash3"></i></button></div>
         </footer>
       </article>`;
     }).join('');
@@ -4363,7 +4358,8 @@
     body.querySelectorAll('[data-master-cancel]').forEach(button => button.addEventListener('click', () => cancelMasterBranchInline(button.dataset.masterCancel)));
     body.querySelectorAll('[data-master-save]').forEach(button => button.addEventListener('click', () => saveMasterBranchInline(button.dataset.masterSave)));
     body.querySelectorAll('[data-master-url]').forEach(input => {
-      input.addEventListener('change', () => saveMasterUrlInline(input.dataset.masterUrl, input.value));
+      input.addEventListener('input', () => markMasterUrlDirty(input.dataset.masterUrl));
+      input.addEventListener('blur', () => saveMasterUrlInline(input.dataset.masterUrl, input.value));
       input.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); input.blur(); } });
     });
     body.querySelectorAll('[data-master-delete]').forEach(button => button.addEventListener('click', () => deleteMasterBranch(Portal.taxBranches.find(branch => branch.id === button.dataset.masterDelete))));
@@ -4571,6 +4567,14 @@
 
   function bulkBranchPreviewHtml(preview) {
     return NotaImport.branchPreviewHtml(preview);
+  }
+
+  function markMasterUrlDirty(id) {
+    const row = document.querySelector(`[data-master-row="${safeCssEscape(id)}"]`);
+    if (!row) return;
+    row.classList.add('portal-master-url-dirty');
+    const hint = row.querySelector('.portal-master-card-foot > span');
+    if (hint) hint.innerHTML = '<i class="bi bi-pencil-square"></i> Tekan Enter atau klik di luar untuk menyimpan';
   }
 
   function bulkBranchErrorsHtml(errors) {

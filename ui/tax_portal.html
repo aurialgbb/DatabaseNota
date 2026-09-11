@@ -132,8 +132,11 @@
   <div class="portal-card portal-master-workspace">
     <div class="portal-master-toolbar">
       <div>
-        <span class="portal-toolbar-label">Cari cabang</span>
-        <select id="taxLinkBranchFilter" class="portal-select" data-portal-combo><option value="">Semua cabang</option></select>
+        <label class="portal-toolbar-label" for="taxLinkBranchFilter">Cari cabang</label>
+        <div class="portal-master-search-field">
+          <i class="bi bi-search" aria-hidden="true"></i>
+          <input id="taxLinkBranchFilter" type="search" placeholder="Ketik nama atau ID cabang" autocomplete="off" aria-label="Cari cabang">
+        </div>
       </div>
       <div class="portal-master-toolbar-meta">
         <span><i class="bi bi-info-circle"></i> URL tersimpan otomatis saat kolom selesai diedit.</span>
