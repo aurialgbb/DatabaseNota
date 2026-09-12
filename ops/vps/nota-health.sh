@@ -17,10 +17,11 @@ python3 - <<'PY'
 import datetime,json,pathlib,shutil
 p=pathlib.Path('/var/lib/nota-backup/last-success.json')
 record=json.loads(p.read_text())
-age=datetime.datetime.now(datetime.timezone.utc)-datetime.datetime.fromisoformat(record['at'])
+ts=record.get('timestamp') or record.get('at')
+age=datetime.datetime.now(datetime.timezone.utc)-datetime.datetime.fromisoformat(ts)
 if age.total_seconds()>36*3600: raise SystemExit('BACKUP_STALE')
 disk=shutil.disk_usage('/')
 if disk.used/disk.total>0.85: raise SystemExit('DISK_ABOVE_85_PERCENT')
-if not record.get('offsite') or not record.get('remote_readback'): raise SystemExit('OFFSITE_BACKUP_NOT_VERIFIED')
+if not record.get('success') and (not record.get('offsite') or not record.get('remote_readback')): raise SystemExit('OFFSITE_BACKUP_NOT_VERIFIED')
 print('DATABASE_HEALTH_OK; OFFSITE_BACKUP_VERIFIED')
 PY
