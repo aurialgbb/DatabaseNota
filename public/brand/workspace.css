@@ -384,3 +384,94 @@ body.portal-ui-v3 #tokoAccountPage #portalAccountLogoutButton { min-height:44px;
   body.portal-ui-v3 #tokoAccountPage .portal-account-workspace > .portal-card { padding:20px; }
   body.portal-ui-v3 #tokoAccountPage .portal-account-facts { grid-template-columns:minmax(0,1fr); }
 }
+
+/* ==========================================================================
+   Tarik Data - Clean SaaS UI Typography & Grid Hierarchy
+   ========================================================================== */
+
+/* 1. Table Header: Crisp, readable SaaS header with proper hierarchy (12px, font-bold/semibold) */
+body.portal-ui-v3 #inputPage .legacy-pull-v3-result-card th,
+body.portal-ui-v3 #tabInputTarik table thead th,
+body.portal-ui-v3 #tarikResultSection table thead th {
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: #334155 !important; /* slate-700 */
+  background-color: #f8fafc !important; /* slate-50 */
+  border-bottom: 1px solid #e2e8f0 !important;
+  letter-spacing: 0.04em !important;
+  padding: 11px 14px !important;
+  text-transform: uppercase !important;
+  line-height: 1.4 !important;
+}
+
+/* 2. Table Inputs (Grid Cells): Clean data grid cells, medium weight (NOT heavy 700 bold!) */
+body.portal-ui-v3 #tarikTableBody .tarik-grid-input {
+  font-family: inherit !important;
+  font-size: 12px !important;
+  font-weight: 500 !important; /* Clean medium weight, prevents visual noise */
+  color: #1e293b !important; /* slate-800 */
+  line-height: 1.4 !important;
+  letter-spacing: 0 !important;
+  background-color: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  padding: 5px 10px !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease !important;
+}
+
+body.portal-ui-v3 #tarikTableBody .tarik-grid-input:hover:not(:disabled) {
+  border-color: #cbd5e1 !important;
+}
+
+body.portal-ui-v3 #tarikTableBody .tarik-grid-input:focus {
+  border-color: #2456c5 !important;
+  box-shadow: 0 0 0 3px rgba(36, 86, 197, 0.12) !important;
+  background-color: #ffffff !important;
+}
+
+/* 3. Currency / Nominal Input: Tabular nums with crisp semi-bold emphasis */
+body.portal-ui-v3 #tarikTableBody .tarik-grid-input[data-tarik-money="true"] {
+  font-weight: 600 !important;
+  color: #0f172a !important; /* slate-900 */
+  text-align: right !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+/* 4. Row 1 Lock: Explicit soft slate styling ("Buat abu-abu aja non editable") */
+body.portal-ui-v3 #tarikTableBody tr.tarik-row-locked,
+body.portal-ui-v3 #tarikTableBody tr.tarik-row-locked td {
+  background-color: #f8fafc !important;
+}
+
+body.portal-ui-v3 #tarikTableBody .tarik-input-locked,
+body.portal-ui-v3 #tarikTableBody tr.tarik-row-locked input {
+  background-color: #f1f5f9 !important; /* slate-100 soft grey */
+  color: #94a3b8 !important; /* slate-400 */
+  border: 1px solid #cbd5e1 !important; /* slate-300 */
+  border-radius: 8px !important;
+  padding: 5px 10px !important;
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  line-height: 1.4 !important;
+  cursor: not-allowed !important;
+  user-select: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+body.portal-ui-v3 #tarikTableBody .tarik-input-locked::placeholder,
+body.portal-ui-v3 #tarikTableBody tr.tarik-row-locked input::placeholder {
+  color: #94a3b8 !important;
+  font-style: italic !important;
+  font-weight: 400 !important;
+}
+
+/* 5. Date Accordion Row: Balanced modern SaaS header */
+body.portal-ui-v3 #tarikTableBody tr[data-tarik-action="toggle-date"] td {
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.05em !important;
+  padding: 12px 18px !important;
+}
+

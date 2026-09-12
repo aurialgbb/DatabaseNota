@@ -93,17 +93,17 @@
           <div class="legacy-pull-v3-result-card flex flex-col max-h-[600px]">
             <div class="overflow-x-auto overflow-y-auto flex-1 custom-scrollbar">
               <table class="w-full text-left border-collapse min-w-[1200px]">
-                <thead class="bg-brand-paper border-b border-brand-stone text-slate-500 text-[11px] font-semibold uppercase tracking-wider sticky top-0 z-10 shadow-sm">
+                <thead class="bg-[#F8FAFC] border-b border-slate-200 text-slate-700 text-xs font-bold uppercase tracking-wider sticky top-0 z-10 shadow-sm">
                   <tr>
-                    <th class="p-4 pl-8 w-16 bg-brand-paper">No</th>
-                    <th class="p-4 w-24 bg-brand-paper">Tgl</th>
-                    <th class="p-4 bg-brand-paper">Cabang</th>
-                    <th class="p-4 bg-brand-paper">Keterangan</th>
-                    <th class="p-4 bg-brand-paper">Jenis</th>
-                    <th class="p-4 bg-brand-paper">Jumlah</th>
-                    <th class="p-4 text-right bg-brand-paper">Nominal</th>
-                    <th class="p-4 text-center bg-brand-paper">Eliminasi</th>
-                    <th class="p-4 text-center w-32 bg-brand-paper">Foto Nota</th>
+                    <th class="py-3 px-4 pl-8 w-16 bg-[#F8FAFC]">No</th>
+                    <th class="py-3 px-4 w-24 bg-[#F8FAFC]">Tgl</th>
+                    <th class="py-3 px-4 bg-[#F8FAFC]">Cabang</th>
+                    <th class="py-3 px-4 bg-[#F8FAFC]">Keterangan</th>
+                    <th class="py-3 px-4 bg-[#F8FAFC]">Jenis</th>
+                    <th class="py-3 px-4 bg-[#F8FAFC]">Jumlah</th>
+                    <th class="py-3 px-4 text-right bg-[#F8FAFC]">Nominal</th>
+                    <th class="py-3 px-4 text-center bg-[#F8FAFC]">Eliminasi</th>
+                    <th class="py-3 px-4 text-center w-32 bg-[#F8FAFC]">Foto Nota</th>
                   </tr>
                 </thead>
                 <tbody id="tarikTableBody" class="divide-y divide-brand-stone/50 text-[12px]"></tbody>
@@ -976,8 +976,8 @@
             const isRowOne = Number.parseInt(r.no, 10) === 1 || Boolean(r._isRowOneLocked);
             
             // Render input fields for spreadsheet style with SaaS UI typography
-            const inputClass = "w-full bg-[#FAFAFA] focus:bg-white border border-[#EAEBFA] hover:border-[#7651FF] focus:border-[#7651FF] focus:ring-2 focus:ring-[#7651FF]/10 rounded-lg px-2.5 py-1 font-normal text-[11px] text-slate-800 outline-none transition-all shadow-sm";
-            const rowOneInputClass = "w-full bg-slate-100/90 text-slate-400 border border-slate-200 rounded-lg px-2.5 py-1 text-[11px] font-normal cursor-not-allowed select-none outline-none";
+            const inputClass = "w-full bg-[#FAFAFA] focus:bg-white border border-[#EAEBFA] hover:border-[#2456c5] focus:border-[#2456c5] focus:ring-2 focus:ring-[#2456c5]/10 rounded-lg px-2.5 py-1 font-normal text-xs text-slate-800 outline-none transition-all shadow-sm";
+            const rowOneInputClass = "tarik-input-locked w-full";
             
             // Cek keaktifan baris (jika bukan placeholder atau jika ada salah satu data terisi)
             const isRowActive = !isRowOne && (!r._placeholder || (r.keterangan && r.keterangan.trim() !== "") || (r.nominal && r.nominal > 0) || r.base64 || (r.jenis && r.jenis.trim() !== ""));
@@ -1001,41 +1001,41 @@
                isJenisInvalid = !validJenis.includes(inputJenis);
             }
 
-            const getBorderClass = (isInvalid) => isInvalid ? "w-full bg-[#FFF5F5] border border-red-300 hover:border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-500/10 rounded-lg px-2.5 py-1 font-normal text-[11px] text-slate-800 outline-none transition-all shadow-sm" : inputClass;
+            const getBorderClass = (isInvalid) => isInvalid ? "w-full bg-[#FFF5F5] border border-red-300 hover:border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-500/10 rounded-lg px-2.5 py-1 font-normal text-xs text-slate-800 outline-none transition-all shadow-sm" : inputClass;
 
             let cabangHTML = '';
             if (isRowOne) {
               cabangHTML = `<input type="text" value="${tarikEscapeHtml(r.cabang || '')}" class="${rowOneInputClass}" placeholder="-" readonly disabled>`;
             } else if (tipe === "Central Kitchen") {
               cabangHTML = `<div class="relative w-full">
-                <input type="text" id="tarik-cabang-${Number(r._originalIndex)}" data-row="${Number(r._originalIndex)}" data-col="0" data-tarik-field="cabang" data-tarik-autocomplete="cabang" value="${tarikEscapeHtml(r.cabang || '')}" class="${getBorderClass(isCabangInvalid)} tarik-grid-input uppercase font-normal text-slate-800" placeholder="..." autocomplete="off">
+                <input type="text" id="tarik-cabang-${Number(r._originalIndex)}" data-row="${Number(r._originalIndex)}" data-col="0" data-tarik-field="cabang" data-tarik-autocomplete="cabang" value="${tarikEscapeHtml(r.cabang || '')}" class="${getBorderClass(isCabangInvalid)} tarik-grid-input uppercase font-normal text-slate-800 text-xs" placeholder="..." autocomplete="off">
                 <div class="absolute top-full left-0 mt-1 bg-white border border-brand-stone rounded-xl shadow-xl max-h-48 overflow-y-auto hidden z-50 flex flex-col p-1 min-w-[200px] text-left" id="tarik-cabang-list-${r._originalIndex}"></div>
               </div>`;
             } else {
-              cabangHTML = `<span class="px-2 py-1 font-medium text-slate-600 opacity-70 text-[11px]">${tarikEscapeHtml(r.cabang || '-')}</span>`;
+              cabangHTML = `<span class="px-2 py-1 font-normal text-slate-600 text-xs">${tarikEscapeHtml(r.cabang || '-')}</span>`;
             }
             
             const keteranganVal = r.keterangan || '';
             const placeholderKeterangan = isRowOne ? '(Khusus diisi dari spreadsheet)' : '...';
             const keteranganHTML = isRowOne
               ? `<input type="text" value="${tarikEscapeHtml(keteranganVal)}" class="${rowOneInputClass}" placeholder="${placeholderKeterangan}" readonly disabled>`
-              : `<input type="text" data-row="${Number(r._originalIndex)}" data-col="1" data-tarik-field="keterangan" value="${tarikEscapeHtml(keteranganVal)}" class="${getBorderClass(isKeteranganInvalid)} tarik-grid-input font-normal text-slate-800" placeholder="..." autocomplete="off">`;
+              : `<input type="text" data-row="${Number(r._originalIndex)}" data-col="1" data-tarik-field="keterangan" value="${tarikEscapeHtml(keteranganVal)}" class="${getBorderClass(isKeteranganInvalid)} tarik-grid-input font-normal text-slate-800 text-xs" placeholder="..." autocomplete="off">`;
             
             const jenisHTML = isRowOne
               ? `<input type="text" value="${tarikEscapeHtml(r.jenis || '')}" class="${rowOneInputClass}" placeholder="-" readonly disabled>`
               : `<div class="relative w-full">
-                <input type="text" id="tarik-jenis-${Number(r._originalIndex)}" data-row="${Number(r._originalIndex)}" data-col="2" data-tarik-field="jenis" data-tarik-autocomplete="jenis" value="${tarikEscapeHtml(r.jenis || '')}" class="${getBorderClass(isJenisInvalid)} tarik-grid-input uppercase font-normal text-slate-800" placeholder="..." autocomplete="off">
+                <input type="text" id="tarik-jenis-${Number(r._originalIndex)}" data-row="${Number(r._originalIndex)}" data-col="2" data-tarik-field="jenis" data-tarik-autocomplete="jenis" value="${tarikEscapeHtml(r.jenis || '')}" class="${getBorderClass(isJenisInvalid)} tarik-grid-input uppercase font-normal text-slate-800 text-xs" placeholder="..." autocomplete="off">
                 <div class="absolute top-full left-0 mt-1 bg-white border border-brand-stone rounded-xl shadow-xl max-h-48 overflow-y-auto hidden z-50 flex flex-col p-1 min-w-[200px] text-left" id="tarik-jenis-list-${r._originalIndex}"></div>
               </div>`;
             
             const jumlahHTML = isRowOne
               ? `<input type="text" value="${tarikEscapeHtml(r.jumlah || '')}" class="${rowOneInputClass}" placeholder="-" readonly disabled>`
-              : `<input type="text" data-row="${Number(r._originalIndex)}" data-col="3" data-tarik-field="jumlah" value="${tarikEscapeHtml(r.jumlah || '')}" class="${inputClass} tarik-grid-input font-normal text-slate-800" placeholder="..." autocomplete="off">`;
+              : `<input type="text" data-row="${Number(r._originalIndex)}" data-col="3" data-tarik-field="jumlah" value="${tarikEscapeHtml(r.jumlah || '')}" class="${inputClass} tarik-grid-input font-normal text-slate-800 text-xs" placeholder="..." autocomplete="off">`;
             
             const formattedNominal = r.nominal > 0 ? fmtRp(r.nominal) : '';
             const nominalHTML = isRowOne
-              ? `<input type="text" value="${tarikEscapeHtml(formattedNominal)}" class="${rowOneInputClass} text-right tabular-nums" placeholder="0" readonly disabled>`
-              : `<input type="text" data-row="${Number(r._originalIndex)}" data-col="4" data-tarik-field="nominal" data-tarik-money="true" value="${tarikEscapeHtml(formattedNominal)}" class="${getBorderClass(isNominalInvalid)} tarik-grid-input text-right tabular-nums font-semibold text-slate-900" placeholder="0" autocomplete="off">`;
+              ? `<input type="text" value="${tarikEscapeHtml(formattedNominal)}" class="${rowOneInputClass} text-right tabular-nums text-xs" placeholder="0" readonly disabled>`
+              : `<input type="text" data-row="${Number(r._originalIndex)}" data-col="4" data-tarik-field="nominal" data-tarik-money="true" value="${tarikEscapeHtml(formattedNominal)}" class="${getBorderClass(isNominalInvalid)} tarik-grid-input text-right tabular-nums font-semibold text-slate-900 text-xs" placeholder="0" autocomplete="off">`;
             
             const elimHTML = isRowOne
               ? `<div class="flex items-center justify-center py-1 opacity-50 cursor-not-allowed">
@@ -1053,11 +1053,11 @@
 
             // Adding row indicator for missing photo
             const needsPhoto = !isRowOne && (!r.fotoUrl || r.fotoUrl === "-") && !r.base64 && ((r.keterangan && r.keterangan.trim() !== "") || (r.nominal && r.nominal > 0));
-            const rowClassInfo = isRowOne ? "bg-slate-50/80 hover:bg-slate-100/60" : (needsPhoto ? "bg-red-50/30 hover:bg-red-50/50" : "bg-white hover:bg-slate-50/60");
+            const rowClassInfo = isRowOne ? "tarik-row-locked bg-[#F8FAFC] hover:bg-[#F1F5F9]" : (needsPhoto ? "bg-red-50/30 hover:bg-red-50/50" : "bg-white hover:bg-slate-50/60");
 
             const noCellHTML = isRowOne
               ? `<span class="inline-flex items-center gap-1 font-semibold text-slate-400 text-xs" title="Baris 1 khusus spreadsheet"><i class="bi bi-lock-fill text-[10px]"></i> 1</span>`
-              : `<span class="font-medium text-slate-600 text-xs">${tarikEscapeHtml(r.no)}</span>`;
+              : `<span class="font-normal text-slate-500 text-xs">${tarikEscapeHtml(r.no)}</span>`;
 
             // Action icons for row 1 vs normal
             let rowIconHTML = '';
@@ -1074,13 +1074,13 @@
 
             html += `<tr class="tarik-date-row-${d} hidden transition-colors ${rowClassInfo}">
               <td class="p-2 pl-8">${noCellHTML}</td>
-              <td class="p-2 font-medium text-slate-400 text-[11px] whitespace-nowrap">${tarikEscapeHtml(fmtTarikTgl(r.tanggal))}</td>
-              <td class="p-2 text-[11px]">${cabangHTML}</td>
-              <td class="p-2 text-[11px]">${keteranganHTML}</td>
-              <td class="p-2 text-[11px]">${jenisHTML}</td>
-              <td class="p-2 text-[11px]">${jumlahHTML}</td>
-              <td class="p-2 text-[11px]">${nominalHTML}</td>
-              <td class="p-2 text-center text-[11px]">${elimHTML}</td>
+              <td class="p-2 font-normal text-slate-500 text-xs whitespace-nowrap">${tarikEscapeHtml(fmtTarikTgl(r.tanggal))}</td>
+              <td class="p-2 text-xs">${cabangHTML}</td>
+              <td class="p-2 text-xs">${keteranganHTML}</td>
+              <td class="p-2 text-xs">${jenisHTML}</td>
+              <td class="p-2 text-xs">${jumlahHTML}</td>
+              <td class="p-2 text-xs">${nominalHTML}</td>
+              <td class="p-2 text-center text-xs">${elimHTML}</td>
               <td class="p-2 text-center">${rowIconHTML}</td>
             </tr>`;
           });
