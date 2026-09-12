@@ -32,7 +32,16 @@ let loader = read('runtime_loader.html').replace(/^<script>\s*/, '').replace(/<\
 const assignment = loader.match(/window\.__gbbRuntimeModules = (\[[^\r\n]+\]);/);
 if (!assignment) throw new Error('Manifest runtime tidak ditemukan.');
 const modules = JSON.parse(assignment[1]).map(module => {
-  const code = nativeTransport(Buffer.from(module.code, 'base64').toString('utf8'));
+  let rawCode = Buffer.from(module.code, 'base64').toString('utf8');
+  const editable = path.join(root, 'ui', module.name + '.html');
+  if (fs.existsSync(editable)) {
+    const fileContent = fs.readFileSync(editable, 'utf8');
+    const scriptMatch = fileContent.match(/<script\b[^>]*>([\s\S]*?)<\/script>/i);
+    if (scriptMatch) {
+      rawCode = scriptMatch[1];
+    }
+  }
+  const code = nativeTransport(rawCode);
   new vm.Script(code, { filename: module.name });
   return { name: module.name, group: module.group, url: emit(module.name, code) };
 });
