@@ -95,15 +95,15 @@
               <table class="w-full text-left border-collapse min-w-[1200px]">
                 <thead class="bg-[#F8FAFC] border-b border-slate-200 text-slate-700 text-xs font-bold uppercase tracking-wider sticky top-0 z-10 shadow-sm">
                   <tr>
-                    <th class="py-3 px-4 pl-8 w-16 bg-[#F8FAFC]">No</th>
-                    <th class="py-3 px-4 w-24 bg-[#F8FAFC]">Tgl</th>
-                    <th class="py-3 px-4 bg-[#F8FAFC]">Cabang</th>
-                    <th class="py-3 px-4 bg-[#F8FAFC]">Keterangan</th>
-                    <th class="py-3 px-4 bg-[#F8FAFC]">Jenis</th>
-                    <th class="py-3 px-4 bg-[#F8FAFC]">Jumlah</th>
-                    <th class="py-3 px-4 text-right bg-[#F8FAFC]">Nominal</th>
-                    <th class="py-3 px-4 text-center bg-[#F8FAFC]">Eliminasi</th>
-                    <th class="py-3 px-4 text-center w-32 bg-[#F8FAFC]">Foto Nota</th>
+                    <th class="py-3 px-3 pl-8 w-14 bg-[#F8FAFC] whitespace-nowrap">No</th>
+                    <th class="py-3 px-3 w-28 bg-[#F8FAFC] whitespace-nowrap">Tgl</th>
+                    <th class="py-3 px-3 w-44 min-w-[150px] bg-[#F8FAFC] whitespace-nowrap">Cabang</th>
+                    <th class="py-3 px-3 min-w-[200px] bg-[#F8FAFC]">Keterangan</th>
+                    <th class="py-3 px-3 w-40 min-w-[140px] bg-[#F8FAFC]">Jenis</th>
+                    <th class="py-3 px-3 w-20 max-w-[90px] text-center bg-[#F8FAFC]">Jumlah</th>
+                    <th class="py-3 px-3 w-36 text-right bg-[#F8FAFC] whitespace-nowrap">Nominal</th>
+                    <th class="py-3 px-3 w-28 text-center bg-[#F8FAFC] whitespace-nowrap">Eliminasi</th>
+                    <th class="py-3 px-3 w-28 text-center bg-[#F8FAFC] whitespace-nowrap">Foto Nota</th>
                   </tr>
                 </thead>
                 <tbody id="tarikTableBody" class="divide-y divide-brand-stone/50 text-[12px]"></tbody>
@@ -1014,7 +1014,7 @@
                 </div>`;
               }
             } else {
-              cabangHTML = `<span class="px-2 py-1 font-normal text-slate-600 text-xs">${tarikEscapeHtml(r.cabang || '-')}</span>`;
+              cabangHTML = `<span class="px-2 py-1 font-normal text-slate-600 text-xs whitespace-nowrap">${tarikEscapeHtml(r.cabang || '-')}</span>`;
             }
             
             const keteranganVal = r.keterangan || '';
@@ -1031,8 +1031,8 @@
               </div>`;
             
             const jumlahHTML = isRowOne
-              ? `<input type="text" value="${tarikEscapeHtml(r.jumlah || '')}" class="${rowOneInputClass}" placeholder="-" readonly disabled>`
-              : `<input type="text" data-row="${Number(r._originalIndex)}" data-col="3" data-tarik-field="jumlah" value="${tarikEscapeHtml(r.jumlah || '')}" class="${inputClass} tarik-grid-input font-normal text-slate-800 text-xs" placeholder="..." autocomplete="off">`;
+              ? `<input type="text" value="${tarikEscapeHtml(r.jumlah || '')}" class="${rowOneInputClass} text-center" placeholder="-" readonly disabled>`
+              : `<input type="text" data-row="${Number(r._originalIndex)}" data-col="3" data-tarik-field="jumlah" value="${tarikEscapeHtml(r.jumlah || '')}" class="${inputClass} tarik-grid-input font-normal text-slate-800 text-xs text-center" placeholder="..." autocomplete="off">`;
             
             const formattedNominal = r.nominal > 0 ? fmtRp(r.nominal) : '';
             const nominalHTML = isRowOne
@@ -1077,11 +1077,11 @@
             html += `<tr class="tarik-date-row-${d} hidden transition-colors ${rowClassInfo}">
               <td class="p-2 pl-8">${noCellHTML}</td>
               <td class="p-2 font-normal text-slate-500 text-xs whitespace-nowrap">${tarikEscapeHtml(fmtTarikTgl(r.tanggal))}</td>
-              <td class="p-2 text-xs">${cabangHTML}</td>
-              <td class="p-2 text-xs">${keteranganHTML}</td>
-              <td class="p-2 text-xs">${jenisHTML}</td>
-              <td class="p-2 text-xs">${jumlahHTML}</td>
-              <td class="p-2 text-xs">${nominalHTML}</td>
+              <td class="p-2 text-xs whitespace-nowrap min-w-[150px]">${cabangHTML}</td>
+              <td class="p-2 text-xs min-w-[200px]">${keteranganHTML}</td>
+              <td class="p-2 text-xs w-40 min-w-[140px]">${jenisHTML}</td>
+              <td class="p-2 text-xs w-20 max-w-[90px] text-center">${jumlahHTML}</td>
+              <td class="p-2 text-xs w-36">${nominalHTML}</td>
               <td class="p-2 text-center text-xs">${elimHTML}</td>
               <td class="p-2 text-center">${rowIconHTML}</td>
             </tr>`;

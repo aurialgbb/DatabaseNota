@@ -475,3 +475,28 @@ body.portal-ui-v3 #tarikTableBody tr[data-tarik-action="toggle-date"] td {
   padding: 12px 18px !important;
 }
 
+/* 6. Strict Column Widths & No-Wrap for Branch (Cabang) */
+body.portal-ui-v3 #tabInputTarik table th:nth-child(3),
+body.portal-ui-v3 #tabInputTarik table td:nth-child(3) {
+  white-space: nowrap !important;
+  min-width: 150px !important;
+  width: 170px !important;
+}
+
+body.portal-ui-v3 #tabInputTarik table th:nth-child(3) *,
+body.portal-ui-v3 #tabInputTarik table td:nth-child(3) * {
+  white-space: nowrap !important;
+}
+
+/* 7. Trim excess width on Jumlah column to give room to other columns */
+body.portal-ui-v3 #tabInputTarik table th:nth-child(6),
+body.portal-ui-v3 #tabInputTarik table td:nth-child(6) {
+  width: 90px !important;
+  max-width: 110px !important;
+}
+
+body.portal-ui-v3 #tarikTableBody input[data-tarik-field="jumlah"] {
+  text-align: center !important;
+}
+
+
