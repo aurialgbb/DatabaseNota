@@ -801,7 +801,7 @@
   }
 
   function portalComboIsSearchable(select) {
-    return ['taxBankBranch', 'taxEntryBranch'].includes(select.id);
+    return ['taxBankBranch', 'taxEntryBranch', 'manualAccountBranch'].includes(select.id) || select.hasAttribute('data-portal-searchable');
   }
 
   function filterPortalCombo(combo, value) {
@@ -1977,6 +1977,11 @@
     document.querySelectorAll('#storeItemEditorForm input,#storeItemEditorForm textarea,#storeItemEditorForm select').forEach(input => {
       input.addEventListener('input', () => runPortalFeature('markStoreDraftDirty', true, 'Perubahan item belum disimpan'));
       input.addEventListener('change', () => runPortalFeature('markStoreDraftDirty', true, 'Perubahan item belum disimpan'));
+      input.addEventListener('focus', () => {
+        setTimeout(() => {
+          input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 120);
+      });
     });
     document.querySelectorAll('[data-store-item-editor-close]').forEach(button => button.addEventListener('click', () => runPortalFeature('closeStoreItemEditor')));
 
@@ -2897,7 +2902,13 @@
     document.body.classList.add('portal-item-editor-open');
     requestAnimationFrame(() => {
       sheet.classList.add('open');
-      setTimeout(() => document.getElementById('storeItemDescription')?.focus({ preventScroll:true }), 180);
+      setTimeout(() => {
+        const desc = document.getElementById('storeItemDescription');
+        if (desc) {
+          desc.focus({ preventScroll:false });
+          desc.scrollIntoView({ behavior:'smooth', block:'center' });
+        }
+      }, 200);
     });
   }
 
@@ -3082,20 +3093,175 @@
     return status === 'APPROVED' ? 'portal-badge-approved' : status === 'PENDING' ? 'portal-badge-pending' : status === 'REJECTED' ? 'portal-badge-discarded' : 'portal-badge-correction';
   }
 
+  async function openStoreReceiptDetail(receiptId) {
+    if (!receiptId) return;
+    try {
+      Swal.fire({
+        title: 'Memuat nota...',
+        text: 'Mengambil detail nota...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+      const receipt = await api('GET_RECEIPT_DETAIL', { receiptId });
+      Swal.close();
+
+      const items = Array.isArray(receipt.items) ? receipt.items : [];
+      const itemsHtml = items.length ? `
+        <div style="margin-top:14px;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden">
+          <table class="portal-table" style="width:100%;font-size:12px;margin:0">
+            <thead>
+              <tr style="background:#f8fafc">
+                <th style="padding:8px 10px;text-align:left">No</th>
+                <th style="padding:8px 10px;text-align:left">Item</th>
+                <th style="padding:8px 10px;text-align:left">Kategori</th>
+                <th style="padding:8px 10px;text-align:center">Qty</th>
+                <th style="padding:8px 10px;text-align:right">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${items.map((item, idx) => `
+                <tr style="border-top:1px solid #f1f5f9">
+                  <td style="padding:8px 10px;color:#64748b">${idx + 1}</td>
+                  <td style="padding:8px 10px;font-weight:700;color:#0f172a">${escapeHtml(item.description || '-')}</td>
+                  <td style="padding:8px 10px"><span class="portal-badge" style="background:#f1f5f9;color:#475569;font-size:10px">${escapeHtml(item.category || 'LAIN-LAIN')}</span></td>
+                  <td style="padding:8px 10px;text-align:center;color:#475569">${item.quantity || 1} ${escapeHtml(item.unit || '')}</td>
+                  <td style="padding:8px 10px;text-align:right;font-weight:700;color:#0f172a">${escapeHtml(rupiah(item.amount || item.grossAmount || 0))}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      ` : '<div class="portal-row-muted" style="margin-top:12px">Tidak ada item tercatat.</div>';
+
+      const adjustments = Array.isArray(receipt.adjustments) ? receipt.adjustments : [];
+      const adjustmentsHtml = adjustments.length ? `
+        <div style="margin-top:8px;font-size:12px">
+          ${adjustments.map(a => `
+            <div style="display:flex;justify-content:space-between;color:${a.type==='DISCOUNT'?'#b43b47':'#475569'};padding:4px 0">
+              <span>${escapeHtml(a.description || (a.type==='DISCOUNT'?'Diskon':'Penyesuaian'))}</span>
+              <strong>${a.type==='DISCOUNT'?'-':'+'}${escapeHtml(rupiah(a.amount || 0))}</strong>
+            </div>
+          `).join('')}
+        </div>
+      ` : '';
+
+      const reviewHtml = receipt.review && receipt.review.reason ? `
+        <div style="margin-top:12px;padding:10px 12px;border-radius:10px;background:#fff1f2;border:1px solid #ffe4e6;text-align:left">
+          <strong style="color:#be123c;font-size:12px;display:block;margin-bottom:3px"><i class="bi bi-info-circle"></i> Catatan Review Tim Pajak</strong>
+          <span style="color:#4c0519;font-size:12px">${escapeHtml(receipt.review.reason)}</span>
+        </div>
+      ` : '';
+
+      const contentHtml = `
+        <div style="text-align:left">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #e2e8f0">
+            <div>
+              <div style="color:#3b82f6;font-size:11px;font-weight:800;letter-spacing:.05em">NOTA #${escapeHtml(receipt.displayNumber)}</div>
+              <h3 style="margin:2px 0 0;font-size:18px;font-weight:800;color:#0f172a">${escapeHtml(receipt.supplier || 'Tanpa Supplier')}</h3>
+              <div style="margin-top:4px;color:#64748b;font-size:12px"><i class="bi bi-calendar3" style="margin-right:4px"></i>${escapeHtml(formatDisplayDate(receipt.date))}</div>
+            </div>
+            <span class="portal-badge ${statusBadgeClass(receipt.status)}" style="font-size:11px;padding:6px 12px">${escapeHtml(statusLabel(receipt.status))}</span>
+          </div>
+          ${reviewHtml}
+          ${itemsHtml}
+          ${adjustmentsHtml}
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding:12px;border-radius:12px;background:#f8fafc">
+            <span style="font-size:13px;font-weight:700;color:#475569">Total Nota</span>
+            <strong style="font-size:18px;font-weight:900;color:#0f172a">${escapeHtml(rupiah(receipt.receiptTotal))}</strong>
+          </div>
+          ${receipt.photoId ? `
+            <div style="margin-top:14px;text-align:center">
+              <button type="button" id="storeDetailViewPhotoBtn" class="portal-btn portal-btn-soft portal-btn-block" style="display:inline-flex;align-items:center;justify-content:center;gap:6px">
+                <i class="bi bi-image"></i> Lihat Foto Nota Asli
+              </button>
+            </div>
+          ` : ''}
+        </div>
+      `;
+
+      Swal.fire({
+        title: '',
+        html: contentHtml,
+        width: 600,
+        showCloseButton: true,
+        showCancelButton: receipt.status === 'NEEDS_CORRECTION',
+        cancelButtonText: 'Tutup',
+        cancelButtonColor: '#64748b',
+        showConfirmButton: receipt.status === 'NEEDS_CORRECTION',
+        confirmButtonText: '<i class="bi bi-pencil-square"></i> Perbaiki Nota',
+        confirmButtonColor: '#2563eb',
+        didOpen: () => {
+          const photoBtn = document.getElementById('storeDetailViewPhotoBtn');
+          if (photoBtn && receipt.photoId) {
+            photoBtn.addEventListener('click', async () => {
+              try {
+                photoBtn.disabled = true;
+                photoBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Memuat foto...';
+                const photo = await api('GET_PHOTO', { photoId: receipt.photoId });
+                Swal.fire({
+                  title: `Nota #${receipt.displayNumber}`,
+                  imageUrl: photo.dataUrl,
+                  imageAlt: photo.fileName || `Nota #${receipt.displayNumber}`,
+                  width: 800,
+                  confirmButtonText: 'Tutup Foto'
+                });
+              } catch (err) {
+                Swal.fire('Foto gagal dimuat', err.message, 'error');
+              } finally {
+                photoBtn.disabled = false;
+                photoBtn.innerHTML = '<i class="bi bi-image"></i> Lihat Foto Nota Asli';
+              }
+            });
+          }
+        }
+      }).then(res => {
+        if (res.isConfirmed && receipt.status === 'NEEDS_CORRECTION') {
+          Portal.resubmitId = receipt.id;
+          Portal.uploadId = receipt.uploadId || '';
+          Portal.ocrPhotoResults = [];
+          Portal.removedReceiptIds = {};
+          Portal.activeReceiptIndex = 0;
+          Portal.ocrReceipts = [allocateReceiptDraft(JSON.parse(JSON.stringify(receipt)))];
+          setStoreDraftDirty(false, 'Nota dimuat · belum ada perubahan');
+          renderStoreEditors();
+          document.getElementById('tokoOcrWarnings').innerHTML = '';
+          document.getElementById('tokoOcrReview').classList.remove('portal-hidden');
+          showPage('tokoUploadPage');
+        }
+      });
+    } catch (error) {
+      Swal.fire('Gagal memuat detail nota', error.message, 'error');
+    }
+  }
+
   function renderStoreHistoryRows(rows, root, compact) {
     if (!rows.length) { root.className = 'portal-empty'; root.innerHTML = 'Belum ada nota.'; return; }
     const mobile = window.matchMedia && window.matchMedia('(max-width: 720px)').matches && document.body.classList.contains('portal-store-active');
     if (mobile) {
       root.className = 'portal-store-history-list';
-      root.innerHTML = rows.map(r => `<article class="portal-store-history-card"><div class="portal-store-history-top"><div><small>NOTA #${escapeHtml(r.displayNumber)}</small><strong>${escapeHtml(r.supplier || 'Tanpa supplier')}</strong></div><span class="portal-badge ${statusBadgeClass(r.status)}">${escapeHtml(statusLabel(r.status))}</span></div><div class="portal-store-history-meta"><span><i class="bi bi-calendar3"></i>${escapeHtml(formatDisplayDate(r.date))}</span><span><i class="bi bi-list-ul"></i>${Number(r.itemCount == null ? (r.items||[]).length : r.itemCount)} item</span><strong>${escapeHtml(rupiah(r.receiptTotal))}</strong></div>${r.status==='REJECTED'?'<p class="portal-store-history-note-discarded">Nota ini tidak digunakan untuk pencatatan. Tidak ada perbaikan yang diperlukan.</p>':r.review&&r.review.reason?`<p>${escapeHtml(r.review.reason)}</p>`:''}${!compact && r.status==='NEEDS_CORRECTION'?`<button class="portal-btn portal-btn-soft portal-btn-block" data-correct-id="${escapeHtml(r.id)}"><i class="bi bi-pencil-square"></i> Perbaiki nota</button>`:''}</article>`).join('');
+      root.innerHTML = rows.map(r => `<article class="portal-store-history-card">
+        <div class="portal-store-history-top"><div><small>NOTA #${escapeHtml(r.displayNumber)}</small><strong>${escapeHtml(r.supplier || 'Tanpa supplier')}</strong></div><span class="portal-badge ${statusBadgeClass(r.status)}">${escapeHtml(statusLabel(r.status))}</span></div>
+        <div class="portal-store-history-meta"><span><i class="bi bi-calendar3"></i>${escapeHtml(formatDisplayDate(r.date))}</span><span><i class="bi bi-list-ul"></i>${Number(r.itemCount == null ? (r.items||[]).length : r.itemCount)} item</span><strong>${escapeHtml(rupiah(r.receiptTotal))}</strong></div>
+        ${r.status==='REJECTED'?'<p class="portal-store-history-note-discarded">Nota ini tidak digunakan untuk pencatatan. Tidak ada perbaikan yang diperlukan.</p>':r.review&&r.review.reason?`<p>${escapeHtml(r.review.reason)}</p>`:''}
+        <div class="portal-store-history-actions" style="display:flex;gap:6px;margin-top:10px">
+          <button class="portal-btn portal-btn-soft portal-btn-block" type="button" data-view-receipt-id="${escapeHtml(r.id)}"><i class="bi bi-eye"></i> Detail</button>
+          ${!compact && r.status==='NEEDS_CORRECTION'?`<button class="portal-btn portal-btn-primary portal-btn-block" type="button" data-correct-id="${escapeHtml(r.id)}"><i class="bi bi-pencil-square"></i> Perbaiki</button>`:''}
+        </div>
+      </article>`).join('');
     } else {
       root.className = 'portal-table-wrap';
-      root.innerHTML = `<table class="portal-table"><thead><tr><th>Nota</th><th>Tanggal</th><th>Supplier</th><th>Item</th><th>Total</th><th>Status</th><th></th></tr></thead><tbody>${rows.map(r => `<tr>
+      root.innerHTML = `<table class="portal-table"><thead><tr><th>Nota</th><th>Tanggal</th><th>Supplier</th><th>Item</th><th>Total</th><th>Status</th><th style="text-align:right">Aksi</th></tr></thead><tbody>${rows.map(r => `<tr>
       <td>NOTA #${escapeHtml(r.displayNumber)}</td><td>${escapeHtml(formatDisplayDate(r.date))}</td><td>${escapeHtml(r.supplier)}</td><td>${Number(r.itemCount == null ? (r.items||[]).length : r.itemCount)}</td><td>${escapeHtml(rupiah(r.receiptTotal))}</td>
       <td><span class="portal-badge ${statusBadgeClass(r.status)}">${escapeHtml(statusLabel(r.status))}</span>${r.status==='REJECTED'?'<div style="margin-top:5px;font-size:10px;color:var(--portal-muted)">Tidak ada perbaikan yang diperlukan.</div>':r.review&&r.review.reason?`<div style="margin-top:5px;font-size:10px;color:var(--portal-muted)">${escapeHtml(r.review.reason)}</div>`:''}</td>
-      <td>${!compact && r.status==='NEEDS_CORRECTION'?`<button class="portal-btn portal-btn-soft" data-correct-id="${escapeHtml(r.id)}">Perbaiki</button>`:''}</td>
+      <td style="white-space:nowrap;text-align:right">
+        <button class="portal-btn portal-btn-soft" type="button" data-view-receipt-id="${escapeHtml(r.id)}" title="Lihat detail nota"><i class="bi bi-eye"></i> Detail</button>
+        ${!compact && r.status==='NEEDS_CORRECTION'?`<button class="portal-btn portal-btn-primary" type="button" data-correct-id="${escapeHtml(r.id)}" style="margin-left:4px"><i class="bi bi-pencil-square"></i> Perbaiki</button>`:''}
+      </td>
     </tr>`).join('')}</tbody></table>`;
     }
+    root.querySelectorAll('[data-view-receipt-id]').forEach(btn => btn.addEventListener('click', () => {
+      openStoreReceiptDetail(btn.dataset.viewReceiptId);
+    }));
     root.querySelectorAll('[data-correct-id]').forEach(btn => btn.addEventListener('click', async () => {
       try {
         const receipt = await api('GET_RECEIPT_DETAIL', { receiptId:btn.dataset.correctId });
@@ -3145,7 +3311,7 @@
 
   Object.assign(window.PortalFeatures, {
     addBlankStoreReceipt, changePassword, closeStoreItemEditor, confirmClearStoreUpload, confirmLeaveStoreDraft, markStoreDraftDirty,
-    loadStoreDashboard, loadStoreHistory, processStoreOcr, restoreStoreDraftRecovery, saveStoreItemEditor,
+    loadStoreDashboard, loadStoreHistory, openStoreReceiptDetail, processStoreOcr, restoreStoreDraftRecovery, saveStoreItemEditor,
     selectStoreFiles, submitStoreReceipts
   });
   // Helper editor dipakai juga oleh modul TAX yang berada di IIFE terpisah.
