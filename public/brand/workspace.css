@@ -547,7 +547,17 @@ body.portal-ui-v3 #tarikTableBody input[data-tarik-field="jumlah"] {
     border-radius: 7px !important;
   }
   /* Centered Mobile Login Card */
-  #portalGate, .portal-gate {
+  #portalGate.portal-hidden,
+  .portal-gate.portal-hidden,
+  #portalGate[hidden],
+  .portal-gate[hidden],
+  body.portal-authenticated #portalGate,
+  body.portal-authenticated .portal-gate {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+  #portalGate:not(.portal-hidden):not([hidden]), .portal-gate:not(.portal-hidden):not([hidden]) {
     padding: 16px !important;
     background: var(--nota-paper, #f6f7f9) !important;
     min-height: 100dvh !important;

@@ -41,8 +41,18 @@
 .nota-menu-banner[data-kind="capture"] { background:#f2f5fc; }
 .nota-menu-banner[data-kind="capture"] img { mix-blend-mode:multiply; }
 .nota-menu-banner[data-kind="admin"] { border-radius:4px; }
+#portalGate.portal-hidden,
+.portal-gate.portal-hidden,
+#portalGate[hidden],
+.portal-gate[hidden],
+body.portal-authenticated #portalGate,
+body.portal-authenticated .portal-gate {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
 @media(max-width:760px) {
-  #portalGate, .portal-gate { min-height: 100dvh !important; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; padding: 16px !important; background: var(--nota-paper, #f6f7f9) !important; overflow-y: auto !important; }
+  #portalGate:not(.portal-hidden):not([hidden]), .portal-gate:not(.portal-hidden):not([hidden]) { min-height: 100dvh !important; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; padding: 16px !important; background: var(--nota-paper, #f6f7f9) !important; overflow-y: auto !important; }
   #portalGate .portal-login-frame, .portal-gate .portal-login-frame, .portal-login-frame { width: 100% !important; max-width: 420px !important; min-height: 0 !important; height: auto !important; margin: auto !important; border: 1px solid var(--nota-line, #e2e6ed) !important; border-radius: 20px !important; box-shadow: 0 12px 36px rgba(36,59,98,0.08) !important; background: #fff !important; overflow: hidden !important; display: flex !important; flex-direction: column !important; }
   .portal-login-visual { display: grid !important; grid-template-columns: minmax(0,1fr) 105px !important; align-items: center !important; padding: 18px 20px !important; border-right: 0 !important; border-bottom: 1px solid #e2e6ed !important; background: #fff !important; gap: 8px !important; }
   .portal-visual-copy { margin: 0 !important; }

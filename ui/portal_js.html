@@ -22,7 +22,12 @@
       splash.classList.remove('portal-session-active');
       splash.classList.add('portal-session-leaving');
     }
-    if (gate) gate.classList.remove('portal-hidden');
+    if (gate) {
+      gate.classList.remove('portal-hidden');
+      gate.hidden = false;
+      gate.removeAttribute('hidden');
+      gate.style.removeProperty('display');
+    }
     if (warning) {
       warning.textContent = 'Komponen aplikasi gagal dijalankan: ' + diagnostic.message +
         ' (' + diagnostic.source + ':' + diagnostic.line + ':' + diagnostic.column + ').';
@@ -715,6 +720,22 @@
     }
     const password = document.getElementById('portalPassword');
     if (password && failure.credentialError) { password.value = ''; setTimeout(() => password.focus({ preventScroll:false }), 120); }
+  }
+
+  function setPortalGateVisible(visible) {
+    const gate = document.getElementById('portalGate');
+    if (!gate) return;
+    if (visible) {
+      gate.classList.remove('portal-hidden');
+      gate.hidden = false;
+      gate.removeAttribute('hidden');
+      gate.style.removeProperty('display');
+    } else {
+      gate.classList.add('portal-hidden');
+      gate.hidden = true;
+      gate.setAttribute('hidden', '');
+      gate.style.setProperty('display', 'none', 'important');
+    }
   }
 
   function setSessionSplash(visible, message, detail) {
@@ -1504,7 +1525,7 @@
     }
     if (Portal.user) return;
     setSessionSplash(false);
-    document.getElementById('portalGate').classList.remove('portal-hidden');
+    setPortalGateVisible(true);
     completePortalStartup('login-ready');
   }
 
@@ -1644,10 +1665,9 @@
       // ketika pengguna membuka salah satu halaman legacy, sehingga kegagalannya
       // tidak dapat membatalkan login maupun seluruh portal.
       const targetPage = startPage || (isStore ? 'tokoDashboardPage' : 'taxBankPage');
-      const gate = document.getElementById('portalGate');
       document.body.classList.add('portal-authenticated');
       window.PORTAL_ACTIVE = true;
-      if (gate) gate.classList.add('portal-hidden');
+      setPortalGateVisible(false);
       const focusedControl = document.activeElement;
       if (focusedControl && typeof focusedControl.blur === 'function') focusedControl.blur();
       const skel = document.getElementById('skeleton-loader');
@@ -1681,9 +1701,8 @@
     } catch (activateError) {
       console.error('activatePortal error:', activateError);
       document.body.classList.remove('portal-authenticated');
-      const gate = document.getElementById('portalGate');
       setSessionSplash(false);
-      if (gate) gate.classList.remove('portal-hidden');
+      setPortalGateVisible(true);
       completePortalStartup('activation-error');
       // Biarkan pemanggil menampilkan error di dalam login gate. Popup Swal
       // berada di bawah z-index gate sehingga sebelumnya tidak terlihat.
@@ -1739,7 +1758,7 @@
     document.body.classList.remove('portal-authenticated', 'portal-store-active', 'portal-store-sheet-open');
     storageRemove(PORTAL_SESSION_STORAGE_KEY);
     if (password) password.value = '';
-    if (gate) gate.classList.remove('portal-hidden');
+    setPortalGateVisible(true);
     setSessionSplash(true, 'Sesi berhasil ditutup', 'Workspace Anda sudah aman');
     await pause(420);
 
@@ -1857,8 +1876,7 @@
           Portal.token = '';
           storageRemove(PORTAL_SESSION_STORAGE_KEY);
         }
-        const gate = document.getElementById('portalGate');
-        if (gate) gate.classList.remove('portal-hidden');
+        setPortalGateVisible(true);
         showLoginError(error);
       } finally {
         loginStageTimers.forEach(timer => clearTimeout(timer));

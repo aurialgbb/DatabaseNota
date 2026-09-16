@@ -49,7 +49,12 @@
     var gate = document.getElementById('portalGate');
     var warning = document.getElementById('portalSetupWarning');
     if (splash) splash.classList.add('portal-hidden');
-    if (gate) gate.classList.remove('portal-hidden');
+    if (gate) {
+      gate.classList.remove('portal-hidden');
+      gate.hidden = false;
+      gate.removeAttribute('hidden');
+      gate.style.removeProperty('display');
+    }
     if (warning) {
       var location = diagnostic.source + ':' + diagnostic.line + ':' + diagnostic.column;
       warning.textContent = diagnosticLabel(diagnostic) + ': ' + diagnostic.message + ' (' + location + ').';
@@ -67,7 +72,12 @@
       splash.classList.remove('portal-session-active');
       splash.classList.add('portal-session-leaving', 'portal-hidden');
     }
-    if (gate) gate.classList.remove('portal-hidden');
+    if (gate) {
+      gate.classList.remove('portal-hidden');
+      gate.hidden = false;
+      gate.removeAttribute('hidden');
+      gate.style.removeProperty('display');
+    }
     if (warning) {
       warning.textContent = window.PORTAL_INIT_STARTED
         ? 'Koneksi startup terlalu lama. Form login dibuka agar Anda dapat mencoba kembali.'
@@ -80,7 +90,7 @@
 })();
 </script>
 
-<div id="portalGate" class="portal-gate portal-hidden">
+<div id="portalGate" class="portal-gate portal-hidden" hidden>
   <div class="portal-login-frame">
     <section class="portal-login-visual" aria-hidden="true">
       <div class="portal-visual-copy">
