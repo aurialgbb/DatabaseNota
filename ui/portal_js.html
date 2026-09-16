@@ -3241,11 +3241,16 @@
       root.className = 'portal-store-history-list';
       root.innerHTML = rows.map(r => `<article class="portal-store-history-card">
         <div class="portal-store-history-top"><div><small>NOTA #${escapeHtml(r.displayNumber)}</small><strong>${escapeHtml(r.supplier || 'Tanpa supplier')}</strong></div><span class="portal-badge ${statusBadgeClass(r.status)}">${escapeHtml(statusLabel(r.status))}</span></div>
-        <div class="portal-store-history-meta"><span><i class="bi bi-calendar3"></i>${escapeHtml(formatDisplayDate(r.date))}</span><span><i class="bi bi-list-ul"></i>${Number(r.itemCount == null ? (r.items||[]).length : r.itemCount)} item</span><strong>${escapeHtml(rupiah(r.receiptTotal))}</strong></div>
-        ${r.status==='REJECTED'?'<p class="portal-store-history-note-discarded">Nota ini tidak digunakan untuk pencatatan. Tidak ada perbaikan yang diperlukan.</p>':r.review&&r.review.reason?`<p>${escapeHtml(r.review.reason)}</p>`:''}
-        <div class="portal-store-history-actions" style="display:flex;gap:6px;margin-top:10px">
-          <button class="portal-btn portal-btn-soft portal-btn-block" type="button" data-view-receipt-id="${escapeHtml(r.id)}"><i class="bi bi-eye"></i> Detail</button>
-          ${!compact && r.status==='NEEDS_CORRECTION'?`<button class="portal-btn portal-btn-primary portal-btn-block" type="button" data-correct-id="${escapeHtml(r.id)}"><i class="bi bi-pencil-square"></i> Perbaiki</button>`:''}
+        <div class="portal-store-history-meta">
+          <div class="portal-store-history-meta-left">
+            <span><i class="bi bi-calendar3"></i>${escapeHtml(formatDisplayDate(r.date))}</span>
+            <span><i class="bi bi-list-ul"></i>${Number(r.itemCount == null ? (r.items||[]).length : r.itemCount)} item</span>
+          </div>
+          <div class="portal-store-history-meta-right">
+            <strong>${escapeHtml(rupiah(r.receiptTotal))}</strong>
+            <button class="portal-btn-icon-soft" type="button" data-view-receipt-id="${escapeHtml(r.id)}" title="Detail nota" aria-label="Detail nota"><i class="bi bi-eye"></i></button>
+            ${!compact && r.status==='NEEDS_CORRECTION'?`<button class="portal-btn-icon-primary" type="button" data-correct-id="${escapeHtml(r.id)}" title="Perbaiki nota" aria-label="Perbaiki nota"><i class="bi bi-pencil-square"></i></button>`:''}
+          </div>
         </div>
       </article>`).join('');
     } else {
