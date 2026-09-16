@@ -3,7 +3,7 @@ import {sheetsRequest} from './sheets';
 import {readModel,padded,type Target} from './sync-model';
 import {invariant} from './errors';
 import {stableJson,type User} from './identity';
-export type Edit={target:Target;sheetId:number;rowIndex:number;startColumn:number;before:any[];after:any[];rowId:string;oldTagId?:number;owner?:string;mapping?:any;removeMapping?:string;removeRowId?:boolean;identity?:any[]};
+export type Edit={target:Target;sheetId:number;rowIndex:number;startColumn:number;before:any[];after:any[];rowId:string;oldTagId?:number;owner?:string;removeOwner?:boolean;mapping?:any;removeMapping?:string;removeRowId?:boolean;identity?:any[]};
 export type Plan={edits:Edit[];receipts:any[];expenses:any[];resources:string[];branchName:string;period:string;createdAt:number;clientResult?:any};
 const same=(a:any,b:any)=>stableJson(a)===stableJson(b);
 export async function persistPlan(jobId:string,step:string,plan:Plan){
@@ -37,10 +37,11 @@ export async function executePlan(jobId:string,step:string,user:User,build:()=>P
    const model=models.get(edit.sheetId)!;invariant(model.sheetId===edit.sheetId,'SHEET_REPLACED','Tab spreadsheet telah diganti. Perlu pemeriksaan.',409);
    invariant(!edit.identity||same(padded(model.values[edit.rowIndex-1],3).slice(1,3),edit.identity),'ROW_DATE_CHANGED','Tanggal atau nomor baris berubah. Muat ulang data.',409);
    const tags=model.tags[edit.rowIndex]||[],tag=tags.find(t=>t.metadataKey==='NOTA_ROW_ID');
-   const actual=padded(model.values[edit.rowIndex-1],edit.startColumn+edit.after.length).slice(edit.startColumn),after=same(actual,edit.after)&&(edit.removeRowId?!tag:tag?.metadataValue===edit.rowId);
+   const ownerTag=tags.find(t=>t.metadataKey==='NOTA_CK_OWNER');
+   const actual=padded(model.values[edit.rowIndex-1],edit.startColumn+edit.after.length).slice(edit.startColumn),after=same(actual,edit.after)&&(edit.removeRowId?!tag:tag?.metadataValue===edit.rowId)&&(edit.removeOwner?!ownerTag:(!edit.owner||ownerTag?.metadataValue===edit.owner));
    invariant(tags.filter(t=>t.metadataKey==='NOTA_ROW_ID').length<=1,'ROW_ID_CONFLICT','Identitas baris ganda. Perlu pemeriksaan.',409);
    invariant(!tags.some(t=>/^PORTAL_(R_|CK_)/.test(t.metadataKey)),'FOREIGN_RECEIPT','Baris masih dimiliki aplikasi lama. Perlu pemeriksaan.',409);
-   const owners=tags.filter(t=>t.metadataKey==='NOTA_CK_OWNER');invariant(owners.length<=1&&(!owners.length||owners[0].metadataValue===edit.owner),'DISTRIBUTION_CONFLICT','Kepemilikan distribusi CK berubah.',409);
+   const owners=tags.filter(t=>t.metadataKey==='NOTA_CK_OWNER');invariant(owners.length<=1&&(!owners.length||edit.removeOwner||owners[0].metadataValue===edit.owner),'DISTRIBUTION_CONFLICT','Kepemilikan distribusi CK berubah.',409);
    if(after&&(!edit.owner||owners[0]?.metadataValue===edit.owner)){invariant(!padded(model.formulas[edit.rowIndex-1],edit.startColumn+edit.after.length).slice(edit.startColumn).some(v=>typeof v==='string'&&v.startsWith('=')),'FORMULA_PROTECTED','Baris telah diganti rumus. Perlu pemeriksaan.',409);continue;}
    invariant(same(actual,edit.before),'SHEET_CONFLICT','Isi baris '+edit.rowIndex+' telah berubah. Tidak ditimpa otomatis.',409);
    invariant(!tags.some(t=>/^PORTAL_(R_|CK_)/.test(t.metadataKey)),'FOREIGN_RECEIPT','Baris masih dimiliki aplikasi lama. Perlu pemeriksaan.',409);
@@ -49,12 +50,13 @@ export async function executePlan(jobId:string,step:string,user:User,build:()=>P
    requests.push({updateCells:{range:{sheetId:edit.sheetId,startRowIndex:edit.rowIndex-1,endRowIndex:edit.rowIndex,startColumnIndex:edit.startColumn,endColumnIndex:edit.startColumn+edit.after.length},rows:[{values:edit.after.map(cell)}],fields:'userEnteredValue'}});
    if(edit.removeRowId&&tag)requests.push({deleteDeveloperMetadata:{dataFilter:{developerMetadataLookup:{metadataId:tag.metadataId}}}});
    if(!tag&&!edit.removeRowId)requests.push({createDeveloperMetadata:{developerMetadata:{metadataKey:'NOTA_ROW_ID',metadataValue:edit.rowId,visibility:'DOCUMENT',location:{dimensionRange:{sheetId:edit.sheetId,dimension:'ROWS',startIndex:edit.rowIndex-1,endIndex:edit.rowIndex}}}}});
-   const ownerTag=tags.find(t=>t.metadataKey==='NOTA_CK_OWNER');if(edit.owner&&!ownerTag)requests.push({createDeveloperMetadata:{developerMetadata:{metadataKey:'NOTA_CK_OWNER',metadataValue:edit.owner,visibility:'DOCUMENT',location:{dimensionRange:{sheetId:edit.sheetId,dimension:'ROWS',startIndex:edit.rowIndex-1,endIndex:edit.rowIndex}}}}});
-   invariant(!ownerTag||ownerTag.metadataValue===edit.owner,'DISTRIBUTION_CONFLICT','Kepemilikan distribusi CK berubah.',409);
+   if(edit.removeOwner&&ownerTag)requests.push({deleteDeveloperMetadata:{dataFilter:{developerMetadataLookup:{metadataId:ownerTag.metadataId}}}});
+   if(edit.owner&&!ownerTag)requests.push({createDeveloperMetadata:{developerMetadata:{metadataKey:'NOTA_CK_OWNER',metadataValue:edit.owner,visibility:'DOCUMENT',location:{dimensionRange:{sheetId:edit.sheetId,dimension:'ROWS',startIndex:edit.rowIndex-1,endIndex:edit.rowIndex}}}}});
+   invariant(!ownerTag||edit.removeOwner||ownerTag.metadataValue===edit.owner,'DISTRIBUTION_CONFLICT','Kepemilikan distribusi CK berubah.',409);
   }
   if(requests.length){await db.query("UPDATE nota_app.job_steps SET status='WRITING',attempts=attempts+1,updated_at=now() WHERE job_id=$1 AND step_key=$2",[jobId,step]);await sheetsRequest(fileId,':batchUpdate','POST',{requests});}
   for(const [sheetId] of models){const sample=edits.find(e=>e.sheetId===sheetId)!;const verified=await readModel(sample.target);
-   for(const e of edits.filter(e=>e.sheetId===sheetId)){const row=padded(verified.values[e.rowIndex-1],e.startColumn+e.after.length).slice(e.startColumn);invariant((!e.identity||same(padded(verified.values[e.rowIndex-1],3).slice(1,3),e.identity))&&same(row,e.after)&&(!e.owner||(verified.tags[e.rowIndex]||[]).some(t=>t.metadataKey==='NOTA_CK_OWNER'&&t.metadataValue===e.owner))&&(e.removeRowId?!(verified.tags[e.rowIndex]||[]).some(t=>t.metadataKey==='NOTA_ROW_ID'):(verified.tags[e.rowIndex]||[]).some(t=>t.metadataKey==='NOTA_ROW_ID'&&t.metadataValue===e.rowId)),'WRITE_UNCONFIRMED','Hasil tulis perlu diperiksa sebelum database diperbarui.',409);}
+   for(const e of edits.filter(e=>e.sheetId===sheetId)){const row=padded(verified.values[e.rowIndex-1],e.startColumn+e.after.length).slice(e.startColumn);invariant((!e.identity||same(padded(verified.values[e.rowIndex-1],3).slice(1,3),e.identity))&&same(row,e.after)&&(e.removeOwner?!(verified.tags[e.rowIndex]||[]).some(t=>t.metadataKey==='NOTA_CK_OWNER'):(!e.owner||(verified.tags[e.rowIndex]||[]).some(t=>t.metadataKey==='NOTA_CK_OWNER'&&t.metadataValue===e.owner)))&&(e.removeRowId?!(verified.tags[e.rowIndex]||[]).some(t=>t.metadataKey==='NOTA_ROW_ID'):(verified.tags[e.rowIndex]||[]).some(t=>t.metadataKey==='NOTA_ROW_ID'&&t.metadataValue===e.rowId)),'WRITE_UNCONFIRMED','Hasil tulis perlu diperiksa sebelum database diperbarui.',409);}
   }
  }
  const result={...plan.clientResult,success:true,operationId:jobId,status:'COMPLETED',progress:plan.edits.length,total:plan.edits.length,rows:plan.edits.map(e=>e.rowIndex)};

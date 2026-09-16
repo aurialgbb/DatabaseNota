@@ -22,11 +22,30 @@ function freeRow(model:Model,date:string,used:Set<number>){
 }
 function normalizedItem(item:any,t:Target,names:string[]){
  const date=isoDay(item.tanggal,t.period);invariant(date,'INVALID_DATE','Tanggal di luar periode yang dipilih.');const amount=Number(item.nominal),name=String(item.keterangan||'').trim(),category=String(item.jenis||'').trim().toUpperCase(),branch=t.type==='Mandiri'?t.branchName:String(item.cabang||'').trim().toUpperCase();
- invariant(branch,'BRANCH_REQUIRED','Cabang tujuan distribusi wajib dipilih.');invariant(name&&name.length<=250&&names.includes(category),'INVALID_ITEM','Keterangan atau jenis pengeluaran belum valid.');invariant(Number.isFinite(amount)&&amount>0&&amount<=1e12,'INVALID_AMOUNT','Nominal harus lebih besar dari nol.');
+ if(t.type==='Mandiri')invariant(branch,'BRANCH_REQUIRED','Cabang tujuan distribusi wajib dipilih.');invariant(name&&name.length<=250&&names.includes(category),'INVALID_ITEM','Keterangan atau jenis pengeluaran belum valid.');invariant(Number.isFinite(amount)&&amount>0&&amount<=1e12,'INVALID_AMOUNT','Nominal harus lebih besar dari nol.');
  const eliminated=String(item.eliminasi||'TIDAK').toUpperCase();invariant(['YA','TIDAK',''].includes(eliminated),'INVALID_ELIMINATION','Pilihan eliminasi tidak valid.');return {...item,tanggal:date.slice(8)+'-'+date.slice(5,7)+'-'+date.slice(0,4),isoDate:date,cabang:branch,keterangan:name,jenis:category,jumlah:String(item.jumlah||''),nominal:amount,eliminasi:eliminated};
 }
 function cellsOf(row:any,t:Target){const cells=[row.keterangan,row.jenis,row.jumlah,row.nominal,row.eliminasi];return t.type==='Central Kitchen'?[row.cabang,...cells]:cells;}
 async function photoFor(user:User,id:any){if(!id)return '';const p=(await database().query("SELECT * FROM nota_app.photos WHERE id=$1 AND state='READY' AND owner_uid=$2",[id,user.uid])).rows[0];invariant(p,'PHOTO_NOT_READY','Foto belum siap atau bukan milik akun ini.');return (process.env.APP_ORIGIN||'')+'/api/photos/'+p.id;}
+function slotOfMapping(m:any,owner:string):number{
+ if(typeof m.snapshot?.slotIndex==='number')return m.snapshot.slotIndex;
+ for(let s=0;s<24;s++)if(m.item_id==='CK-'+payloadHash([owner,s]))return s;
+ return -1;
+}
+function freeDistributionRow(model:Model,date:string,used:Set<number>,owner:string){
+ const result=model.values.findIndex((values,i)=>{
+  const rowIndex=i+1;
+  if(i<4||used.has(rowIndex)||isoDay(values[1],model.target.period)!==date||!(Number(values[2])>1))return false;
+  const data=values.slice(3,model.width-1),tags=model.tags[rowIndex]||[];
+  const empty=!data.some(v=>v!==''&&v!==null)&&!/^YA$/i.test(String(values[model.width-1]));
+  const noFormula=!padded(model.formulas[i],model.width).slice(3).some(v=>typeof v==='string'&&v.startsWith('='));
+  const foreignTags=tags.some(t=>/^PORTAL_|NOTA_ROW_ID/.test(t.metadataKey)||(t.metadataKey==='NOTA_CK_OWNER'&&t.metadataValue!==owner));
+  return empty&&noFormula&&!foreignTags;
+ });
+ invariant(result>=0,'CK_CAPACITY','Baris kosong pada cabang tujuan tanggal '+date+' tidak cukup.',409);
+ used.add(result+1);
+ return result+1;
+}
 async function addDistribution(plan:Plan,model:Model){
  if(model.target.type!=='Central Kitchen')return;
  const after=model.values.map(v=>v.slice());for(const e of plan.edits.filter(e=>e.target.fileId===model.target.fileId&&e.sheetId===model.sheetId))after[e.rowIndex-1].splice(e.startColumn,e.after.length,...e.after);
@@ -43,11 +62,51 @@ async function addDistribution(plan:Plan,model:Model){
  const cache=new Map<string,Model>();
  for(const g of groups.values()){
   invariant(g.rows.length<=24,'CK_CAPACITY','Distribusi CK melebihi 24 baris pada '+g.target.branchName+', tanggal '+g.day+'.');const key=g.target.fileId+'|'+g.target.sheetName;if(!cache.has(key))cache.set(key,await readModel(g.target));const dest=cache.get(key)!;plan.resources.push('sheet/'+g.target.fileId);
-  for(let i=0;i<24;i++){
-   const index=6+(g.day-1)*30+i,before=padded(dest.values[index-1],8).slice(1),tags=dest.tags[index]||[],ownerTag=tags.find(t=>t.metadataKey==='NOTA_CK_OWNER');
-   const old=previous.find(m=>m.snapshot.owner===g.owner&&m.row_index===index&&m.spreadsheet_id===g.target.fileId&&Number(m.sheet_id)===dest.sheetId),empty=!before.slice(2,6).some(v=>v!==''&&v!==null)&&String(before[6]).toUpperCase()!=='YA';
-   invariant((empty&&!ownerTag&&!tags.some(t=>/^PORTAL_/.test(t.metadataKey)))||(ownerTag?.metadataValue===g.owner&&old&&same(old.snapshot.cells,before)),'CK_OWNERSHIP_CONFLICT','Baris distribusi '+g.target.branchName+' tanggal '+g.day+' sudah berisi data yang bukan milik pekerjaan ini.',409);
-   const after=g.rows[i]||[g.day,before[1]||i+1,'','','','',''];const itemId='CK-'+payloadHash([g.owner,i]);const edit=makeEdit(dest,index,after,{itemId,snapshot:{ckSource:model.target.fileId,ckSheet:String(model.sheetId),target:g.target,day:g.day,date:isoDay(g.day,g.target.period),owner:g.owner}},1);edit.owner=g.owner;plan.edits.push(edit);
+  const prevMappings=previous.filter(m=>m.snapshot.owner===g.owner&&m.spreadsheet_id===g.target.fileId&&Number(m.sheet_id)===dest.sheetId);
+  const used=new Set<number>();
+  const date=isoDay(g.day,g.target.period);
+  for(const prev of prevMappings){
+   const s=slotOfMapping(prev,g.owner);
+   if(s>=0&&s<g.rows.length&&prev.row_index)used.add(Number(prev.row_index));
+  }
+  for(let i=0;i<g.rows.length;i++){
+   const itemId='CK-'+payloadHash([g.owner,i]);
+   const prev=prevMappings.find(m=>slotOfMapping(m,g.owner)===i);
+   let index:number;
+   if(prev&&prev.row_index){
+    const prevIndex=Number(prev.row_index);
+    const tags=dest.tags[prevIndex]||[];
+    const ownerTag=tags.find(t=>t.metadataKey==='NOTA_CK_OWNER');
+    if(prevIndex>0&&prevIndex<=dest.values.length&&isoDay(dest.values[prevIndex-1]?.[1],dest.target.period)===date&&ownerTag?.metadataValue===g.owner){
+     index=prevIndex;
+    } else {
+     index=freeDistributionRow(dest,date,used,g.owner);
+    }
+   } else {
+    index=freeDistributionRow(dest,date,used,g.owner);
+   }
+   used.add(index);
+   const before=padded(dest.values[index-1],8).slice(1);
+   const r=g.rows[i];
+   const afterCells=[g.day,before[1]||i+1,r[2],r[3],r[4],r[5],r[6]];
+   const edit=makeEdit(dest,index,afterCells,{itemId,snapshot:{ckSource:model.target.fileId,ckSheet:String(model.sheetId),target:g.target,day:g.day,date,owner:g.owner,slotIndex:i}},1);
+   edit.owner=g.owner;
+   plan.edits.push(edit);
+  }
+  for(const prev of prevMappings){
+   const s=slotOfMapping(prev,g.owner);
+   const stillActive=s>=0&&s<g.rows.length;
+   if(!stillActive){
+    const index=Number(prev.row_index);
+    if(index>0&&index<=dest.values.length){
+     const before=padded(dest.values[index-1],8).slice(1);
+     const afterCells=[g.day,before[1]||'','','','','',''];
+     const edit=makeEdit(dest,index,afterCells,undefined,1);
+     edit.removeOwner=true;
+     edit.removeMapping=prev.item_id;
+     plan.edits.push(edit);
+    }
+   }
   }
  }
 }

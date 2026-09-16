@@ -30,7 +30,7 @@ export async function reconcileSheetPlan(jobId:string,user:User){
   for(const edits of groups.values()){
    edits.sort((a,b)=>a.rowIndex-b.rowIndex);const sample=edits[0],day=sample.mapping.snapshot.day,rows=after.filter(v=>Number(isoDay(v[1],model.target.period).slice(-2))===Number(day)&&String(v[3]).toUpperCase()===sample.target.branchName&&v[4]).map(v=>[v[1],v[2],v[4],v[5],v[6],v[7],v[8]]);
    invariant(rows.length<=edits.length,'CK_CAPACITY','Baris distribusi tidak cukup untuk hasil pemulihan.',409);
-   for(let i=0;i<edits.length;i++)if(!manualDestinations.has(edits[i])){const e=edits[i],dest=models.get(e.target.fileId+'|'+e.sheetId)!;e.before=padded(dest.values[e.rowIndex-1],e.startColumn+e.after.length).slice(e.startColumn);e.after=rows[i]||[day,e.after[1],'','','','',''];}
+   for(let i=0;i<edits.length;i++)if(!manualDestinations.has(edits[i])){const e=edits[i],dest=models.get(e.target.fileId+'|'+e.sheetId)!;e.before=padded(dest.values[e.rowIndex-1],e.startColumn+e.after.length).slice(e.startColumn);const r=rows[i];e.after=r?[day,e.after[1]||r[1],r[2],r[3],r[4],r[5],r[6]]:[day,e.after[1],'','','','',''];}
   }
  }
  for(const id of changed){

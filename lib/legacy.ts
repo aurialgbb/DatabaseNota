@@ -35,7 +35,7 @@ export async function legacyRead(db:Database,user:User,action:string,args:any[])
  requireRole(user,['ADMIN','TAX']);
  if(action==='getBootstrapData'){
   const branches=(await db.query('SELECT id,name,type,data FROM nota_app.branches WHERE active=true ORDER BY name')).rows.map(b=>({id:b.id,toko:b.name,name:b.name,cv:b.data.cv||'',type:b.type}));
-  return {branches,jenisPengeluaran:(await db.query('SELECT name FROM nota_app.categories ORDER BY position,name')).rows.map(r=>r.name),cabangCentralKitchen:branches.filter(b=>b.type==='Central Kitchen').map(b=>b.name)};
+  return {branches,jenisPengeluaran:(await db.query('SELECT name FROM nota_app.categories ORDER BY position,name')).rows.map(r=>r.name),cabangCentralKitchen:branches.filter(b=>b.type==='Mandiri').map(b=>b.name)};
  }
  if(action==='getHistoryPage')return legacyPage(db,true,args[0]);
  if(action==='getExpensePage')return legacyPage(db,false,args[0]);

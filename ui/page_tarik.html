@@ -207,9 +207,21 @@
       return Boolean(parts && parts.day === Number(day) && parts.month === Number(month) && parts.year === Number(year));
     }
 
+    function isTarikRowOneLockActive() {
+      return ($('#tarikTipe').val() || '') !== 'Central Kitchen';
+    }
+
+    function isTarikRowLocked(r) {
+      if (!isTarikRowOneLockActive()) return false;
+      return Boolean(r && (Number.parseInt(r.no, 10) === 1 || r._isRowOneLocked));
+    }
+
+    window.isTarikRowOneLockActive = isTarikRowOneLockActive;
+    window.isTarikRowLocked = isTarikRowLocked;
+
     function tarikNextAvailableNo(rows) {
       const used = new Set((rows || []).map(row => Number.parseInt(row.no, 10)).filter(no => Number.isInteger(no) && no > 0));
-      let candidate = 2;
+      let candidate = isTarikRowOneLockActive() ? 2 : 1;
       while (used.has(candidate)) candidate += 1;
       return candidate;
     }
@@ -218,7 +230,7 @@
       document.querySelectorAll('#tarikTableBody [data-tarik-field]').forEach(input => {
         const index = Number(input.dataset.row);
         if (!Number.isInteger(index) || !TARIK_DATA[index]) return;
-        if (Number.parseInt(TARIK_DATA[index].no, 10) === 1 || TARIK_DATA[index]._isRowOneLocked) return;
+        if (isTarikRowLocked(TARIK_DATA[index])) return;
         if (input.dataset.tarikMoney === 'true') {
           const nextNominal = parseIndoNumber(input.value);
           if (Number(TARIK_DATA[index].nominal || 0) !== nextNominal) updateTarikNominalField(index, input.value);
@@ -333,6 +345,28 @@
       }
       return mandiri;
     }
+
+    function getTarikMandiriBranchNames() {
+      if (Array.isArray(TARIK_MASTER_BRANCHES) && TARIK_MASTER_BRANCHES.length > 0) {
+        const fromMaster = TARIK_MASTER_BRANCHES
+          .filter(item => String(item.type || '').toLowerCase() === 'mandiri' && item.active !== false)
+          .map(item => String(item.name || item.id || '').trim().toUpperCase())
+          .filter(Boolean);
+        if (fromMaster.length > 0) return [...new Set(fromMaster)];
+      }
+      if (typeof APP_DATA !== 'undefined' && Array.isArray(APP_DATA.branches) && APP_DATA.branches.length > 0) {
+        const fromBranches = APP_DATA.branches
+          .filter(item => String(item.type || '').toLowerCase() === 'mandiri' && item.active !== false)
+          .map(item => String(item.name || item.toko || item.id || '').trim().toUpperCase())
+          .filter(Boolean);
+        if (fromBranches.length > 0) return [...new Set(fromBranches)];
+      }
+      if (typeof APP_DATA !== 'undefined' && Array.isArray(APP_DATA.cabangCentralKitchen) && APP_DATA.cabangCentralKitchen.length > 0) {
+        return [...new Set(APP_DATA.cabangCentralKitchen.map(item => String(item).trim().toUpperCase()).filter(Boolean))];
+      }
+      return [];
+    }
+    window.getTarikMandiriBranchNames = getTarikMandiriBranchNames;
 
     async function prepareTarikBranches(force) {
       if (typeof window.portalGetMasterLinks !== 'function') return null;
@@ -580,6 +614,7 @@
         const payloadBulanStr = String(payloadBulan).padStart(2, '0');
         const payloadTahunStr = String(payloadTahun);
         const newTarikData = [];
+        const isRowOneLockActive = tipe !== "Central Kitchen";
         
         for (let d = 1; d <= maxDays; d++) {
           const tglStr = `${String(d).padStart(2, '0')}-${payloadBulanStr}-${payloadTahunStr}`;
@@ -597,10 +632,10 @@
                 isNew: false,
                 isEdited: false,
                 _placeholder: false,
-                _isRowOneLocked: true
+                _isRowOneLocked: isRowOneLockActive
              });
           } else {
-             // Reserve row 1 as locked slot
+             // Reserve row 1 (locked slot for Mandiri, editable placeholder for CK)
              newTarikData.push({
                 sheetRowIndex: null,
                 no: 1,
@@ -615,7 +650,7 @@
                 base64: "",
                 isNew: true,
                 _placeholder: true,
-                _isRowOneLocked: true
+                _isRowOneLocked: isRowOneLockActive
              });
           }
 
@@ -973,7 +1008,7 @@
             
             iconHTML += ` <button data-tarik-action="delete" data-tarik-index="${Number(r._originalIndex)}" class="ml-3 text-brand-stone hover:text-red-500 hover:scale-110 transition-transform" title="Hapus Data"><i class="bi bi-trash text-lg"></i></button>`;
             
-            const isRowOne = Number.parseInt(r.no, 10) === 1 || Boolean(r._isRowOneLocked);
+            const isRowOne = isTarikRowLocked(r);
             
             // Render input fields for spreadsheet style with SaaS UI typography
             const inputClass = "w-full bg-[#FAFAFA] focus:bg-white border border-[#EAEBFA] hover:border-[#2456c5] focus:border-[#2456c5] focus:ring-2 focus:ring-[#2456c5]/10 rounded-lg px-2.5 py-1 font-normal text-xs text-slate-800 outline-none transition-all shadow-sm";
@@ -987,8 +1022,11 @@
             const isNominalInvalid = isRowActive && (!r.nominal || Number(r.nominal) <= 0);
             
             let isCabangInvalid = false;
-            if (tipe === "Central Kitchen") {
-              isCabangInvalid = isRowActive && (!r.cabang || r.cabang.trim() === "");
+            if (tipe === "Central Kitchen" && r.cabang && r.cabang.trim() !== "") {
+              const validCabang = getTarikMandiriBranchNames();
+              if (validCabang.length > 0) {
+                isCabangInvalid = !validCabang.includes(String(r.cabang).trim().toUpperCase());
+              }
             }
             
             let isJenisInvalid = false;
@@ -1111,7 +1149,7 @@
     window.updateTarikField = function(idx, field, val) {
       const r = TARIK_DATA[idx];
       if (!r) return;
-      if (Number.parseInt(r.no, 10) === 1 || r._isRowOneLocked) return;
+      if (isTarikRowLocked(r)) return;
       r[field] = val;
       if (!r.isNew) {
          r.isEdited = true;
@@ -1123,7 +1161,7 @@
        let source = [];
        let listId = "";
        if (type === 'cabang') {
-          source = APP_DATA.cabangCentralKitchen || [];
+          source = getTarikMandiriBranchNames();
           listId = `#tarik-cabang-list-${idx}`;
        } else if (type === 'jenis') {
           source = APP_DATA.jenisPengeluaran || [];
@@ -1187,7 +1225,7 @@
     window.toggleEliminasiDirectly = async function(idx, btn) {
        const r = TARIK_DATA[idx];
        if (!r) return;
-       if (Number.parseInt(r.no, 10) === 1 || r._isRowOneLocked) return;
+       if (isTarikRowLocked(r)) return;
        const newVal = r.eliminasi === 'YA' ? 'TIDAK' : 'YA';
        
        if (r.receiptId) {
@@ -1216,7 +1254,7 @@
     window.updateTarikNominalField = function(idx, val) {
       const r = TARIK_DATA[idx];
       if (!r) return;
-      if (Number.parseInt(r.no, 10) === 1 || r._isRowOneLocked) return;
+      if (isTarikRowLocked(r)) return;
       r.nominal = parseIndoNumber(val);
       if (!r.isNew) {
          r.isEdited = true;
@@ -1282,7 +1320,7 @@
     async function openTarikModal(idx) {
       const row = TARIK_DATA[idx];
       if (!row) return;
-      if (Number.parseInt(row.no, 10) === 1 || row._isRowOneLocked) {
+      if (isTarikRowLocked(row)) {
         Swal.fire('Informasi', 'Foto untuk Baris No. 1 dikelola langsung dari spreadsheet.', 'info');
         return;
       }
@@ -1628,13 +1666,13 @@
       syncTarikVisibleInputsToModel();
       const dataWithIndex = TARIK_DATA.map((r, idx) => ({ ...r, _originalIndex: idx }));
       
-      const newItems = dataWithIndex.filter(r => !r._isRowOneLocked && r.isNew && !r.isDeleted && ((r.keterangan && r.keterangan.trim() !== "") || (r.nominal && Number(r.nominal) > 0) || r.base64));
-      const editedItems = dataWithIndex.filter(r => !r._isRowOneLocked && r.isEdited && !r.isNew && !r.isDeleted);
+      const newItems = dataWithIndex.filter(r => !isTarikRowLocked(r) && r.isNew && !r.isDeleted && ((r.keterangan && r.keterangan.trim() !== "") || (r.nominal && Number(r.nominal) > 0) || r.base64));
+      const editedItems = dataWithIndex.filter(r => !isTarikRowLocked(r) && r.isEdited && !r.isNew && !r.isDeleted);
       // photoItems: hanya item yang yang punya base64 atau ingin dihapus (fotoUrl === "")
       // Foto dari item isNew dihandle via clientIndex di server setelah row dibuat
-      const photoItems = dataWithIndex.filter(r => !r._isRowOneLocked && !r.isDeleted && !r.isNew && (r.base64 || tarikPhotoRemoved(r)));
+      const photoItems = dataWithIndex.filter(r => !isTarikRowLocked(r) && !r.isDeleted && !r.isNew && (r.base64 || tarikPhotoRemoved(r)));
       const photoCounts = tarikPhotoChangeCounts(dataWithIndex);
-      const deletedItems = dataWithIndex.filter(r => !r._isRowOneLocked && r.isDeleted && !r.isNew);
+      const deletedItems = dataWithIndex.filter(r => !isTarikRowLocked(r) && r.isDeleted && !r.isNew);
       
       if (newItems.length === 0 && editedItems.length === 0 && photoItems.length === 0 && deletedItems.length === 0) {
         return Swal.fire('Info', 'Tidak ada data baru, perubahan, foto, atau hapusan untuk disubmit.', 'info');
@@ -1673,10 +1711,10 @@
          
          // 4. Validasi Cabang (Hanya Central Kitchen) - Boleh Kosong
          if (tipeValForCheck === "Central Kitchen" && item.cabang && String(item.cabang).trim() !== "") {
-            const validCabang = (APP_DATA.cabangCentralKitchen || []).map(c => String(c).trim().toUpperCase());
+            const validCabang = getTarikMandiriBranchNames();
             const inputCabang = String(item.cabang).trim().toUpperCase();
-            if (!validCabang.includes(inputCabang)) {
-               return Swal.fire('Validasi Gagal', `Baris pada Tanggal ${tglDay} Nomor ${displayNo} memiliki Cabang '${item.cabang}' yang tidak valid. Harap pilih cabang resmi dari dropdown.`, 'error');
+            if (validCabang.length > 0 && !validCabang.includes(inputCabang)) {
+               return Swal.fire('Validasi Gagal', `Baris pada Tanggal ${tglDay} Nomor ${displayNo} memiliki Cabang '${item.cabang}' yang tidak valid. Harap pilih cabang Mandiri resmi dari dropdown.`, 'error');
             }
          }
       }
@@ -1905,7 +1943,7 @@
     
     window.deleteTarikDataLocal = async function(idx) {
       if (!TARIK_DATA[idx]) return;
-      if (Number.parseInt(TARIK_DATA[idx].no, 10) === 1 || TARIK_DATA[idx]._isRowOneLocked) {
+      if (isTarikRowLocked(TARIK_DATA[idx])) {
         Swal.fire('Informasi', 'Baris No. 1 adalah baris khusus spreadsheet dan tidak dapat dihapus.', 'info');
         return;
       }
@@ -1952,6 +1990,9 @@
        
        if ($('#tarikTipe').val() === 'Central Kitchen') {
           $('#tambahCabangContainer').show();
+          if (typeof setupSearchableDropdown === 'function') {
+             setupSearchableDropdown('tambahCabang', getTarikMandiriBranchNames());
+          }
        } else {
           $('#tambahCabangContainer').hide();
        }
@@ -2021,7 +2062,7 @@
     window.openEditTarikModal = function(idx) {
        const r = TARIK_DATA[idx];
        if (!r) return;
-       if (Number.parseInt(r.no, 10) === 1 || r._isRowOneLocked) {
+       if (isTarikRowLocked(r)) {
          Swal.fire('Informasi', 'Baris No. 1 adalah baris khusus spreadsheet dan tidak dapat diedit secara manual.', 'info');
          return;
        }
@@ -2037,6 +2078,9 @@
        if ($('#tarikTipe').val() === 'Central Kitchen') {
           $('#editCabangContainer').show();
           $('#editCabang').val(r.cabang || '');
+          if (typeof setupSearchableDropdown === 'function') {
+             setupSearchableDropdown('editCabang', getTarikMandiriBranchNames());
+          }
        } else {
           $('#editCabangContainer').hide();
        }

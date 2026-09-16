@@ -17,16 +17,18 @@ test('Tarik Data: Baris No. 1 dikunci per tanggal dan status fetch dipindah ke h
   assert.ok(spreadsheetInfoBlock.includes('id="tarikFetchStatus"'), 'tarikFetchStatus harus berdampingan dengan nama spreadsheet');
   assert.ok(portalHtml.includes('tarikFetchStatusText'));
 
-  // 3. Baris 1 dikunci dan nomor baris baru selalu >= 2
-  assert.match(pageTarik, /function tarikNextAvailableNo\(rows\) \{[\s\S]*?let candidate = 2;/);
+  // 3. Baris 1 dikunci untuk Mandiri (candidate >= 2) dan tidak dikunci untuk Central Kitchen (candidate >= 1)
+  assert.match(pageTarik, /function isTarikRowOneLockActive\(\) \{[\s\S]*?Central Kitchen/);
+  assert.match(pageTarik, /function isTarikRowLocked\(r\) \{[\s\S]*?Central Kitchen[\s\S]*?Number\.parseInt\(r\.no, 10\) === 1/);
+  assert.match(pageTarik, /function tarikNextAvailableNo\(rows\) \{[\s\S]*?let candidate = isTarikRowOneLockActive\(\) \? 2 : 1;/);
   assert.match(pageTarik, /_isRowOneLocked/);
-  assert.match(pageTarik, /const isRowOne = Number\.parseInt\(r\.no, 10\) === 1 \|\| Boolean\(r\._isRowOneLocked\);/);
+  assert.match(pageTarik, /const isRowOne = isTarikRowLocked\(r\);/);
   assert.match(pageTarik, /placeholderKeterangan = isRowOne \? '\(Khusus diisi dari spreadsheet\)' : '\.\.\.';/);
 
-  // 4. Proteksi hapus, edit, dan eliminasi untuk baris 1
-  assert.match(pageTarik, /Number\.parseInt\(TARIK_DATA\[idx\]\.no, 10\) === 1 \|\| TARIK_DATA\[idx\]\._isRowOneLocked/);
-  assert.match(pageTarik, /window\.toggleEliminasiDirectly = async function\(idx, btn\) \{[\s\S]*?if \(Number\.parseInt\(r\.no, 10\) === 1 \|\| r\._isRowOneLocked\) return;/);
+  // 4. Proteksi hapus, edit, dan eliminasi untuk baris 1 berbasis isTarikRowLocked
+  assert.match(pageTarik, /if \(isTarikRowLocked\(TARIK_DATA\[idx\]\)\)/);
+  assert.match(pageTarik, /window\.toggleEliminasiDirectly = async function\(idx, btn\) \{[\s\S]*?if \(isTarikRowLocked\(r\)\) return;/);
 
-  // 5. Submit data tidak boleh mengirim baris 1 sebagai data baru/editan
-  assert.match(pageTarik, /!r\._isRowOneLocked && r\.isNew && !r\.isDeleted/);
+  // 5. Submit data tidak boleh mengirim baris 1 yang terkunci sebagai data baru/editan
+  assert.match(pageTarik, /!isTarikRowLocked\(r\) && r\.isNew && !r\.isDeleted/);
 });
