@@ -555,6 +555,60 @@ body.portal-ui-v3 #tarikTableBody input[data-tarik-field="jumlah"] {
     padding: 6px 12px !important;
     border-radius: 7px !important;
   }
+  /* Full-screen Mobile Login Gate & Frame */
+  #portalGate, .portal-gate {
+    padding: 0 !important;
+    background: #fff !important;
+    min-height: 100dvh !important;
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  #portalGate .portal-login-frame, .portal-gate .portal-login-frame {
+    width: 100% !important;
+    min-height: 100dvh !important;
+    flex: 1 1 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+  }
+  .portal-login-visual {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 95px !important;
+    align-items: center !important;
+    padding: 16px 18px !important;
+    border-right: 0 !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    background: #f8fafc !important;
+    flex: 0 0 auto !important;
+  }
+  .portal-login-panel {
+    flex: 1 1 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    padding: 18px 20px calc(18px + env(safe-area-inset-bottom)) !important;
+    background: #fff !important;
+  }
+  .portal-login-content {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 12px 0 16px !important;
+    flex: 1 0 auto !important;
+  }
+  .portal-login-footer {
+    margin-top: auto !important;
+    padding-top: 14px !important;
+    text-align: center !important;
+  }
 }
 
 

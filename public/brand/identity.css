@@ -40,17 +40,18 @@
 .nota-menu-banner[data-kind="capture"] img { mix-blend-mode:multiply; }
 .nota-menu-banner[data-kind="admin"] { border-radius:4px; }
 @media(max-width:760px) {
-  .portal-gate { padding:16px; align-items:start; }
-  .portal-login-frame { display:flex; flex-direction:column; min-height:0; border-radius:14px; }
-  .portal-login-visual { display:grid !important; grid-template-columns:minmax(0,1fr) 110px; align-items:center; border-right:0; border-bottom:1px solid var(--nota-line); padding:20px; gap:6px; }
+  .portal-gate { padding:0 !important; background:#fff !important; min-height:100dvh !important; display:flex !important; flex-direction:column !important; align-items:stretch !important; overflow-y:auto !important; }
+  .portal-login-frame { display:flex; flex-direction:column; min-height:100dvh !important; flex:1 1 auto; width:100% !important; border:0 !important; border-radius:0 !important; box-shadow:none !important; background:#fff !important; }
+  .portal-login-visual { display:grid !important; grid-template-columns:minmax(0,1fr) 95px; align-items:center; border-right:0; border-bottom:1px solid var(--nota-line); padding:16px 18px; gap:8px; background:#f8fafc !important; }
   .portal-visual-copy { margin:0; }
-  .portal-visual-copy h2 { font-size:23px; margin:8px 0 0; }
+  .portal-visual-copy h2 { font-size:18px; line-height:1.25; margin:4px 0 0; }
   .portal-visual-copy p { display:none; }
-  .portal-visual-kicker { font-size:11px; }
-  .nota-login-art { width:110px; height:140px; }
-  .portal-login-panel { padding:24px; }
-  .portal-login-content { padding:24px 0; }
-  .portal-login-content .portal-title { font-size:26px; }
+  .portal-visual-kicker { font-size:10px; }
+  .nota-login-art { width:95px; height:105px; }
+  .portal-login-panel { padding:18px 20px calc(18px + env(safe-area-inset-bottom)) !important; flex:1 1 auto; display:flex; flex-direction:column; justify-content:space-between; background:#fff !important; }
+  .portal-login-content { padding:12px 0 16px; flex:1 0 auto; max-width:100%; width:100%; margin:0; }
+  .portal-login-content .portal-title { font-size:20px; }
+  .portal-login-footer { margin-top:auto; padding-top:14px; text-align:center; font-size:10.5px; }
   .nota-menu-banner { padding:16px; gap:12px; margin-bottom:16px; }
   .nota-menu-banner img { flex-basis:84px; width:84px; height:64px; }
   .nota-menu-banner p { font-size:12px; }
