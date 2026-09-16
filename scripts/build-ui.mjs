@@ -79,7 +79,9 @@ let html = expand(read('index.html'));
 const buildId = 'native-' + sha(JSON.stringify(manifest.files)).slice(0, 12);
 html = html.replaceAll('<?= buildId ?>', buildId);
 html = html.replace('<head>', '<head>\n<script src="/import-workbooks.js"></script><script src="/native-transport.js"></script>');
-html = html.replace('</head>', '<link rel="icon" href="/brand/nota-mark.svg" type="image/svg+xml"><link rel="stylesheet" href="/brand/identity.css"><link rel="stylesheet" href="/brand/workspace.css"><script src="/brand/menu-banners.js" defer></script></head>');
+const workspaceCssPath = path.join(publicDir, 'brand', 'workspace.css');
+const workspaceSha = fs.existsSync(workspaceCssPath) ? sha(fs.readFileSync(workspaceCssPath)).slice(0, 10) : '1';
+html = html.replace('</head>', `<link rel="icon" href="/brand/nota-mark.svg" type="image/svg+xml"><link rel="stylesheet" href="/brand/identity.css"><link rel="stylesheet" href="/brand/workspace.css?v=${workspaceSha}"><script src="/brand/menu-banners.js" defer></script></head>`);
 if (/<\?/.test(html)) throw new Error('Template GAS tersisa.');
 fs.writeFileSync(path.join(publicDir, 'portal.html'), html);
 // The preview uses real page markup but never loads the application or auth runtime.

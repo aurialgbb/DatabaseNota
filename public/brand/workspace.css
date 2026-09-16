@@ -43,20 +43,26 @@ body.portal-ui-v3 .portal-entry-receipt-total { font-variant-numeric:tabular-num
 body.portal-ui-v3 .portal-entry-receipt-total { margin-top:4px; color:var(--ui-muted); font-size:12px; font-weight:750; }
 @media (max-width:760px) {
   body.portal-ui-v3 :is(.portal-input,.portal-select,.portal-inline-input) { font-size:16px; }
-  body.portal-store-active .portal-receipt-body :is(.portal-input,.portal-select,.portal-date-input,input.flatpickr-input + .portal-date-input,.portal-combobox-trigger) { font-size:12px !important; min-height:34px !important; height:34px !important; padding:5px 9px !important; font-weight:500 !important; border-radius:7px !important; }
-  body.portal-ui-v3 .portal-item-editor-sheet :is(.portal-input,.portal-select,.portal-textarea) { font-size:12px !important; }
+  :is(.portal-receipt-body, body.portal-store-active .portal-receipt-body, #tokoUploadPage .portal-receipt-body) :is(.portal-input,.portal-select,.portal-date-input,input.flatpickr-input + .portal-date-input,.portal-combobox-trigger,[data-receipt-field]) { font-size:11px !important; min-height:30px !important; height:30px !important; padding:4px 8px !important; font-weight:500 !important; border-radius:6px !important; line-height:1.25 !important; }
+  :is(.portal-receipt-body, body.portal-store-active .portal-receipt-body, #tokoUploadPage .portal-receipt-body) .portal-label { font-size:11px !important; font-weight:600 !important; color:#475569 !important; margin-bottom:2px !important; letter-spacing:0 !important; text-transform:none !important; }
+  body.portal-ui-v3 .portal-item-editor-sheet :is(.portal-input,.portal-select) { font-size:11px !important; min-height:30px !important; height:30px !important; padding:4px 8px !important; border-radius:6px !important; }
+  body.portal-ui-v3 .portal-item-editor-sheet .portal-textarea { font-size:11px !important; min-height:44px !important; padding:4px 8px !important; border-radius:6px !important; }
+  body.portal-ui-v3 .portal-item-editor-sheet .portal-label { font-size:11px !important; }
   body.portal-ui-v3 .portal-store-history-card { padding:10px 12px !important; border-radius:12px !important; }
-  body.portal-ui-v3 .portal-login-panel :is(.portal-input, input) { font-size:12.5px !important; min-height:40px !important; height:40px !important; }
+  :is(.portal-login-panel, body.portal-ui-v3 .portal-login-panel) :is(.portal-input, input, #portalUsername, #portalPassword) { font-size:11px !important; min-height:34px !important; height:34px !important; padding:4px 10px 4px 32px !important; border-radius:7px !important; }
+  :is(.portal-login-panel, body.portal-ui-v3 .portal-login-panel) .portal-input-wrap { min-height:34px !important; height:34px !important; }
+  :is(.portal-login-panel, body.portal-ui-v3 .portal-login-panel) .portal-label { font-size:11px !important; margin-bottom:2px !important; }
+  :is(.portal-login-panel, body.portal-ui-v3 .portal-login-panel) .portal-login-submit { min-height:34px !important; height:34px !important; font-size:11.5px !important; padding:6px 12px !important; border-radius:7px !important; }
   body.portal-store-active .portal-store-stats { display:grid !important; grid-template-columns:repeat(3,minmax(0,1fr)) !important; gap:8px !important; margin-bottom:14px !important; }
   body.portal-store-active .portal-store-stats .portal-stat-featured { grid-column:auto !important; }
   body.portal-store-active .portal-store-stats .portal-stat-rejected { display:none !important; }
   body.portal-ui-v3 .portal-receipt-summary strong,
-  body.portal-ui-v3 .portal-mobile-item-copy strong { font-size:12px; line-height:1.35; }
+  body.portal-ui-v3 .portal-mobile-item-copy strong { font-size:11.5px; line-height:1.35; }
   body.portal-ui-v3 .portal-receipt-summary small,
   body.portal-ui-v3 .portal-mobile-item-copy :is(span,small),
-  body.portal-ui-v3 .portal-entry-receipt-total { font-size:10.5px; line-height:1.4; }
+  body.portal-ui-v3 .portal-entry-receipt-total { font-size:10px; line-height:1.4; }
   body.portal-ui-v3 .portal-receipt-total strong,
-  body.portal-ui-v3 .portal-mobile-item-side > strong { font-size:12px; }
+  body.portal-ui-v3 .portal-mobile-item-side > strong { font-size:11.5px; }
 }
 @media (max-width:480px) {
   body.portal-ui-v3 .portal-master-search-field { min-height:44px; }
@@ -154,7 +160,7 @@ body.portal-ui-v3 .portal-store-camera-orb { background:#2456c5 !important; box-
   body.portal-ui-v3 .portal-card { padding:16px; }
   body.portal-ui-v3 :is(.portal-page-head,.portal-actions,.portal-form-actions) { flex-wrap:wrap; gap:12px; }
   body.portal-ui-v3 :is(.portal-btn,.portal-icon-button) { min-height:44px; }
-  body.portal-ui-v3 :is(.portal-input,.portal-textarea) { font-size:16px; }
+  body.portal-ui-v3 #inputPage :is(.portal-input,.portal-textarea) { font-size:16px; }
   body.portal-ui-v3 #inputPage .legacy-input-v3-analyze { flex-wrap:wrap; }
   body.portal-ui-v3 #inputPage .legacy-input-v3-tabs { width:100%; }
   body.portal-ui-v3 #inputPage .legacy-input-v3-tabs button { flex:1; width:auto; }
@@ -505,5 +511,51 @@ body.portal-ui-v3 #tabInputTarik table td:nth-child(6) {
 body.portal-ui-v3 #tarikTableBody input[data-tarik-field="jumlah"] {
   text-align: center !important;
 }
+
+/* 8. Mobile Form Compact Typography - Guarantees 11px font and compact heights on mobile */
+@media (max-width: 768px) {
+  :is(.portal-receipt-body, body.portal-store-active .portal-receipt-body, #tokoUploadPage .portal-receipt-body) :is(.portal-input,.portal-select,.portal-date-input,input.flatpickr-input + .portal-date-input,.portal-combobox-trigger,[data-receipt-field]) {
+    font-size: 11px !important;
+    min-height: 30px !important;
+    height: 30px !important;
+    padding: 4px 8px !important;
+    border-radius: 6px !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #0f172a !important;
+    background: #fff !important;
+  }
+  :is(.portal-receipt-body, body.portal-store-active .portal-receipt-body, #tokoUploadPage .portal-receipt-body) .portal-label {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    color: #475569 !important;
+    margin-bottom: 2px !important;
+  }
+  :is(.portal-login-panel, body.portal-ui-v3 .portal-login-panel) :is(.portal-input, input, #portalUsername, #portalPassword) {
+    font-size: 11px !important;
+    min-height: 34px !important;
+    height: 34px !important;
+    padding: 4px 10px 4px 32px !important;
+    border-radius: 7px !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #0f172a !important;
+  }
+  :is(.portal-login-panel, body.portal-ui-v3 .portal-login-panel) .portal-input-wrap {
+    min-height: 34px !important;
+    height: 34px !important;
+  }
+  :is(.portal-login-panel, body.portal-ui-v3 .portal-login-panel) .portal-label {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    margin-bottom: 2px !important;
+  }
+  :is(.portal-login-panel, body.portal-ui-v3 .portal-login-panel) .portal-login-submit {
+    min-height: 34px !important;
+    height: 34px !important;
+    font-size: 11.5px !important;
+    padding: 6px 12px !important;
+    border-radius: 7px !important;
+  }
+}
+
 
 
