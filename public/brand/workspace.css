@@ -43,15 +43,19 @@ body.portal-ui-v3 .portal-entry-receipt-total { font-variant-numeric:tabular-num
 body.portal-ui-v3 .portal-entry-receipt-total { margin-top:4px; color:var(--ui-muted); font-size:12px; font-weight:750; }
 @media (max-width:760px) {
   body.portal-ui-v3 :is(.portal-input,.portal-select,.portal-inline-input) { font-size:16px; }
-  body.portal-store-active .portal-receipt-body :is(.portal-input,.portal-select) { font-size:13px !important; }
-  body.portal-ui-v3 .portal-item-editor-sheet :is(.portal-input,.portal-select,.portal-textarea) { font-size:13.5px !important; }
+  body.portal-store-active .portal-receipt-body :is(.portal-input,.portal-select,.portal-date-input,input.flatpickr-input + .portal-date-input,.portal-combobox-trigger) { font-size:12.5px !important; min-height:36px !important; height:36px !important; font-weight:500 !important; }
+  body.portal-ui-v3 .portal-item-editor-sheet :is(.portal-input,.portal-select,.portal-textarea) { font-size:12.5px !important; }
+  body.portal-ui-v3 .portal-login-panel :is(.portal-input, input) { font-size:12.5px !important; min-height:40px !important; height:40px !important; }
+  body.portal-store-active .portal-store-stats { display:grid !important; grid-template-columns:repeat(3,minmax(0,1fr)) !important; gap:8px !important; margin-bottom:14px !important; }
+  body.portal-store-active .portal-store-stats .portal-stat-featured { grid-column:auto !important; }
+  body.portal-store-active .portal-store-stats .portal-stat-rejected { display:none !important; }
   body.portal-ui-v3 .portal-receipt-summary strong,
-  body.portal-ui-v3 .portal-mobile-item-copy strong { font-size:13px; line-height:1.35; }
+  body.portal-ui-v3 .portal-mobile-item-copy strong { font-size:12.5px; line-height:1.35; }
   body.portal-ui-v3 .portal-receipt-summary small,
   body.portal-ui-v3 .portal-mobile-item-copy :is(span,small),
-  body.portal-ui-v3 .portal-entry-receipt-total { font-size:11px; line-height:1.4; }
+  body.portal-ui-v3 .portal-entry-receipt-total { font-size:10.5px; line-height:1.4; }
   body.portal-ui-v3 .portal-receipt-total strong,
-  body.portal-ui-v3 .portal-mobile-item-side > strong { font-size:13px; }
+  body.portal-ui-v3 .portal-mobile-item-side > strong { font-size:12.5px; }
 }
 @media (max-width:480px) {
   body.portal-ui-v3 .portal-master-search-field { min-height:44px; }
