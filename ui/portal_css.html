@@ -862,7 +862,7 @@
     body.portal-store-active .portal-receipt-date-field { grid-column:1; grid-row:2; }
     body.portal-store-active .portal-receipt-total-field { grid-column:2; grid-row:2; }
     body.portal-store-active .portal-receipt-body .portal-label { margin-bottom:2px; font-size:11px !important; font-weight:600; color:#475569; letter-spacing:0; text-transform:none; }
-    body.portal-store-active .portal-receipt-body :is(.portal-input,.portal-select,.portal-date-input,input.flatpickr-input + .portal-date-input,.portal-combobox-trigger,[data-receipt-field]) { min-height:30px !important; height:30px !important; padding:4px 8px !important; border:1px solid #cbd5e1 !important; border-radius:6px !important; background:#fff !important; font-size:11px !important; font-weight:500 !important; font-family:inherit !important; color:#0f172a !important; line-height:1.25 !important; }
+    :is(.portal-receipt-body, body.portal-store-active .portal-receipt-body, #tokoUploadPage .portal-receipt-body) :is(.portal-input,.portal-select,.portal-date-input,input.flatpickr-input + .portal-date-input,.portal-combobox-trigger,[data-receipt-field]) { min-height:34px !important; height:34px !important; padding:5px 9px !important; border:1px solid #cbd5e1 !important; border-radius:7px !important; background:#fff !important; font-size:16px !important; font-weight:500 !important; font-family:inherit !important; color:#0f172a !important; line-height:1.25 !important; }
     body.portal-store-active .portal-items-wrap { overflow:visible; }
     body.portal-store-active .portal-items,body.portal-store-active .portal-items tbody { display:block; min-width:0; width:100%; }
     body.portal-store-active .portal-items tr { display:block; margin-top:8px; padding:0; border:1px solid #e2e8f0; border-radius:12px; background:#fff; box-shadow:0 2px 6px rgba(15,23,42,.04); }
@@ -883,9 +883,8 @@
     body.portal-store-active .portal-add-item { min-height:34px; margin-top:8px; padding:5px 12px; border-radius:8px; font-size:11.5px; font-weight:600; font-family:inherit; }
     .portal-item-editor-sheet>section { left:8px; right:8px; bottom:calc(8px + env(safe-area-inset-bottom)); width:auto; height:calc(var(--portal-visual-height,100dvh) - 16px - env(safe-area-inset-bottom)); max-height:calc(var(--portal-visual-height,100dvh) - 16px - env(safe-area-inset-bottom)); transform:translateY(calc(100% + 30px)); }
     .portal-item-editor-sheet.open>section { transform:translateY(0); }
-    .portal-item-editor-sheet .portal-input,
-    .portal-item-editor-sheet .portal-select { font-size:11px !important; min-height:30px !important; height:30px !important; padding:4px 8px !important; border-radius:6px !important; }
-    .portal-item-editor-sheet .portal-textarea { font-size:11px !important; min-height:44px !important; padding:4px 8px !important; border-radius:6px !important; }
+    .portal-item-editor-sheet :is(.portal-input, .portal-select) { font-size:16px !important; min-height:34px !important; height:34px !important; padding:5px 9px !important; border-radius:7px !important; }
+    .portal-item-editor-sheet .portal-textarea { font-size:16px !important; min-height:52px !important; padding:5px 9px !important; border-radius:7px !important; }
     body.portal-mobile-keyboard-open .portal-item-editor-sheet>section { top:8px; bottom:auto; height:calc(var(--portal-visual-height,100dvh) - 16px); max-height:calc(var(--portal-visual-height,100dvh) - 16px); }
     body.portal-mobile-keyboard-open .portal-item-editor-handle { display:none; }
     body.portal-mobile-keyboard-open .portal-item-editor-head { margin-bottom:6px; }
