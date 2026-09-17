@@ -16,7 +16,16 @@ export async function targetFor(p:any,db:Database=database()):Promise<Target>{
  if(p.branchId){values.push(String(p.branchId));where.push('b.id=$'+values.length);}
  else if(p.cabang){values.push(String(p.cabang).trim());where.push('upper(b.name)=upper($'+values.length+')');}
  const match=String(p.link||'').match(/^https?:\/\/docs\.google\.com\/spreadsheets\/d\/([\w-]+)(?:\/|$)/);if(p.link){invariant(match,'INVALID_SHEET','Tautan spreadsheet tidak valid.');values.push(match[1]);where.push('l.spreadsheet_id=$'+values.length);}
- const rows=(await db.query('SELECT l.*,b.name,b.type FROM nota_app.master_links l JOIN nota_app.branches b ON b.id=l.branch_id WHERE '+where.join(' AND '),values)).rows;
+ let rows=(await db.query('SELECT l.*,b.name,b.type FROM nota_app.master_links l JOIN nota_app.branches b ON b.id=l.branch_id WHERE '+where.join(' AND '),values)).rows;
+ if(rows.length===0&&match&&p.cabang&&!p.branchId){
+  const linkRows=(await db.query('SELECT l.*,b.name,b.type FROM nota_app.master_links l JOIN nota_app.branches b ON b.id=l.branch_id WHERE l.period=$1 AND b.active=true AND l.spreadsheet_id=$2',[period,match[1]])).rows;
+  if(linkRows.length===1)rows=linkRows;
+ }
+ if(rows.length===0&&p.cabang&&!p.branchId){
+  const nameTrimmed=String(p.cabang).trim();
+  const nameRows=(await db.query('SELECT l.*,b.name,b.type FROM nota_app.master_links l JOIN nota_app.branches b ON b.id=l.branch_id WHERE l.period=$1 AND b.active=true AND (upper(b.name) LIKE upper($2) OR upper(b.name) LIKE upper($3))'+(match?' AND l.spreadsheet_id=$4':''),match?[period,'% '+nameTrimmed,nameTrimmed+' %',match[1]]:[period,'% '+nameTrimmed,nameTrimmed+' %'])).rows;
+  if(nameRows.length===1)rows=nameRows;
+ }
  invariant(rows.length===1,'SHEET_TARGET_REQUIRED','Master Link untuk cabang dan bulan ini belum tersedia atau ambigu.');const r=rows[0];
  const type=/central/i.test(r.type)?'Central Kitchen':'Mandiri';invariant(!p.tipe||p.tipe===type,'BRANCH_TYPE_CONFLICT','Jenis cabang berubah. Muat ulang Master Link.');
  return {fileId:r.spreadsheet_id,branchId:r.branch_id,branchName:r.name.toUpperCase(),type,period,sheetName:r.data.sheetName||'REKAP',summarySheetName:r.data.summarySheetName||'REKAP PENGELUARAN',linkSheetName:r.data.linkSheetName||'LINK SHEET'};

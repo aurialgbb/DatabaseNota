@@ -51,11 +51,21 @@ async function addDistribution(plan:Plan,model:Model){
  const after=model.values.map(v=>v.slice());for(const e of plan.edits.filter(e=>e.target.fileId===model.target.fileId&&e.sheetId===model.sheetId))after[e.rowIndex-1].splice(e.startColumn,e.after.length,...e.after);
  const links=await valuesOf(model.target.fileId,quoteTab(model.target.linkSheetName)+'!C3:E'),linkMap=new Map<string,string>();
  for(const link of links){if(!link[0]||!link[2])continue;const name=String(link[0]).trim().toUpperCase(),url=String(link[2]);invariant(!linkMap.has(name)||linkMap.get(name)===url,'CK_LINK_CONFLICT','LINK SHEET memiliki tujuan ganda untuk '+name);linkMap.set(name,url);}
+ const masterRows=(await database().query("SELECT l.spreadsheet_id, b.name FROM nota_app.master_links l JOIN nota_app.branches b ON b.id=l.branch_id WHERE l.period=$1 AND b.active=true AND b.type='Mandiri'",[model.target.period])).rows;
+ for(const mr of masterRows){
+  const bName=String(mr.name).trim().toUpperCase(),url='https://docs.google.com/spreadsheets/d/'+mr.spreadsheet_id+'/edit';
+  if(!linkMap.has(bName))linkMap.set(bName,url);
+  for(const [alias,aliasUrl] of [...linkMap.entries()]){
+   const m=String(aliasUrl).match(/^https?:\/\/docs\.google\.com\/spreadsheets\/d\/([\w-]+)(?:\/|$)/);
+   if(m&&m[1]===mr.spreadsheet_id&&!linkMap.has(bName))linkMap.set(bName,aliasUrl);
+  }
+ }
+ const resolveLink=(name:string)=>{if(linkMap.has(name))return linkMap.get(name);for(const [k,v] of linkMap.entries())if(k.endsWith(' '+name)||k.startsWith(name+' '))return v;return undefined;};
  const previous=(await database().query("SELECT * FROM nota_app.sheet_mappings WHERE snapshot->>'ckSource'=$1 AND snapshot->>'ckSheet'=$2",[model.target.fileId,String(model.sheetId)])).rows;
  const groups=new Map<string,{target:Target;day:number;rows:any[][];owner:string}>();
  for(let i=0;i<after.length;i++){
   const v=after[i],date=isoDay(v[1],model.target.period),name=String(v[3]||'').trim().toUpperCase();if(!date||!name||!v[4])continue;
-  invariant(linkMap.has(name),'CK_LINK_MISSING','Tujuan distribusi CK belum tersedia untuk '+name);const dest=await targetFor({period:model.target.period,cabang:name,link:linkMap.get(name)});invariant(dest.type==='Mandiri','CK_TARGET_TYPE','Tujuan distribusi harus cabang Mandiri.');
+  const branchLink=resolveLink(name);invariant(branchLink,'CK_LINK_MISSING','Tujuan distribusi CK belum tersedia untuk '+name);const dest=await targetFor({period:model.target.period,cabang:name,link:branchLink});invariant(dest.type==='Mandiri','CK_TARGET_TYPE','Tujuan distribusi harus cabang Mandiri.');
   const day=Number(date.slice(8)),owner=[model.target.fileId,model.sheetId,dest.branchId,dest.fileId,dest.sheetName,day].join('|');if(!groups.has(owner))groups.set(owner,{target:dest,day,rows:[],owner});groups.get(owner)!.rows.push([v[1],v[2],v[4],v[5],v[6],v[7],v[8]]);
  }
  for(const m of previous){const s=m.snapshot;if(s.owner&&!groups.has(s.owner))groups.set(s.owner,{target:s.target,day:s.day,rows:[],owner:s.owner});}

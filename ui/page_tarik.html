@@ -179,6 +179,7 @@
     // ==========================================
     let TARIK_DATA = [];
     let TARIK_MASTER_BRANCHES = [];
+    let TARIK_MASTER_LINKS = {};
     let TARIK_MASTER_PERIOD = '';
     let TARIK_MASTER_PROMISE = null;
 
@@ -348,6 +349,13 @@
 
     function getTarikMandiriBranchNames() {
       if (Array.isArray(TARIK_MASTER_BRANCHES) && TARIK_MASTER_BRANCHES.length > 0) {
+        const hasLinks = TARIK_MASTER_LINKS && Object.keys(TARIK_MASTER_LINKS).length > 0;
+        const withLinks = TARIK_MASTER_BRANCHES
+          .filter(item => String(item.type || '').toLowerCase() === 'mandiri' && item.active !== false && (!hasLinks || Boolean(TARIK_MASTER_LINKS[item.id])))
+          .map(item => String(item.name || item.id || '').trim().toUpperCase())
+          .filter(Boolean);
+        if (withLinks.length > 0) return [...new Set(withLinks)];
+
         const fromMaster = TARIK_MASTER_BRANCHES
           .filter(item => String(item.type || '').toLowerCase() === 'mandiri' && item.active !== false)
           .map(item => String(item.name || item.id || '').trim().toUpperCase())
@@ -376,12 +384,13 @@
       if (!force && TARIK_MASTER_PERIOD === period && TARIK_MASTER_BRANCHES.length) {
         populateTarikCentralKitchens(TARIK_MASTER_BRANCHES);
         populateTarikMandiri(TARIK_MASTER_BRANCHES, $('#tarikCabangInput').val());
-        return { branches:TARIK_MASTER_BRANCHES };
+        return { branches:TARIK_MASTER_BRANCHES, links:TARIK_MASTER_LINKS };
       }
       if (TARIK_MASTER_PROMISE && TARIK_MASTER_PERIOD === period) return TARIK_MASTER_PROMISE;
       TARIK_MASTER_PERIOD = period;
       TARIK_MASTER_PROMISE = window.portalGetMasterLinks(period).then(master => {
         TARIK_MASTER_BRANCHES = Array.isArray(master && master.branches) ? master.branches : [];
+        TARIK_MASTER_LINKS = master && master.links && typeof master.links === 'object' ? master.links : {};
         populateTarikCentralKitchens(TARIK_MASTER_BRANCHES);
         populateTarikMandiri(TARIK_MASTER_BRANCHES, $('#tarikCabangInput').val());
         return master;

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { PGlite } from '@electric-sql/pglite';
 import { legacyRead } from '../lib/legacy';
+import { targetFor } from '../lib/sync-model';
 import type { Database } from '../lib/db';
 import type { User } from '../lib/identity';
 
@@ -186,4 +187,50 @@ test('CK distribution dynamically allocates to the next empty row in destination
   assert.equal(nextAllocatedRow, 11, 'Next item must allocate row index 11 (No. 7)');
   assert.equal(dummyValues[nextAllocatedRow - 1][2], '7', 'Column No in next allocated row must be 7');
 });
+
+test('CK Master Link: targetFor falls back to spreadsheet_id when branch name is an alias in sheet', async () => {
+  const pg = new PGlite(), db = pg as unknown as Database;
+  try {
+    for (const file of fs.readdirSync('migrations').filter(x => x.endsWith('.sql')).sort()) {
+      await pg.exec(fs.readFileSync('migrations/' + file, 'utf8'));
+    }
+    await pg.exec(`
+      INSERT INTO nota_app.branches(id, name, type, active, data) VALUES
+        ('elud-prima', 'ELUD PRIMA', 'Mandiri', true, '{}'::jsonb),
+        ('elud-dakta', 'ELUD DAKTA', 'Mandiri', true, '{}'::jsonb);
+      INSERT INTO nota_app.master_links(branch_id, period, spreadsheet_id, data) VALUES
+        ('elud-prima', '202609', '1NzLlppP4BaLUzsvbVuypalZEOFBIPc5ut2RIWRx6JPI', '{}'::jsonb),
+        ('elud-dakta', '202609', '19h_mPsH-pr8b3hMs1DomvCzR_RdFNbPa9a6yb_axIhA', '{}'::jsonb);
+    `);
+
+    // 1. Exact match with official name
+    const exact = await targetFor({
+      period: '202609',
+      cabang: 'ELUD PRIMA',
+      link: 'https://docs.google.com/spreadsheets/d/1NzLlppP4BaLUzsvbVuypalZEOFBIPc5ut2RIWRx6JPI/edit'
+    }, db);
+    assert.equal(exact.branchId, 'elud-prima');
+    assert.equal(exact.branchName, 'ELUD PRIMA');
+
+    // 2. Fallback match when sheet row has alias 'PRIMA' but correct spreadsheet link
+    const aliasMatch = await targetFor({
+      period: '202609',
+      cabang: 'PRIMA',
+      link: 'https://docs.google.com/spreadsheets/d/1NzLlppP4BaLUzsvbVuypalZEOFBIPc5ut2RIWRx6JPI/edit?usp=sharing'
+    }, db);
+    assert.equal(aliasMatch.branchId, 'elud-prima', 'Should resolve to ELUD PRIMA via spreadsheet_id fallback');
+    assert.equal(aliasMatch.branchName, 'ELUD PRIMA');
+
+    // 3. Fallback match when alias 'DAKTA' without prefix ELUD
+    const daktaMatch = await targetFor({
+      period: '202609',
+      cabang: 'DAKTA',
+      link: 'https://docs.google.com/spreadsheets/d/19h_mPsH-pr8b3hMs1DomvCzR_RdFNbPa9a6yb_axIhA/edit'
+    }, db);
+    assert.equal(daktaMatch.branchId, 'elud-dakta', 'Should resolve to ELUD DAKTA via spreadsheet_id fallback');
+  } finally {
+    await pg.close();
+  }
+});
+
 
